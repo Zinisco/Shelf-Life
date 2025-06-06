@@ -33,15 +33,6 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "RotateObject",
-                    "type": "Button",
-                    "id": "8d0f2142-289b-4cb2-8c50-62e27ff75ce6",
-                    "expectedControlType": "",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "ShelveObject",
                     "type": "Button",
                     "id": "0d215d58-a626-4bda-a194-7675e899cdc5",
@@ -159,28 +150,6 @@
                     "processors": "",
                     "groups": ";KeyboardMouse",
                     "action": "PickUpObject",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "5f3b85c6-1358-457b-adbe-13e907ac58b0",
-                    "path": "<Gamepad>/rightShoulder",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";Gamepad",
-                    "action": "RotateObject",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "472757d5-e7e0-40a7-850e-1ef8cd7f15c2",
-                    "path": "<Mouse>/rightButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": ";KeyboardMouse",
-                    "action": "RotateObject",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },

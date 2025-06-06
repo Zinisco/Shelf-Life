@@ -25,14 +25,12 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.Enable();
 
         playerInputActions.Player.PickUpObject.performed += PickUpObject_performed;
-        playerInputActions.Player.RotateObject.performed += RotateObject_performed;
         playerInputActions.Player.ShelveObject.performed += ShelveObject_performed;
     }
 
     private void OnDestroy()
     {
         playerInputActions.Player.PickUpObject.performed -= PickUpObject_performed;
-        playerInputActions.Player.RotateObject.performed -= RotateObject_performed;
 
         playerInputActions.Dispose();
     }

@@ -55,15 +55,6 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
-                    ""name"": ""RotateObject"",
-                    ""type"": ""Button"",
-                    ""id"": ""8d0f2142-289b-4cb2-8c50-62e27ff75ce6"",
-                    ""expectedControlType"": """",
-                    ""processors"": """",
-                    ""interactions"": """",
-                    ""initialStateCheck"": false
-                },
-                {
                     ""name"": ""ShelveObject"",
                     ""type"": ""Button"",
                     ""id"": ""0d215d58-a626-4bda-a194-7675e899cdc5"",
@@ -186,28 +177,6 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""5f3b85c6-1358-457b-adbe-13e907ac58b0"",
-                    ""path"": ""<Gamepad>/rightShoulder"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": "";Gamepad"",
-                    ""action"": ""RotateObject"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""472757d5-e7e0-40a7-850e-1ef8cd7f15c2"",
-                    ""path"": ""<Mouse>/rightButton"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": "";KeyboardMouse"",
-                    ""action"": ""RotateObject"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
                     ""id"": ""19daa843-4245-4546-afba-6a8fc58f0299"",
                     ""path"": ""<Gamepad>/buttonSouth"",
                     ""interactions"": """",
@@ -265,7 +234,6 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Player_Move = m_Player.FindAction("Move", throwIfNotFound: true);
         m_Player_Look = m_Player.FindAction("Look", throwIfNotFound: true);
         m_Player_PickUpObject = m_Player.FindAction("PickUpObject", throwIfNotFound: true);
-        m_Player_RotateObject = m_Player.FindAction("RotateObject", throwIfNotFound: true);
         m_Player_ShelveObject = m_Player.FindAction("ShelveObject", throwIfNotFound: true);
     }
 
@@ -336,7 +304,6 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Move;
     private readonly InputAction m_Player_Look;
     private readonly InputAction m_Player_PickUpObject;
-    private readonly InputAction m_Player_RotateObject;
     private readonly InputAction m_Player_ShelveObject;
     public struct PlayerActions
     {
@@ -345,7 +312,6 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         public InputAction @Move => m_Wrapper.m_Player_Move;
         public InputAction @Look => m_Wrapper.m_Player_Look;
         public InputAction @PickUpObject => m_Wrapper.m_Player_PickUpObject;
-        public InputAction @RotateObject => m_Wrapper.m_Player_RotateObject;
         public InputAction @ShelveObject => m_Wrapper.m_Player_ShelveObject;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
@@ -365,9 +331,6 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @PickUpObject.started += instance.OnPickUpObject;
             @PickUpObject.performed += instance.OnPickUpObject;
             @PickUpObject.canceled += instance.OnPickUpObject;
-            @RotateObject.started += instance.OnRotateObject;
-            @RotateObject.performed += instance.OnRotateObject;
-            @RotateObject.canceled += instance.OnRotateObject;
             @ShelveObject.started += instance.OnShelveObject;
             @ShelveObject.performed += instance.OnShelveObject;
             @ShelveObject.canceled += instance.OnShelveObject;
@@ -384,9 +347,6 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @PickUpObject.started -= instance.OnPickUpObject;
             @PickUpObject.performed -= instance.OnPickUpObject;
             @PickUpObject.canceled -= instance.OnPickUpObject;
-            @RotateObject.started -= instance.OnRotateObject;
-            @RotateObject.performed -= instance.OnRotateObject;
-            @RotateObject.canceled -= instance.OnRotateObject;
             @ShelveObject.started -= instance.OnShelveObject;
             @ShelveObject.performed -= instance.OnShelveObject;
             @ShelveObject.canceled -= instance.OnShelveObject;
@@ -430,7 +390,6 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         void OnMove(InputAction.CallbackContext context);
         void OnLook(InputAction.CallbackContext context);
         void OnPickUpObject(InputAction.CallbackContext context);
-        void OnRotateObject(InputAction.CallbackContext context);
         void OnShelveObject(InputAction.CallbackContext context);
     }
 }

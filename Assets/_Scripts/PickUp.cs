@@ -9,34 +9,48 @@ public class PickUp : MonoBehaviour
     private ShelfSpot currentShelfSpot; // Tracks where the book is shelved
     private GameObject shelvedBook;
 
+    [SerializeField] private Collider playerCollider;
+
+    [SerializeField] private ShelfDetector shelfDetector;
+    [SerializeField] private GhostBookManager ghostBookManager;
+
+
     [Header("Game Input")]
     [SerializeField] private GameInput gameInput;
 
     [Header("Pick Up Object Settings")]
-    [SerializeField] private float pickupRange = 3f;  // Max distance to pick up objects
+    [SerializeField] private float pickupRange = 4f;  // Max distance to pick up objects
     [SerializeField] private Transform holdPosition;  // Where the object will be held
     private GameObject heldObject;
     private Rigidbody heldObjectRb;
-
-    [Header("Rotation Settings")]
-    [SerializeField] private float rotationAmount = 90f; // Rotate by 90 degrees per click
-    [SerializeField] private float rotationSpeed = 5f;   // Speed of the smooth rotation
 
     [Header("Bookshelf Settings")]
     //[SerializeField] private float bookshelfScanRange = 5f;
     [SerializeField] private float shelfSnapRange = 1.5f; // How close the book needs to be to snap
 
-    private bool isRotating = false;
-
-    private Quaternion targetRotation;
 
     private void Start()
     {
         gameInput.OnPickUpObjectAction += GameInput_OnPickUpObjectAction;
-        gameInput.OnRotateObjectAction += GameInput_OnRotateObjectAction;
         gameInput.OnShelveObjectAction += GameInput_OnShelveObjectAction;
 
+        ghostBookManager.Init();
+
     }
+
+    void Update()
+    {
+        shelfDetector.UpdateLookedAtShelf();
+        ghostBookManager.UpdateGhostBook(heldObject, shelfDetector.CurrentLookedAtShelfSpot);
+
+        // Force book to stick to hand
+        if (heldObject != null)
+        {
+            heldObject.transform.position = holdPosition.position;
+            heldObject.transform.rotation = holdPosition.rotation * Quaternion.Euler(0, 180, 90); // adjust as needed
+        }
+    }
+
 
     private void GameInput_OnShelveObjectAction(object sender, System.EventArgs e)
     {
@@ -57,18 +71,7 @@ public class PickUp : MonoBehaviour
         }
     }
 
-    private void GameInput_OnRotateObjectAction(object sender, System.EventArgs e)
-    {
-        if (heldObject != null)
-        {
-            if (!isRotating)
-            {
-                StartCoroutine(RotateObjectSmoothly(Quaternion.Euler(rotationAmount, 0, 0)));
-            }
-        }
-    }
-
-    void TryPickup()
+    private void TryPickup()
     {
         Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
         RaycastHit hit;
@@ -94,12 +97,22 @@ public class PickUp : MonoBehaviour
                     heldObjectRb.isKinematic = true;
                 }
 
-                heldObject.transform.SetParent(holdPosition);
+                // Ignore collision between player and held book
+                Collider bookCollider = heldObject.GetComponent<Collider>();
+                if (bookCollider != null && playerCollider != null)
+                {
+                    Physics.IgnoreCollision(bookCollider, playerCollider, true);
+                }
+
+                heldObject.transform.SetParent(holdPosition, worldPositionStays: false); // localPosition stays consistent
                 heldObject.transform.localPosition = Vector3.zero;
-                transform.rotation = Quaternion.Euler(0, transform.rotation.eulerAngles.y, 90);
-                heldObject.transform.LookAt(Camera.main.transform);
+                heldObject.transform.localRotation = Quaternion.Euler(0, 180, 90);
+
+
             }
         }
+
+
     }
 
 
@@ -125,10 +138,20 @@ public class PickUp : MonoBehaviour
             heldObjectRb.isKinematic = false; // Re-enable physics
         }
 
+        if (heldObject != null && playerCollider != null)
+        {
+            Collider bookCollider = heldObject.GetComponent<Collider>();
+            if (bookCollider != null)
+            {
+                Physics.IgnoreCollision(bookCollider, playerCollider, false);
+            }
+        }
+
+
         heldObject.transform.SetParent(null);
+        heldObject.transform.position = holdPosition.position + Camera.main.transform.forward * 0.5f;
         heldObject = null;
         heldObjectRb = null;
-        isRotating = false;
     }
 
 
@@ -136,41 +159,47 @@ public class PickUp : MonoBehaviour
     {
         if (heldObject == null) return;
 
-        Bookshelf[] bookshelves = FindObjectsOfType<Bookshelf>();
-        ShelfSpot closestSpot = null;
-        float closestDistance = Mathf.Infinity;
+        ShelfSpot targetSpot = null;
 
-        foreach (Bookshelf shelf in bookshelves)
+        // Prioritize the spot we're looking at if it's valid
+        ShelfSpot lookedAtShelfSpot = shelfDetector.CurrentLookedAtShelfSpot;
+        if (lookedAtShelfSpot != null && !lookedAtShelfSpot.IsOccupied())
         {
-            foreach (ShelfSpot spot in shelf.GetShelfSpots())
-            {
-                if (spot.IsOccupied()) continue;
+            targetSpot = lookedAtShelfSpot;
+        }
 
-                float distance = Vector3.Distance(heldObject.transform.position, spot.transform.position);
-                if (distance < shelfSnapRange && distance < closestDistance)
+        // Fallback: Find closest unoccupied shelf spot if look failed
+        if (targetSpot == null)
+        {
+            Bookshelf[] bookshelves = FindObjectsOfType<Bookshelf>();
+            float closestDistance = Mathf.Infinity;
+
+            foreach (Bookshelf shelf in bookshelves)
+            {
+                foreach (ShelfSpot spot in shelf.GetShelfSpots())
                 {
-                    closestDistance = distance;
-                    closestSpot = spot;
+                    if (spot.IsOccupied()) continue;
+
+                    float distance = Vector3.Distance(heldObject.transform.position, spot.transform.position);
+                    if (distance < shelfSnapRange && distance < closestDistance)
+                    {
+                        closestDistance = distance;
+                        targetSpot = spot;
+                    }
                 }
             }
         }
 
-        if (closestSpot != null)
+        // If we found a valid spot, shelve it
+        if (targetSpot != null)
         {
-            currentShelfSpot = closestSpot;
+            currentShelfSpot = targetSpot;
             shelvedBook = heldObject;
-            closestSpot.SetOccupied(true, heldObject);
+            targetSpot.SetOccupied(true, heldObject);
 
-            BookInfo info = heldObject.GetComponent<BookInfo>();
-            if (info != null)
-            {
-                info.SetShelfSpot(closestSpot);
-            }
-
-            StartCoroutine(SmoothPlaceOnShelf(heldObject, closestSpot.transform));
+            StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.transform));
             heldObjectRb.isKinematic = true;
             heldObject.transform.SetParent(null);
-
             heldObject = null;
             heldObjectRb = null;
         }
@@ -179,6 +208,7 @@ public class PickUp : MonoBehaviour
             Debug.Log("No valid shelf spot nearby.");
         }
     }
+
 
     IEnumerator SmoothPlaceOnShelf(GameObject book, Transform shelfSpot)
     {
@@ -207,23 +237,4 @@ public class PickUp : MonoBehaviour
         book.transform.position = targetPosition;
         book.transform.rotation = targetRotation;
     }
-
-    IEnumerator RotateObjectSmoothly(Quaternion localRotation)
-    {
-        isRotating = true;
-        Quaternion startRotation = heldObject.transform.localRotation;  // Use localRotation instead of world rotation
-        Quaternion targetRotation = startRotation * localRotation;
-
-        float elapsedTime = 0f;
-        while (elapsedTime < 1f)
-        {
-            elapsedTime += Time.deltaTime * rotationSpeed;
-            heldObject.transform.localRotation = Quaternion.Slerp(startRotation, targetRotation, elapsedTime);  // Apply local rotation
-            yield return null;
-        }
-
-        heldObject.transform.localRotation = targetRotation; // Ensure exact local rotation
-        isRotating = false;
-    }
-
 }
