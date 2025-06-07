@@ -7,6 +7,9 @@ public class ShelfDetector : MonoBehaviour
 
     public ShelfSpot CurrentLookedAtShelfSpot { get; private set; }
 
+    private float timeSinceLostLook = 0f;
+    private float loseLookDelay = 0.2f;  // Delay before clearing looked at spot
+
     public void UpdateLookedAtShelf()
     {
         Ray ray = new Ray(Camera.main.transform.position, Camera.main.transform.forward);
@@ -22,14 +25,21 @@ public class ShelfDetector : MonoBehaviour
                     CurrentLookedAtShelfSpot = spot;
                     Debug.Log($"Looking at ShelfSpot: {spot.gameObject.name}");
                 }
+                timeSinceLostLook = 0f; // Reset timer when looking at a spot
                 return;
             }
         }
 
+        // If no hit, start counting time since last valid shelf spot
         if (CurrentLookedAtShelfSpot != null)
         {
-            Debug.Log("No longer looking at a shelf spot");
-            CurrentLookedAtShelfSpot = null;
+            timeSinceLostLook += Time.deltaTime;
+            if (timeSinceLostLook > loseLookDelay)
+            {
+                Debug.Log("No longer looking at a shelf spot");
+                CurrentLookedAtShelfSpot = null;
+                timeSinceLostLook = 0f;
+            }
         }
     }
 }

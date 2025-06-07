@@ -13,7 +13,7 @@ public class GhostBookManager : MonoBehaviour
 
     public void UpdateGhostBook(GameObject heldObject, ShelfSpot spot)
     {
-        if (heldObject != null && spot != null && !spot.IsOccupied())
+        if (heldObject != null && spot != null)
         {
             ghostBookInstance.SetActive(true);
             ghostBookInstance.transform.position = spot.transform.position;
