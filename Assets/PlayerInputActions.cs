@@ -78,7 +78,34 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""id"": ""80566f5f-011f-4149-b174-5ee15dc287b7"",
                     ""expectedControlType"": """",
                     ""processors"": """",
+                    ""interactions"": ""Hold"",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""RotateRight"",
+                    ""type"": ""Button"",
+                    ""id"": ""503544fe-80bf-46cd-a834-4ef3459b7994"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
                     ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""RotateLeft"",
+                    ""type"": ""Button"",
+                    ""id"": ""186e2639-eaa0-4410-b329-3e0fe7e599a1"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""PrecisionModifier"",
+                    ""type"": ""Button"",
+                    ""id"": ""aaf0be7c-3c8d-422c-967f-435804591b70"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": ""Hold"",
                     ""initialStateCheck"": false
                 }
             ],
@@ -230,7 +257,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""name"": """",
                     ""id"": ""adc9ccba-dc61-432a-aa5a-ad9a4ae93045"",
                     ""path"": ""<Mouse>/rightButton"",
-                    ""interactions"": ""Hold"",
+                    ""interactions"": """",
                     ""processors"": """",
                     ""groups"": "";KeyboardMouse"",
                     ""action"": ""MoveFurniture"",
@@ -241,10 +268,54 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""name"": """",
                     ""id"": ""b88f8fae-dc74-474c-ba9c-3f0d612423ed"",
                     ""path"": ""<Gamepad>/buttonNorth"",
-                    ""interactions"": ""Hold"",
+                    ""interactions"": """",
                     ""processors"": """",
                     ""groups"": "";Gamepad"",
                     ""action"": ""MoveFurniture"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""13938501-9c51-406a-a24a-d5efde570b7a"",
+                    ""path"": ""<Gamepad>/rightShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Gamepad"",
+                    ""action"": ""RotateRight"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f2bdffe4-eef6-4944-8ec5-fe49335dbd5b"",
+                    ""path"": ""<Gamepad>/leftShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Gamepad"",
+                    ""action"": ""RotateLeft"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""20b09f27-bf31-40a6-bb9e-10c2c7203c5b"",
+                    ""path"": ""<Keyboard>/shift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";KeyboardMouse"",
+                    ""action"": ""PrecisionModifier"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b02181ec-aaa9-4297-ad09-4bd397bff6e4"",
+                    ""path"": ""<Gamepad>/buttonWest"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Gamepad"",
+                    ""action"": ""PrecisionModifier"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -288,6 +359,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Player_ShelveObject = m_Player.FindAction("ShelveObject", throwIfNotFound: true);
         m_Player_ScrollRotate = m_Player.FindAction("ScrollRotate", throwIfNotFound: true);
         m_Player_MoveFurniture = m_Player.FindAction("MoveFurniture", throwIfNotFound: true);
+        m_Player_RotateRight = m_Player.FindAction("RotateRight", throwIfNotFound: true);
+        m_Player_RotateLeft = m_Player.FindAction("RotateLeft", throwIfNotFound: true);
+        m_Player_PrecisionModifier = m_Player.FindAction("PrecisionModifier", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
@@ -360,6 +434,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_ShelveObject;
     private readonly InputAction m_Player_ScrollRotate;
     private readonly InputAction m_Player_MoveFurniture;
+    private readonly InputAction m_Player_RotateRight;
+    private readonly InputAction m_Player_RotateLeft;
+    private readonly InputAction m_Player_PrecisionModifier;
     public struct PlayerActions
     {
         private @PlayerInputActions m_Wrapper;
@@ -370,6 +447,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         public InputAction @ShelveObject => m_Wrapper.m_Player_ShelveObject;
         public InputAction @ScrollRotate => m_Wrapper.m_Player_ScrollRotate;
         public InputAction @MoveFurniture => m_Wrapper.m_Player_MoveFurniture;
+        public InputAction @RotateRight => m_Wrapper.m_Player_RotateRight;
+        public InputAction @RotateLeft => m_Wrapper.m_Player_RotateLeft;
+        public InputAction @PrecisionModifier => m_Wrapper.m_Player_PrecisionModifier;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -397,6 +477,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @MoveFurniture.started += instance.OnMoveFurniture;
             @MoveFurniture.performed += instance.OnMoveFurniture;
             @MoveFurniture.canceled += instance.OnMoveFurniture;
+            @RotateRight.started += instance.OnRotateRight;
+            @RotateRight.performed += instance.OnRotateRight;
+            @RotateRight.canceled += instance.OnRotateRight;
+            @RotateLeft.started += instance.OnRotateLeft;
+            @RotateLeft.performed += instance.OnRotateLeft;
+            @RotateLeft.canceled += instance.OnRotateLeft;
+            @PrecisionModifier.started += instance.OnPrecisionModifier;
+            @PrecisionModifier.performed += instance.OnPrecisionModifier;
+            @PrecisionModifier.canceled += instance.OnPrecisionModifier;
         }
 
         private void UnregisterCallbacks(IPlayerActions instance)
@@ -419,6 +508,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @MoveFurniture.started -= instance.OnMoveFurniture;
             @MoveFurniture.performed -= instance.OnMoveFurniture;
             @MoveFurniture.canceled -= instance.OnMoveFurniture;
+            @RotateRight.started -= instance.OnRotateRight;
+            @RotateRight.performed -= instance.OnRotateRight;
+            @RotateRight.canceled -= instance.OnRotateRight;
+            @RotateLeft.started -= instance.OnRotateLeft;
+            @RotateLeft.performed -= instance.OnRotateLeft;
+            @RotateLeft.canceled -= instance.OnRotateLeft;
+            @PrecisionModifier.started -= instance.OnPrecisionModifier;
+            @PrecisionModifier.performed -= instance.OnPrecisionModifier;
+            @PrecisionModifier.canceled -= instance.OnPrecisionModifier;
         }
 
         public void RemoveCallbacks(IPlayerActions instance)
@@ -462,5 +560,8 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         void OnShelveObject(InputAction.CallbackContext context);
         void OnScrollRotate(InputAction.CallbackContext context);
         void OnMoveFurniture(InputAction.CallbackContext context);
+        void OnRotateRight(InputAction.CallbackContext context);
+        void OnRotateLeft(InputAction.CallbackContext context);
+        void OnPrecisionModifier(InputAction.CallbackContext context);
     }
 }

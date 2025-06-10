@@ -9,8 +9,6 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float jumpForce = 5f;
-    [SerializeField] private float gravity = -9.81f;
 
     [Header("Look Settings")]
     [SerializeField] private float lookSensitivity = 0.2f;
@@ -38,15 +36,6 @@ public class PlayerMovement : MonoBehaviour
         Vector2 inputVector = gameInput.GetMovementVectorNormalized();
 
         Vector3 move = transform.right * inputVector.x + transform.forward * inputVector.y;
-
-        if (!controller.isGrounded)
-        {
-            verticalVelocity += gravity * Time.deltaTime; // Apply gravity
-        }
-        else if (Input.GetButtonDown("Jump"))  // Check Jump
-        {
-            verticalVelocity = jumpForce;
-        }
 
         controller.Move((move * moveSpeed + Vector3.up * verticalVelocity) * Time.deltaTime);
     }

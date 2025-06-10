@@ -56,7 +56,34 @@
                     "id": "80566f5f-011f-4149-b174-5ee15dc287b7",
                     "expectedControlType": "",
                     "processors": "",
+                    "interactions": "Hold",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "RotateRight",
+                    "type": "Button",
+                    "id": "503544fe-80bf-46cd-a834-4ef3459b7994",
+                    "expectedControlType": "",
+                    "processors": "",
                     "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "RotateLeft",
+                    "type": "Button",
+                    "id": "186e2639-eaa0-4410-b329-3e0fe7e599a1",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "PrecisionModifier",
+                    "type": "Button",
+                    "id": "aaf0be7c-3c8d-422c-967f-435804591b70",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "Hold",
                     "initialStateCheck": false
                 }
             ],
@@ -208,7 +235,7 @@
                     "name": "",
                     "id": "adc9ccba-dc61-432a-aa5a-ad9a4ae93045",
                     "path": "<Mouse>/rightButton",
-                    "interactions": "Hold",
+                    "interactions": "",
                     "processors": "",
                     "groups": ";KeyboardMouse",
                     "action": "MoveFurniture",
@@ -219,10 +246,54 @@
                     "name": "",
                     "id": "b88f8fae-dc74-474c-ba9c-3f0d612423ed",
                     "path": "<Gamepad>/buttonNorth",
-                    "interactions": "Hold",
+                    "interactions": "",
                     "processors": "",
                     "groups": ";Gamepad",
                     "action": "MoveFurniture",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "13938501-9c51-406a-a24a-d5efde570b7a",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "RotateRight",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f2bdffe4-eef6-4944-8ec5-fe49335dbd5b",
+                    "path": "<Gamepad>/leftShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "RotateLeft",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "20b09f27-bf31-40a6-bb9e-10c2c7203c5b",
+                    "path": "<Keyboard>/shift",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";KeyboardMouse",
+                    "action": "PrecisionModifier",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b02181ec-aaa9-4297-ad09-4bd397bff6e4",
+                    "path": "<Gamepad>/buttonWest",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "PrecisionModifier",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

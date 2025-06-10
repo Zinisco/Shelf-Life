@@ -34,12 +34,18 @@ public class FurnitureMover : MonoBehaviour
 
         gameInput.OnStartMoveFurnitureAction += HandleStartMove;
         gameInput.OnPlaceFurnitureAction += HandlePlaceFurniture;
+
+        gameInput.OnRotateLeftAction += OnRotateLeft;
+        gameInput.OnRotateRightAction += OnRotateRight;
     }
 
     private void OnDisable()
     {
         gameInput.OnStartMoveFurnitureAction -= HandleStartMove;
         gameInput.OnPlaceFurnitureAction -= HandlePlaceFurniture;
+
+        gameInput.OnRotateLeftAction += OnRotateLeft;
+        gameInput.OnRotateRightAction += OnRotateRight;
     }
 
     private void Update()
@@ -179,9 +185,11 @@ public class FurnitureMover : MonoBehaviour
     private void HandleRotationInput()
     {
         float scroll = Mouse.current.scroll.ReadValue().y;
+
         if (Mathf.Abs(scroll) < 0.01f) return;
 
-        float angleStep = Keyboard.current.leftShiftKey.isPressed ? 15f : 90f;
+
+        float angleStep = IsShiftHeld() ? 90f : 15f;
 
         if (scroll > 0)
             rotationAmount += angleStep;
@@ -190,6 +198,7 @@ public class FurnitureMover : MonoBehaviour
 
         rotationAmount %= 360f;
     }
+
 
     private bool CanPlaceGhost()
     {
@@ -233,5 +242,23 @@ public class FurnitureMover : MonoBehaviour
         return true;
     }
 
+    private void OnRotateLeft(object sender, EventArgs e)
+    {
+        float angleStep = IsShiftHeld() ? 90f : 15f;
+        rotationAmount -= angleStep;
+        rotationAmount %= 360f;
+    }
+
+    private void OnRotateRight(object sender, EventArgs e)
+    {
+        float angleStep = IsShiftHeld() ? 90f : 15f;
+        rotationAmount += angleStep;
+        rotationAmount %= 360f;
+    }
+
+    private bool IsShiftHeld()
+    {
+        return GameInput.Instance.IsPrecisionModifierHeld();
+    }
 
 }

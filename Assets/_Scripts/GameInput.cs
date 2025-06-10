@@ -15,6 +15,8 @@ public class GameInput : MonoBehaviour
     public event EventHandler<InputAction.CallbackContext> OnScrollRotate;
     public event EventHandler OnStartMoveFurnitureAction;
     public event EventHandler OnPlaceFurnitureAction;
+    public event EventHandler OnRotateLeftAction;
+    public event EventHandler OnRotateRightAction;
 
 
 
@@ -34,6 +36,8 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.ScrollRotate.performed += ScrollRotate_performed;
         playerInputActions.Player.MoveFurniture.started += MoveFurniture_started;
         playerInputActions.Player.MoveFurniture.performed += MoveFurniture_performed;
+        playerInputActions.Player.RotateLeft.performed += RotateLeft_performed;
+        playerInputActions.Player.RotateRight.performed += RotateRight_performed;
 
 
     }
@@ -45,6 +49,8 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.ScrollRotate.performed -= ScrollRotate_performed;
         playerInputActions.Player.MoveFurniture.started -= MoveFurniture_started;
         playerInputActions.Player.MoveFurniture.performed -= MoveFurniture_performed;
+        playerInputActions.Player.RotateLeft.performed -= RotateLeft_performed;
+        playerInputActions.Player.RotateRight.performed -= RotateRight_performed;
 
 
 
@@ -72,6 +78,15 @@ public class GameInput : MonoBehaviour
         OnShelveObjectAction?.Invoke(this, EventArgs.Empty);
     }
 
+    private void RotateLeft_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
+    {
+        OnRotateLeftAction?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void RotateRight_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
+    {
+        OnRotateRightAction?.Invoke(this, EventArgs.Empty);
+    }
     private void ScrollRotate_performed(InputAction.CallbackContext context)
     {
         OnScrollRotate?.Invoke(this, context);
@@ -92,4 +107,10 @@ public class GameInput : MonoBehaviour
 
         return inputLookVector;
     }
+
+    public bool IsPrecisionModifierHeld()
+    {
+        return playerInputActions.Player.PrecisionModifier.IsPressed();
+    }
+
 }
