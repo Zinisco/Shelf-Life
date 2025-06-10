@@ -6,6 +6,7 @@ TagManager:
   tags:
   - CinemachineTarget
   - Pickable
+  - Furniture
   layers:
   - Default
   - TransparentFX
@@ -17,9 +18,9 @@ TagManager:
   - Player
   - Wall
   - Ghost
-  - 
-  - 
-  - 
+  - Furniture
+  - Pickable
+  - Ground
   - 
   - 
   - 

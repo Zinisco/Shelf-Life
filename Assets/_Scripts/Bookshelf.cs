@@ -45,7 +45,7 @@ public class Bookshelf : MonoBehaviour
             {
                 Vector3 spotPos = new Vector3(startX + col * spacing.x, startY - row * spacing.y, z);
                 GameObject spot = new GameObject($"Spot_{row}_{col}");
-                spot.transform.SetPositionAndRotation(spotPos, Quaternion.LookRotation(-transform.forward));
+                spot.transform.SetPositionAndRotation(spotPos, Quaternion.LookRotation(transform.forward));
                 spot.transform.parent = transform;
 
                 // Add ShelfSpot component
@@ -55,11 +55,14 @@ public class Bookshelf : MonoBehaviour
                 // Optional visual
                 if (spotVisualPrefab)
                 {
-                    Instantiate(spotVisualPrefab, spot.transform.position, spot.transform.rotation, spot.transform);
+                    GameObject visual = Instantiate(spotVisualPrefab, spot.transform.position, spot.transform.rotation, spot.transform);
+                    shelfSpot.InitializeFromVisual(visual);
                 }
+
             }
         }
     }
+
 
     public List<ShelfSpot> GetShelfSpots()
     {

@@ -62,6 +62,24 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ScrollRotate"",
+                    ""type"": ""Value"",
+                    ""id"": ""2ddef8c0-06a4-4360-8425-db4128bc82fc"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""MoveFurniture"",
+                    ""type"": ""Button"",
+                    ""id"": ""80566f5f-011f-4149-b174-5ee15dc287b7"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -156,7 +174,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""17119e59-b2e7-4ac7-8acd-f7bbd95694d1"",
-                    ""path"": ""<Gamepad>/buttonWest"",
+                    ""path"": ""<Gamepad>/buttonSouth"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": "";Gamepad"",
@@ -178,7 +196,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""19daa843-4245-4546-afba-6a8fc58f0299"",
-                    ""path"": ""<Gamepad>/buttonSouth"",
+                    ""path"": ""<Gamepad>/buttonWest"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": "";Gamepad"",
@@ -194,6 +212,39 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": "";KeyboardMouse"",
                     ""action"": ""ShelveObject"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e8726fbe-044d-4aeb-b8e2-63aacf0e42e4"",
+                    ""path"": ""<Mouse>/scroll"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ScrollRotate"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""adc9ccba-dc61-432a-aa5a-ad9a4ae93045"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": ""Hold"",
+                    ""processors"": """",
+                    ""groups"": "";KeyboardMouse"",
+                    ""action"": ""MoveFurniture"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b88f8fae-dc74-474c-ba9c-3f0d612423ed"",
+                    ""path"": ""<Gamepad>/buttonNorth"",
+                    ""interactions"": ""Hold"",
+                    ""processors"": """",
+                    ""groups"": "";Gamepad"",
+                    ""action"": ""MoveFurniture"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -235,6 +286,8 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Player_Look = m_Player.FindAction("Look", throwIfNotFound: true);
         m_Player_PickUpObject = m_Player.FindAction("PickUpObject", throwIfNotFound: true);
         m_Player_ShelveObject = m_Player.FindAction("ShelveObject", throwIfNotFound: true);
+        m_Player_ScrollRotate = m_Player.FindAction("ScrollRotate", throwIfNotFound: true);
+        m_Player_MoveFurniture = m_Player.FindAction("MoveFurniture", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
@@ -305,6 +358,8 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Look;
     private readonly InputAction m_Player_PickUpObject;
     private readonly InputAction m_Player_ShelveObject;
+    private readonly InputAction m_Player_ScrollRotate;
+    private readonly InputAction m_Player_MoveFurniture;
     public struct PlayerActions
     {
         private @PlayerInputActions m_Wrapper;
@@ -313,6 +368,8 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         public InputAction @Look => m_Wrapper.m_Player_Look;
         public InputAction @PickUpObject => m_Wrapper.m_Player_PickUpObject;
         public InputAction @ShelveObject => m_Wrapper.m_Player_ShelveObject;
+        public InputAction @ScrollRotate => m_Wrapper.m_Player_ScrollRotate;
+        public InputAction @MoveFurniture => m_Wrapper.m_Player_MoveFurniture;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -334,6 +391,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @ShelveObject.started += instance.OnShelveObject;
             @ShelveObject.performed += instance.OnShelveObject;
             @ShelveObject.canceled += instance.OnShelveObject;
+            @ScrollRotate.started += instance.OnScrollRotate;
+            @ScrollRotate.performed += instance.OnScrollRotate;
+            @ScrollRotate.canceled += instance.OnScrollRotate;
+            @MoveFurniture.started += instance.OnMoveFurniture;
+            @MoveFurniture.performed += instance.OnMoveFurniture;
+            @MoveFurniture.canceled += instance.OnMoveFurniture;
         }
 
         private void UnregisterCallbacks(IPlayerActions instance)
@@ -350,6 +413,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @ShelveObject.started -= instance.OnShelveObject;
             @ShelveObject.performed -= instance.OnShelveObject;
             @ShelveObject.canceled -= instance.OnShelveObject;
+            @ScrollRotate.started -= instance.OnScrollRotate;
+            @ScrollRotate.performed -= instance.OnScrollRotate;
+            @ScrollRotate.canceled -= instance.OnScrollRotate;
+            @MoveFurniture.started -= instance.OnMoveFurniture;
+            @MoveFurniture.performed -= instance.OnMoveFurniture;
+            @MoveFurniture.canceled -= instance.OnMoveFurniture;
         }
 
         public void RemoveCallbacks(IPlayerActions instance)
@@ -391,5 +460,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         void OnLook(InputAction.CallbackContext context);
         void OnPickUpObject(InputAction.CallbackContext context);
         void OnShelveObject(InputAction.CallbackContext context);
+        void OnScrollRotate(InputAction.CallbackContext context);
+        void OnMoveFurniture(InputAction.CallbackContext context);
     }
 }

@@ -40,6 +40,24 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "ScrollRotate",
+                    "type": "Value",
+                    "id": "2ddef8c0-06a4-4360-8425-db4128bc82fc",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "MoveFurniture",
+                    "type": "Button",
+                    "id": "80566f5f-011f-4149-b174-5ee15dc287b7",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -134,7 +152,7 @@
                 {
                     "name": "",
                     "id": "17119e59-b2e7-4ac7-8acd-f7bbd95694d1",
-                    "path": "<Gamepad>/buttonWest",
+                    "path": "<Gamepad>/buttonSouth",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Gamepad",
@@ -156,7 +174,7 @@
                 {
                     "name": "",
                     "id": "19daa843-4245-4546-afba-6a8fc58f0299",
-                    "path": "<Gamepad>/buttonSouth",
+                    "path": "<Gamepad>/buttonWest",
                     "interactions": "",
                     "processors": "",
                     "groups": ";Gamepad",
@@ -172,6 +190,39 @@
                     "processors": "",
                     "groups": ";KeyboardMouse",
                     "action": "ShelveObject",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e8726fbe-044d-4aeb-b8e2-63aacf0e42e4",
+                    "path": "<Mouse>/scroll",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ScrollRotate",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "adc9ccba-dc61-432a-aa5a-ad9a4ae93045",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "Hold",
+                    "processors": "",
+                    "groups": ";KeyboardMouse",
+                    "action": "MoveFurniture",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "b88f8fae-dc74-474c-ba9c-3f0d612423ed",
+                    "path": "<Gamepad>/buttonNorth",
+                    "interactions": "Hold",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "MoveFurniture",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

@@ -14,6 +14,8 @@ public class PickUp : MonoBehaviour
     [SerializeField] private ShelfDetector shelfDetector;
     [SerializeField] private GhostBookManager ghostBookManager;
 
+    [SerializeField] private LayerMask pickableLayerMask;
+
 
     [Header("Game Input")]
     [SerializeField] private GameInput gameInput;
@@ -84,7 +86,7 @@ public class PickUp : MonoBehaviour
         Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
         RaycastHit hit;
 
-        if (Physics.Raycast(ray, out hit, pickupRange))
+        if (Physics.Raycast(ray, out hit, pickupRange, pickableLayerMask))
         {
             if (hit.collider.gameObject.CompareTag("Pickable"))
             {
@@ -105,7 +107,11 @@ public class PickUp : MonoBehaviour
                     heldObjectRb.interpolation = RigidbodyInterpolation.Interpolate;
                     heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
                     heldObject.transform.position = holdPosition.position;
-                    heldObject.transform.rotation = holdPosition.rotation * Quaternion.Euler(0, 180, 90);
+                    // Align book so cover faces player, spine left, top up
+                    Vector3 forward = -Camera.main.transform.forward; // cover toward camera
+                    Vector3 up = Vector3.up; // top up
+                    heldObject.transform.rotation = Quaternion.LookRotation(forward, up);
+
 
                 }
 
@@ -238,6 +244,7 @@ public class PickUp : MonoBehaviour
             if (occupyingRb != null)
             {
                 occupyingRb.isKinematic = true;
+
             }
 
             Collider occupyingCollider = occupyingBook.GetComponent<Collider>();
@@ -248,7 +255,8 @@ public class PickUp : MonoBehaviour
 
             // Shelve the current held book
             shelvedBook = heldObject;
-            StartCoroutine(SmoothPlaceOnShelf(shelvedBook, targetSpot.transform));
+            StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.GetBookAnchor()));
+
             targetSpot.SetOccupied(true, shelvedBook);
 
             BookInfo newInfo = shelvedBook.GetComponent<BookInfo>();
@@ -257,18 +265,12 @@ public class PickUp : MonoBehaviour
                 newInfo.SetShelfSpot(targetSpot);
             }
 
-            // Final cleanup: remove joint, reset physics, etc.
-            if (holdJoint != null)
-            {
-                Destroy(holdJoint);
-                holdJoint = null;
-            }
-
             if (heldObjectRb != null)
             {
                 heldObjectRb.isKinematic = true;
                 heldObjectRb.interpolation = RigidbodyInterpolation.None;
                 heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+
             }
 
             Collider shelvedCol = shelvedBook.GetComponent<Collider>();
@@ -279,6 +281,7 @@ public class PickUp : MonoBehaviour
 
             // Final cleanup for shelved book
             shelvedBook = null;
+            heldObjectRb = null;
 
             // Don't assign currentShelfSpot to the swapped book
             // The new heldObject is not shelved
@@ -293,12 +296,16 @@ public class PickUp : MonoBehaviour
                 heldObjectRb.isKinematic = false;
                 heldObjectRb.interpolation = RigidbodyInterpolation.Interpolate;
                 heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+
             }
 
             // Detach from any parent and set position/rotation
             heldObject.transform.SetParent(null);
             heldObject.transform.position = holdPosition.position;
-            heldObject.transform.rotation = holdPosition.rotation * Quaternion.Euler(0, 180, 90);
+            // Align book so cover faces player, spine left, top up
+            Vector3 forward = -Camera.main.transform.forward; // cover toward camera
+            Vector3 up = Vector3.up; // top up
+            heldObject.transform.rotation = Quaternion.LookRotation(forward, up);
 
             // Re-ignore collision
             Collider occupyingCol = heldObject.GetComponent<Collider>();
@@ -327,15 +334,14 @@ public class PickUp : MonoBehaviour
                 newInfo.SetShelfSpot(targetSpot); // or: newInfo.currentSpot = targetSpot;
             }
 
-            StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.transform));
-            heldObjectRb.isKinematic = true;
-            heldObject.transform.SetParent(null);
+            StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.GetBookAnchor()));
+
             heldObject = null;
             heldObjectRb = null;
         }
     }
 
-    IEnumerator SmoothPlaceOnShelf(GameObject book, Transform shelfSpot)
+    IEnumerator SmoothPlaceOnShelf(GameObject book, Transform anchorTransform)
     {
         float duration = 0.5f;
         float elapsed = 0f;
@@ -343,12 +349,24 @@ public class PickUp : MonoBehaviour
         Vector3 startPosition = book.transform.position;
         Quaternion startRotation = book.transform.rotation;
 
-        Vector3 targetPosition = shelfSpot.position;
-        Quaternion baseRotation = Quaternion.LookRotation(-shelfSpot.right, Vector3.up);
-        Quaternion targetRotation = baseRotation * Quaternion.Euler(0, 180, 90); // Rotate cover to correct orientation
+        Vector3 targetPosition = anchorTransform.position;
 
+        // Define the final desired local rotation when shelved
+        Quaternion finalLocalRotation = Quaternion.Euler(0, 90, 0); // cover right, spine out
 
+        // Get target world rotation by applying local rotation to anchor
+        Quaternion targetRotation = anchorTransform.rotation * finalLocalRotation;
 
+        // Disable collider during animation
+        Collider bookCollider = book.GetComponent<Collider>();
+        if (bookCollider != null) bookCollider.enabled = false;
+
+        // Remove hold joint
+        if (holdJoint != null)
+        {
+            Destroy(holdJoint);
+            holdJoint = null;
+        }
 
         while (elapsed < duration)
         {
@@ -359,9 +377,29 @@ public class PickUp : MonoBehaviour
             yield return null;
         }
 
+        // Snap to final placement
         book.transform.position = targetPosition;
         book.transform.rotation = targetRotation;
+
+        book.transform.SetParent(anchorTransform, false);
+        book.transform.localPosition = Vector3.zero;
+        book.transform.localRotation = finalLocalRotation;
+        book.transform.localScale = Vector3.one;
+
+        if (bookCollider != null) bookCollider.enabled = true;
+
+        Rigidbody rb = book.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.interpolation = RigidbodyInterpolation.None;
+            rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+        }
+
+        Debug.Log($"Final Book Position: {book.transform.position}, Local Scale: {book.transform.localScale}");
     }
+
+
 
     private bool IsDropPositionSafe(Vector3 position)
     {
@@ -413,6 +451,10 @@ public class PickUp : MonoBehaviour
         return origin + (forward * 0.3f) + (Camera.main.transform.right * 0.2f);
     }
 
+    public bool IsHoldingObject()
+    {
+        return heldObject != null;
+    }
 
 
     private void OnDrawGizmos()

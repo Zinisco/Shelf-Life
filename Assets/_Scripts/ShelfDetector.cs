@@ -17,7 +17,7 @@ public class ShelfDetector : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit, shelfDetectionRange, shelfSpotLayerMask))
         {
-            ShelfSpot spot = hit.collider.GetComponent<ShelfSpot>();
+            ShelfSpot spot = hit.collider.GetComponentInParent<ShelfSpot>();
             if (spot != null)
             {
                 if (CurrentLookedAtShelfSpot != spot)
