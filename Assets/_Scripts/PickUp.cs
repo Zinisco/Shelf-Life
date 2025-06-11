@@ -51,11 +51,6 @@ public class PickUp : MonoBehaviour
     {
         shelfDetector.UpdateLookedAtShelf();
         ghostBookManager.UpdateGhostBook(heldObject, shelfDetector.CurrentLookedAtShelfSpot);
-
-        if (heldObject != null)
-        {
-            Debug.Log($"[Held Book] Parent: {heldObject.transform.parent}, Position: {heldObject.transform.position}");
-        }
     }
 
 
@@ -111,8 +106,6 @@ public class PickUp : MonoBehaviour
                     Vector3 forward = -Camera.main.transform.forward; // cover toward camera
                     Vector3 up = Vector3.up; // top up
                     heldObject.transform.rotation = Quaternion.LookRotation(forward, up);
-
-
                 }
 
                 // Ignore collision between player and held book
@@ -183,6 +176,7 @@ public class PickUp : MonoBehaviour
         // Clear references
         heldObject = null;
         heldObjectRb = null;
+
     }
 
 
@@ -257,13 +251,12 @@ public class PickUp : MonoBehaviour
             shelvedBook = heldObject;
             StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.GetBookAnchor()));
 
-            targetSpot.SetOccupied(true, shelvedBook);
-
-            BookInfo newInfo = shelvedBook.GetComponent<BookInfo>();
+            BookInfo newInfo = heldObject.GetComponent<BookInfo>();
             if (newInfo != null)
             {
-                newInfo.SetShelfSpot(targetSpot);
+                targetSpot.Occupy(newInfo);
             }
+
 
             if (heldObjectRb != null)
             {
@@ -320,19 +313,20 @@ public class PickUp : MonoBehaviour
             holdJoint.breakForce = Mathf.Infinity;
             holdJoint.breakTorque = Mathf.Infinity;
 
+
+
         }
         else
         {
             // Normal shelving if spot is unoccupied
             currentShelfSpot = targetSpot;
             shelvedBook = heldObject;
-            targetSpot.SetOccupied(true, heldObject);
-
             BookInfo newInfo = heldObject.GetComponent<BookInfo>();
             if (newInfo != null)
             {
-                newInfo.SetShelfSpot(targetSpot); // or: newInfo.currentSpot = targetSpot;
+                targetSpot.Occupy(newInfo);
             }
+
 
             StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.GetBookAnchor()));
 
@@ -396,7 +390,7 @@ public class PickUp : MonoBehaviour
             rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
         }
 
-        Debug.Log($"Final Book Position: {book.transform.position}, Local Scale: {book.transform.localScale}");
+        //Debug.Log($"Final Book Position: {book.transform.position}, Local Scale: {book.transform.localScale}");
     }
 
 
@@ -478,7 +472,6 @@ public class PickUp : MonoBehaviour
 
             // Set Gizmos matrix to the book's position and rotation (no scale because we scale the size manually)
             Gizmos.matrix = Matrix4x4.TRS(heldObject.transform.position, heldObject.transform.rotation, Vector3.one);
-
             Gizmos.color = Color.red;
 
             // Draw wire cube centered at zero with scaled size

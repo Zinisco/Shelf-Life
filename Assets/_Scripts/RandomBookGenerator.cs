@@ -3,10 +3,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
-using System.Drawing;
 
 public class RandomBookGenerator : MonoBehaviour
 {
+    public BookInfo bookInfo { get; private set; }
+
+    public bool preventAutoGenerate = false;
+
+
     [SerializeField]
     private TMP_Text CoverTitle_Text;
     [SerializeField]
@@ -41,17 +45,22 @@ public class RandomBookGenerator : MonoBehaviour
 
     private MeshRenderer m_Renderer;
 
+    UnityEngine.Color newColor;
+
 
     private void Awake()
     {
-        m_Renderer = GetComponent<MeshRenderer>();
+        m_Renderer = GetComponentInChildren<MeshRenderer>();
+        bookInfo = GetComponent<BookInfo>();
     }
 
 
     private void Start()
     {
-        ChooseGenre();
+        if (!preventAutoGenerate)
+            ChooseGenre(); // Only generate random data if we didn't load from file
     }
+
 
     private void ChooseGenre()
     {
@@ -138,6 +147,15 @@ public class RandomBookGenerator : MonoBehaviour
         SpineName_Text.text = randomSpineName;
 
         ChooseRandomBrightColor();
+
+        if (bookInfo != null)
+        {
+            bookInfo.Genre = "Romance"; // or Mystery, etc.
+            bookInfo.Title = randomTitleName;
+            bookInfo.SpineTitle = randomSpineName;
+            bookInfo.CoverColor = m_Renderer.material.color;
+        }
+
     }
         private void CreateMysteryBookTitle()
     {
@@ -181,6 +199,14 @@ public class RandomBookGenerator : MonoBehaviour
         SpineName_Text.text = randomSpineName;
 
         ChooseRandomDarkColor();
+
+        if (bookInfo != null)
+        {
+            bookInfo.Genre = "Mystery"; // or Mystery, etc.
+            bookInfo.Title = randomTitleName;
+            bookInfo.SpineTitle = randomSpineName;
+            bookInfo.CoverColor = m_Renderer.material.color;
+        }
     }
 
     private void CreateSciFiBookTitle()
@@ -218,6 +244,14 @@ public class RandomBookGenerator : MonoBehaviour
         SpineName_Text.text = randomSpineName;
 
         ChooseRandomDarkColor();
+
+        if (bookInfo != null)
+        {
+            bookInfo.Genre = "SciFi"; // or Mystery, etc.
+            bookInfo.Title = randomTitleName;
+            bookInfo.SpineTitle = randomSpineName;
+            bookInfo.CoverColor = m_Renderer.material.color;
+        }
     }
 
     private void CreateFantasyBookTitle()
@@ -255,6 +289,14 @@ public class RandomBookGenerator : MonoBehaviour
         SpineName_Text.text = randomSpineName;
 
         ChooseRandomDarkColor();
+
+        if (bookInfo != null)
+        {
+            bookInfo.Genre = "Fantasy"; // or Mystery, etc.
+            bookInfo.Title = randomTitleName;
+            bookInfo.SpineTitle = randomSpineName;
+            bookInfo.CoverColor = m_Renderer.material.color;
+        }
     }
 
     private void CreateHorrorBookTitle()
@@ -296,9 +338,17 @@ public class RandomBookGenerator : MonoBehaviour
         SpineName_Text.text = randomSpineName;
 
         ChooseRandomDarkColor();
+
+        if (bookInfo != null)
+        {
+            bookInfo.Genre = "Horror"; // or Mystery, etc.
+            bookInfo.Title = randomTitleName;
+            bookInfo.SpineTitle = randomSpineName;
+            bookInfo.CoverColor = m_Renderer.material.color;
+        }
     }
 
-    private void ChooseRandomBrightColor()
+    private Color ChooseRandomBrightColor()
     {
         string[] colorNames = { "SkyBlue", "SunsentOrange", "Purple", "LimeGreen", "Red"};
 
@@ -334,9 +384,13 @@ public class RandomBookGenerator : MonoBehaviour
         }
 
         m_Renderer.material.color = newColor;
+if (bookInfo != null)
+    bookInfo.CoverColor = newColor;
+
+return newColor;
     }
 
-    private void ChooseRandomDarkColor()
+    private Color ChooseRandomDarkColor()
     {
         string[] colorNames = { "DarkBlue", "Black", "Red", "Green", "Grey" };
 
@@ -369,5 +423,34 @@ public class RandomBookGenerator : MonoBehaviour
         }
 
         m_Renderer.material.color = newColor;
+        if (bookInfo != null)
+            bookInfo.CoverColor = newColor;
+
+        return newColor;
     }
+
+    public void ApplyBookInfo(BookSaveManager.BookSaveData data)
+    {
+        if (bookInfo == null)
+            bookInfo = GetComponent<BookInfo>();
+
+        bookInfo.Genre = data.Genre;
+        bookInfo.Title = data.Title;
+        bookInfo.SpineTitle = data.SpineTitle;
+        bookInfo.CoverColor = data.CoverColor;
+
+        CoverTitle_Text.text = data.Title;
+        SpineName_Text.text = data.SpineTitle;
+
+        if (m_Renderer == null)
+            m_Renderer = GetComponentInChildren<MeshRenderer>();
+
+        if (m_Renderer != null)
+            m_Renderer.material.color = data.CoverColor;
+    }
+
+
+
+
+
 }

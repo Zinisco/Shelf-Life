@@ -4,8 +4,7 @@ using UnityEngine.InputSystem;
 
 public class FurnitureMover : MonoBehaviour
 {
-    [SerializeField] private PickUp pickup; // Drag your PickUp script in the Inspector
-
+    private PickUp pickUp;
 
     [SerializeField] private Transform playerCamera;
     [SerializeField] private float moveDistance = 3f;
@@ -48,16 +47,29 @@ public class FurnitureMover : MonoBehaviour
         gameInput.OnRotateRightAction += OnRotateRight;
     }
 
+    private void Start()
+    {
+        pickUp = FindObjectOfType<PickUp>();
+    }
+
     private void Update()
     {
-        if (!isMoving) return;
+        // Completely prevent all moving logic while holding a book
+        if (pickUp != null && pickUp.IsHoldingObject())
+            return;
+
+        if (!isMoving)
+            return;
 
         UpdateGhostPosition();
         HandleRotationInput();
     }
 
+
     private void HandleStartMove(object sender, EventArgs e)
     {
+        if (pickUp != null && pickUp.IsHoldingObject()) return;
+
         if (isMoving || !TryFindFurniture(out selectedFurniture)) return;
 
         isMoving = true;
@@ -189,7 +201,7 @@ public class FurnitureMover : MonoBehaviour
         if (Mathf.Abs(scroll) < 0.01f) return;
 
 
-        float angleStep = IsShiftHeld() ? 90f : 15f;
+        float angleStep = IsShiftHeld() ? 15f : 90f;
 
         if (scroll > 0)
             rotationAmount += angleStep;
@@ -244,14 +256,14 @@ public class FurnitureMover : MonoBehaviour
 
     private void OnRotateLeft(object sender, EventArgs e)
     {
-        float angleStep = IsShiftHeld() ? 90f : 15f;
+        float angleStep = IsShiftHeld() ? 15f : 90f;
         rotationAmount -= angleStep;
         rotationAmount %= 360f;
     }
 
     private void OnRotateRight(object sender, EventArgs e)
     {
-        float angleStep = IsShiftHeld() ? 90f : 15f;
+        float angleStep = IsShiftHeld() ? 15f : 90f;
         rotationAmount += angleStep;
         rotationAmount %= 360f;
     }

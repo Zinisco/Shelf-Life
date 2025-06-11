@@ -113,4 +113,14 @@ public class GameInput : MonoBehaviour
         return playerInputActions.Player.PrecisionModifier.IsPressed();
     }
 
+    public bool IsGamepad()
+    {
+        return Gamepad.current != null && Gamepad.current.wasUpdatedThisFrame;
+    }
+
+    public bool IsRightTriggerHeld()
+    {
+        return playerInputActions.Player.Aim.IsPressed(); // Assuming 'Aim' is mapped to RightTrigger
+    }
+
 }

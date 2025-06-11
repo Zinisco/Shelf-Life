@@ -1,12 +1,17 @@
 using System.Collections.Generic;
 using UnityEngine;
+using System;
+using static UnityEngine.Rendering.DebugUI.Table;
 
 public class Bookshelf : MonoBehaviour
 {
+    [Header("Shelf Metadata")]
+    public string ShelfID = Guid.NewGuid().ToString(); // Assigned automatically unless overridden
+
     [Header("Shelf Spot Generation")]
-    [SerializeField] private int rows = 3;
-    [SerializeField] private int columns = 5;
-    [SerializeField] private Vector2 spacing = new Vector2(0.3f, 0.3f); // X = horizontal spacing, Y = vertical spacing
+    [SerializeField] private int rows = 5;
+    [SerializeField] private int columns = 21;
+    [SerializeField] private Vector2 spacing = new Vector2(0.1f, 0.8f); // X = horizontal spacing, Y = vertical spacing
     [SerializeField] private Vector3 offset = Vector3.zero; // Offset from center
     [SerializeField] private GameObject spotVisualPrefab; // Optional visual helper
 
@@ -39,6 +44,10 @@ public class Bookshelf : MonoBehaviour
         float startY = origin.y + ((rows - 1) * spacing.y) / 2f;
         float z = origin.z;
 
+        int spotIndex = 0;
+        
+
+
         for (int row = 0; row < rows; row++)
         {
             for (int col = 0; col < columns; col++)
@@ -51,6 +60,7 @@ public class Bookshelf : MonoBehaviour
                 // Add ShelfSpot component
                 ShelfSpot shelfSpot = spot.AddComponent<ShelfSpot>();
                 shelfSpots.Add(shelfSpot);
+                shelfSpot.SetIndex(spotIndex++); // New line to track spot index
 
                 // Optional visual
                 if (spotVisualPrefab)
@@ -67,6 +77,16 @@ public class Bookshelf : MonoBehaviour
     public List<ShelfSpot> GetShelfSpots()
     {
         return shelfSpots;
+    }
+
+    public void SetID(string id)
+    {
+        ShelfID = id;
+    }
+
+    public string GetID()
+    {
+        return ShelfID;
     }
 
 }

@@ -11,6 +11,13 @@ public class ShelfSpot : MonoBehaviour
     private Color occupiedColor = Color.red;
     private Color emptyColor = Color.green;
 
+    public int SpotIndex { get; private set; }
+
+    public void SetIndex(int index)
+    {
+        SpotIndex = index;
+    }
+
     public void InitializeFromVisual(GameObject visual)
     {
         // Look for the Anchor under visual
@@ -54,6 +61,19 @@ public class ShelfSpot : MonoBehaviour
             spotRenderer.material.color = occupied ? occupiedColor : emptyColor;
         }
     }
+
+    public void Occupy(BookInfo book)
+    {
+        occupied = true;
+        occupyingBook = book.gameObject;
+
+        string shelfID = transform.parent.GetComponent<Bookshelf>()?.GetID() ?? "UnknownShelf";
+        book.SetShelfSpot(this, shelfID, SpotIndex);
+
+        UpdateSpotColor();
+    }
+
+
 
     public Transform GetBookAnchor() => bookAnchor;
 }

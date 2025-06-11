@@ -107,6 +107,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": ""Hold"",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Aim"",
+                    ""type"": ""Button"",
+                    ""id"": ""26fb5087-a3d5-4b0f-bfd7-b912af790f06"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": ""Hold"",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -181,7 +190,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""id"": ""9f5bfa41-367c-4e51-9602-ba0f98e48c49"",
                     ""path"": ""<Gamepad>/rightStick"",
                     ""interactions"": """",
-                    ""processors"": """",
+                    ""processors"": ""StickDeadzone"",
                     ""groups"": ""Gamepad"",
                     ""action"": ""Look"",
                     ""isComposite"": false,
@@ -318,6 +327,17 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""action"": ""PrecisionModifier"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""fa013ba1-7c40-4121-a49d-e22be8b5e53c"",
+                    ""path"": ""<Gamepad>/rightTrigger"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Gamepad"",
+                    ""action"": ""Aim"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -362,6 +382,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Player_RotateRight = m_Player.FindAction("RotateRight", throwIfNotFound: true);
         m_Player_RotateLeft = m_Player.FindAction("RotateLeft", throwIfNotFound: true);
         m_Player_PrecisionModifier = m_Player.FindAction("PrecisionModifier", throwIfNotFound: true);
+        m_Player_Aim = m_Player.FindAction("Aim", throwIfNotFound: true);
     }
 
     ~@PlayerInputActions()
@@ -437,6 +458,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_RotateRight;
     private readonly InputAction m_Player_RotateLeft;
     private readonly InputAction m_Player_PrecisionModifier;
+    private readonly InputAction m_Player_Aim;
     public struct PlayerActions
     {
         private @PlayerInputActions m_Wrapper;
@@ -450,6 +472,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         public InputAction @RotateRight => m_Wrapper.m_Player_RotateRight;
         public InputAction @RotateLeft => m_Wrapper.m_Player_RotateLeft;
         public InputAction @PrecisionModifier => m_Wrapper.m_Player_PrecisionModifier;
+        public InputAction @Aim => m_Wrapper.m_Player_Aim;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -486,6 +509,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @PrecisionModifier.started += instance.OnPrecisionModifier;
             @PrecisionModifier.performed += instance.OnPrecisionModifier;
             @PrecisionModifier.canceled += instance.OnPrecisionModifier;
+            @Aim.started += instance.OnAim;
+            @Aim.performed += instance.OnAim;
+            @Aim.canceled += instance.OnAim;
         }
 
         private void UnregisterCallbacks(IPlayerActions instance)
@@ -517,6 +543,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @PrecisionModifier.started -= instance.OnPrecisionModifier;
             @PrecisionModifier.performed -= instance.OnPrecisionModifier;
             @PrecisionModifier.canceled -= instance.OnPrecisionModifier;
+            @Aim.started -= instance.OnAim;
+            @Aim.performed -= instance.OnAim;
+            @Aim.canceled -= instance.OnAim;
         }
 
         public void RemoveCallbacks(IPlayerActions instance)
@@ -563,5 +592,6 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         void OnRotateRight(InputAction.CallbackContext context);
         void OnRotateLeft(InputAction.CallbackContext context);
         void OnPrecisionModifier(InputAction.CallbackContext context);
+        void OnAim(InputAction.CallbackContext context);
     }
 }

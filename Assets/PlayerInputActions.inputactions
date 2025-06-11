@@ -85,6 +85,15 @@
                     "processors": "",
                     "interactions": "Hold",
                     "initialStateCheck": false
+                },
+                {
+                    "name": "Aim",
+                    "type": "Button",
+                    "id": "26fb5087-a3d5-4b0f-bfd7-b912af790f06",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "Hold",
+                    "initialStateCheck": false
                 }
             ],
             "bindings": [
@@ -159,7 +168,7 @@
                     "id": "9f5bfa41-367c-4e51-9602-ba0f98e48c49",
                     "path": "<Gamepad>/rightStick",
                     "interactions": "",
-                    "processors": "",
+                    "processors": "StickDeadzone",
                     "groups": "Gamepad",
                     "action": "Look",
                     "isComposite": false,
@@ -294,6 +303,17 @@
                     "processors": "",
                     "groups": ";Gamepad",
                     "action": "PrecisionModifier",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "fa013ba1-7c40-4121-a49d-e22be8b5e53c",
+                    "path": "<Gamepad>/rightTrigger",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Gamepad",
+                    "action": "Aim",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
