@@ -22,6 +22,7 @@ public class BookSaveManager : MonoBehaviour
     public class SaveDataWrapper
     {
         public List<BookSaveData> allBooks;
+        public List<BookshelfSaveData> allShelves;
     }
 
     [SerializeField] private GameObject bookPrefab;
@@ -40,7 +41,10 @@ public class BookSaveManager : MonoBehaviour
     public static void SaveBooks()
     {
         var allBookInfos = FindObjectsOfType<BookInfo>();
-        List<BookSaveData> dataList = new List<BookSaveData>();
+        var allShelves = FindObjectsOfType<Bookshelf>();
+
+        List<BookSaveData> bookDataList = new List<BookSaveData>();
+        List<BookshelfSaveData> shelfDataList = new List<BookshelfSaveData>();
 
         foreach (var book in allBookInfos)
         {
@@ -51,24 +55,36 @@ public class BookSaveManager : MonoBehaviour
                 SpineTitle = book.SpineTitle,
                 CoverColor = book.CoverColor,
                 ShelfID = book.ShelfID,
-                SpotIndex = book.SpotIndex
+                SpotIndex = book.SpotIndex,
+                Position = book.transform.position,
+                Rotation = book.transform.rotation
             };
 
-            if (string.IsNullOrEmpty(book.ShelfID) || book.SpotIndex < 0)
-            {
-                // Save world position and rotation if not shelved
-                data.Position = book.transform.position;
-                data.Rotation = book.transform.rotation;
-            }
-
-
-            dataList.Add(data);
+            bookDataList.Add(data);
         }
 
-        string json = JsonUtility.ToJson(new SaveDataWrapper { allBooks = dataList }, true);
+        foreach (var shelf in allShelves)
+        {
+            var data = new BookshelfSaveData
+            {
+                ShelfID = shelf.GetID(),
+                Position = shelf.transform.position,
+                Rotation = shelf.transform.rotation
+            };
+
+            shelfDataList.Add(data);
+        }
+
+        string json = JsonUtility.ToJson(new SaveDataWrapper
+        {
+            allBooks = bookDataList,
+            allShelves = shelfDataList
+        }, true);
+
         File.WriteAllText(Application.persistentDataPath + "/booksave.json", json);
-        Debug.Log("Books saved to: " + Application.persistentDataPath);
+        Debug.Log("Saved books & shelves to: " + Application.persistentDataPath);
     }
+
 
     public static void LoadBooks()
     {
@@ -82,12 +98,25 @@ public class BookSaveManager : MonoBehaviour
         string json = File.ReadAllText(path);
         var wrapper = JsonUtility.FromJson<SaveDataWrapper>(json);
 
-        // Clean up existing books
+        // Cleanup old objects
         foreach (var oldBook in FindObjectsOfType<BookInfo>())
-        {
             Destroy(oldBook.gameObject);
+        foreach (var oldShelf in FindObjectsOfType<Bookshelf>())
+            Destroy(oldShelf.gameObject);
+
+        // Load shelves first
+        foreach (var shelfData in wrapper.allShelves)
+        {
+            GameObject shelfGO = Instantiate(Resources.Load<GameObject>("Bookshelf"));
+            shelfGO.transform.position = shelfData.Position;
+            shelfGO.transform.rotation = shelfData.Rotation;
+
+            Bookshelf shelf = shelfGO.GetComponent<Bookshelf>();
+            if (shelf != null)
+                shelf.SetID(shelfData.ShelfID); // You'll need to add this method if it's not public
         }
 
+        // Load books
         foreach (var data in wrapper.allBooks)
         {
             GameObject newBook = Instantiate(Resources.Load<GameObject>("Book"));
@@ -105,7 +134,6 @@ public class BookSaveManager : MonoBehaviour
 
             if (string.IsNullOrEmpty(data.ShelfID) || data.SpotIndex < 0)
             {
-                // Not shelved — position manually
                 newBook.transform.position = data.Position;
                 newBook.transform.rotation = data.Rotation;
             }
@@ -113,6 +141,7 @@ public class BookSaveManager : MonoBehaviour
 
         instance.StartCoroutine(instance.ReconnectShelfSpotsAfterDelay());
     }
+
 
     private IEnumerator ReconnectShelfSpotsAfterDelay()
     {

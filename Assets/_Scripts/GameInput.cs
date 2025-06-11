@@ -123,4 +123,10 @@ public class GameInput : MonoBehaviour
         return playerInputActions.Player.Aim.IsPressed(); // Assuming 'Aim' is mapped to RightTrigger
     }
 
+    public bool IsRunHeld()
+    {
+        return Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
+    }
+
+
 }

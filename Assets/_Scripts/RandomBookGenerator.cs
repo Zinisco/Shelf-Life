@@ -102,7 +102,7 @@ public class RandomBookGenerator : MonoBehaviour
         int randomPluralNounIndex = UnityEngine.Random.Range(0, RomancePluralNounWord.Length);
         int randomNounIndex2;
 
-        int randomTemplateIndex = UnityEngine.Random.Range(0, 3);
+        int randomTemplateIndex = UnityEngine.Random.Range(0, 4);
 
         //prevent duplicates
         do
@@ -138,7 +138,11 @@ public class RandomBookGenerator : MonoBehaviour
                 randomTitleName = randomNoun + "\n of the \n" + randomAdjective;
                 randomSpineName = randomNoun + " of the " + randomAdjective;
                 break;
-               
+            case 3:
+                randomTitleName = "A \n" + randomAdjective + " \n " + randomNoun;
+                randomSpineName = "A " + randomAdjective + " " + randomNoun;
+                break;
+
         }
 
         //Update the TextMeshPro UI element

@@ -11,6 +11,7 @@ public class PlayerMovement : MonoBehaviour
 
     [Header("Movement Settings")]
     [SerializeField] private float moveSpeed = 5f;
+    [SerializeField] private float runMultiplier = 1.5f;
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private float groundCheckDistance = 0.4f;
     [SerializeField] private LayerMask groundMask;
@@ -67,7 +68,19 @@ public class PlayerMovement : MonoBehaviour
         Vector2 inputVector = gameInput.GetMovementVectorNormalized();
         Vector3 move = transform.right * inputVector.x + transform.forward * inputVector.y;
 
-        controller.Move((move * moveSpeed + Vector3.up * verticalVelocity) * Time.deltaTime);
+        float currentSpeed = moveSpeed;
+
+        // Disable running if moving furniture
+        bool isMovingFurniture = FindObjectOfType<FurnitureMover>()?.IsMovingFurniture() ?? false;
+        bool canRun = gameInput.IsRunHeld() && !isMovingFurniture;
+
+        if (canRun)
+        {
+            currentSpeed *= runMultiplier;
+        }
+
+        controller.Move((move * currentSpeed + Vector3.up * verticalVelocity) * Time.deltaTime);
+
     }
 
     void HandleLook()

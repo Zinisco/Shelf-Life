@@ -273,4 +273,10 @@ public class FurnitureMover : MonoBehaviour
         return GameInput.Instance.IsPrecisionModifierHeld();
     }
 
+    public bool IsMovingFurniture()
+    {
+        return isMoving;
+    }
+
+
 }
