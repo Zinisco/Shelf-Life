@@ -1,3 +1,5 @@
+using UnityEngine;
+
 [System.Serializable]
 public class BookSaveData
 {
@@ -6,4 +8,7 @@ public class BookSaveData
     public float[] color; // RGB values
     public string shelfID;
     public int spotIndex;
+
+    public Vector3 Position;     // Used if not shelved
+    public Quaternion Rotation;
 }

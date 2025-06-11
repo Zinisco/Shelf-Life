@@ -8,7 +8,7 @@ public class RandomBookGenerator : MonoBehaviour
 {
     public BookInfo bookInfo { get; private set; }
 
-    public bool preventAutoGenerate = false;
+    private bool hasBeenInitialized = false;
 
 
     [SerializeField]
@@ -57,7 +57,7 @@ public class RandomBookGenerator : MonoBehaviour
 
     private void Start()
     {
-        if (!preventAutoGenerate)
+        if (!hasBeenInitialized)
             ChooseGenre(); // Only generate random data if we didn't load from file
     }
 
@@ -431,6 +431,8 @@ return newColor;
 
     public void ApplyBookInfo(BookSaveManager.BookSaveData data)
     {
+        hasBeenInitialized = true;
+
         if (bookInfo == null)
             bookInfo = GetComponent<BookInfo>();
 
@@ -439,8 +441,10 @@ return newColor;
         bookInfo.SpineTitle = data.SpineTitle;
         bookInfo.CoverColor = data.CoverColor;
 
-        CoverTitle_Text.text = data.Title;
-        SpineName_Text.text = data.SpineTitle;
+        if (CoverTitle_Text != null)
+            CoverTitle_Text.text = data.Title;
+        if (SpineName_Text != null)
+            SpineName_Text.text = data.SpineTitle;
 
         if (m_Renderer == null)
             m_Renderer = GetComponentInChildren<MeshRenderer>();
@@ -448,9 +452,5 @@ return newColor;
         if (m_Renderer != null)
             m_Renderer.material.color = data.CoverColor;
     }
-
-
-
-
 
 }

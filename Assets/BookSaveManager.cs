@@ -14,6 +14,8 @@ public class BookSaveManager : MonoBehaviour
         public Color CoverColor;
         public string ShelfID;
         public int SpotIndex;
+        public Vector3 Position;     // Used if not shelved
+        public Quaternion Rotation;
     }
 
     [System.Serializable]
@@ -42,8 +44,6 @@ public class BookSaveManager : MonoBehaviour
 
         foreach (var book in allBookInfos)
         {
-            if (book == null) continue;
-
             var data = new BookSaveData
             {
                 Genre = book.Genre,
@@ -53,6 +53,14 @@ public class BookSaveManager : MonoBehaviour
                 ShelfID = book.ShelfID,
                 SpotIndex = book.SpotIndex
             };
+
+            if (string.IsNullOrEmpty(book.ShelfID) || book.SpotIndex < 0)
+            {
+                // Save world position and rotation if not shelved
+                data.Position = book.transform.position;
+                data.Rotation = book.transform.rotation;
+            }
+
 
             dataList.Add(data);
         }
@@ -82,20 +90,24 @@ public class BookSaveManager : MonoBehaviour
 
         foreach (var data in wrapper.allBooks)
         {
-            GameObject newBook = Instantiate(Resources.Load<GameObject>("Book")); // "Book" must exist in Resources folder
+            GameObject newBook = Instantiate(Resources.Load<GameObject>("Book"));
             RandomBookGenerator generator = newBook.GetComponent<RandomBookGenerator>();
+            BookInfo info = newBook.GetComponent<BookInfo>();
 
             if (generator != null)
-            {
-                generator.preventAutoGenerate = true;
                 generator.ApplyBookInfo(data);
-            }
 
-            BookInfo info = newBook.GetComponent<BookInfo>();
             if (info != null)
             {
                 info.ShelfID = data.ShelfID;
                 info.SpotIndex = data.SpotIndex;
+            }
+
+            if (string.IsNullOrEmpty(data.ShelfID) || data.SpotIndex < 0)
+            {
+                // Not shelved — position manually
+                newBook.transform.position = data.Position;
+                newBook.transform.rotation = data.Rotation;
             }
         }
 
