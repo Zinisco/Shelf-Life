@@ -28,8 +28,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 40, y: 40, z: 40}
-  m_ConstrainProportionsScale: 1
+  m_LocalScale: {x: 35, y: 35, z: 35}
+  m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4431940061504583557}
   - {fileID: 9074184442869064281}
@@ -98,7 +98,7 @@ GameObject:
   - component: {fileID: 8224635544657995778}
   - component: {fileID: 6298778966942306572}
   - component: {fileID: 5011039745262841221}
-  - component: {fileID: 8678931487874315104}
+  - component: {fileID: 6324312024836018304}
   m_Layer: 11
   m_Name: Book
   m_TagString: Pickable
@@ -169,7 +169,8 @@ MonoBehaviour:
   Position: {x: 0, y: 0, z: 0}
   Rotation: {x: 0, y: 0, z: 0, w: 0}
   tempShelfSpotName: 
-  ShelfID: 
+  bookID: 
+  ObjectID: 
   SpotIndex: 0
 --- !u!65 &5011039745262841221
 BoxCollider:
@@ -190,9 +191,9 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.51689005, y: 0.75039506, z: 0.13}
-  m_Center: {x: -0.00000023841858, y: -0.000000014901161, z: 0}
---- !u!114 &8678931487874315104
+  m_Size: {x: 0.4551425, y: 0.64954054, z: 0.13}
+  m_Center: {x: -0.00000023841858, y: 0.0030873418, z: 0}
+--- !u!114 &6324312024836018304
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -201,145 +202,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 940939929322109603}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 21d3dc8e79186e947ae74e95c66c79e5, type: 3}
+  m_Script: {fileID: 11500000, guid: 37dda4c9197f6b7418261b1279bdfdcc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  CoverTitle_Text: {fileID: 8574068824914450158}
-  SpineName_Text: {fileID: 6103417470195975679}
-  GenreNames:
-  - Romance
-  - Mystery
-  - SciFi
-  - Fantasy
-  - Horror
-  RomanceAdjectiveWord:
-  - Whimsical
-  - Tender
-  - Passionate
-  - Honest
-  - Kind
-  - Star-Crossed
-  - True
-  - Irresistible
-  - Devoted
-  - Bittersweet
-  RomanceNounWord:
-  - Love
-  - Heart
-  - Destiny
-  - Whisper
-  - Soul
-  - Promise
-  - Temptation
-  - Vow
-  - Devotion
-  - Flame
-  - Desire
-  RomancePluralNounWord:
-  - Destinies
-  - Whispers
-  - Souls
-  - Promises
-  - Hearts
-  - Temptations
-  - Vows
-  - Bonds
-  - Flames
-  - Desires
-  MysteryAdjectiveWord:
-  - Mysterious
-  - Cold
-  - Dark
-  - Cryptic
-  - Silent
-  - Forbidden
-  - Deadly
-  - Fatal
-  MysteryNounWord:
-  - Whisper
-  - Secret
-  - Clue
-  - Puzzle
-  - Murder
-  - Lie
-  - Game
-  - Witness
-  - Suspect
-  - Investigator
-  - Maze
-  - Confession
-  MysteryPluralNounWord:
-  - Whispers
-  - Secrets
-  - Crimes
-  - Enigmas
-  - Murders
-  - Clues
-  - Witnesses
-  - Games
-  - Lies
-  - Confessions
-  - Suspects
-  SciFiAdjectiveWord:
-  - Galactic
-  - Futuristic
-  - Cosmic
-  - Digital
-  - Quantum
-  - Space
-  - Virtual
-  - Cybernetic
-  - Robotic
-  SciFiNounWord:
-  - Odyssey
-  - Empire
-  - Chronicles
-  - Frontier
-  - Dimension
-  - Universe
-  - Rebellion
-  - Colony
-  - Conquest
-  - Protocol
-  - Evolution
-  FantasyAdjectiveWord:
-  - Legendary
-  - Mystical
-  - Ancient
-  - Magical
-  - Lost
-  - Cursed
-  - Mythical
-  - Fabled
-  - Noble
-  FantasyNounWord:
-  - Realm
-  - Sword
-  - Kingdom
-  - Prophecy
-  - Fortress
-  - Adventure
-  - Saga
-  - Dragon
-  - Wizard
-  - Scroll
-  - Throne
-  - Spell
-  - Legacy
-  HorrorAdjectiveWord:
-  - Deadly
-  - Grim
-  - Sinister
-  - Twisted
-  - Dark
-  HorrorNounWord:
-  - Corpse
-  - Nightmare
-  - Shadow
-  - Ritual
-  - Demon
-  - Soul
-  - Spirit
+  coverTitleText: {fileID: 8574068824914450158}
+  spineTitleText: {fileID: 6103417470195975679}
+  coverRenderer: {fileID: -7511558181221131132}
 --- !u!1 &1403580079620976138
 GameObject:
   m_ObjectHideFlags: 0
@@ -466,8 +334,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 2
-  m_fontSizeBase: 2
+  m_fontSize: 1.9
+  m_fontSizeBase: 1.9
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -502,7 +370,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 1.9512849, y: 1.6735958, z: 1.9420528, w: 1.5681844}
+  m_margin: {x: 1.8769337, y: 1.6735958, z: 1.9420528, w: 1.5681844}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   _SortingLayer: 0
@@ -637,8 +505,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 1
-  m_fontSizeBase: 1
+  m_fontSize: 0.9
+  m_fontSizeBase: 0.9
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18

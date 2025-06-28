@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
@@ -50,6 +51,8 @@ public class PlayerMovement : MonoBehaviour
             ApplySoftAimAssist();
         }
 
+        Debug.Log("Current Input: " + gameInput.IsUsingGamepad());
+
     }
 
     void HandleMovement()
@@ -86,8 +89,19 @@ public class PlayerMovement : MonoBehaviour
     void HandleLook()
     {
         Vector2 mouseDelta = gameInput.GetMouseDelta();
-        float sensitivity = gameInput.IsGamepad() ? controllerLookSensitivity : lookSensitivity;
-        mouseDelta *= sensitivity;
+        mouseDelta = Vector2.ClampMagnitude(mouseDelta, 10f);
+        float sensitivity = gameInput.IsGamepadActive ? controllerLookSensitivity : lookSensitivity;
+
+        if (gameInput.IsGamepadActive)
+        {
+            // Analog stick is frame-rate independent
+            mouseDelta *= sensitivity * Time.deltaTime;
+        }
+        else
+        {
+            // Mouse is already delta-based
+            mouseDelta *= sensitivity;
+        }
 
         xRotation -= mouseDelta.y;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);

@@ -13,8 +13,13 @@ public class PickUp : MonoBehaviour
 
     [SerializeField] private ShelfDetector shelfDetector;
     [SerializeField] private GhostBookManager ghostBookManager;
+    [SerializeField] private BookStackManager bookStackManager;
+
 
     [SerializeField] private LayerMask pickableLayerMask;
+
+    [SerializeField] private TableSpotDetector tableSpotDetector; // Like ShelfDetector
+    //[SerializeField] private float tableSnapRange = 1.5f;
 
 
     [Header("Game Input")]
@@ -28,6 +33,9 @@ public class PickUp : MonoBehaviour
 
     [Header("Bookshelf Settings")]
     [SerializeField] private float shelfSnapRange = 1.5f; // How close the book needs to be to snap
+
+    [Header("Table Stack Settings")]
+    [SerializeField] private float tableStackOffset = 0.12f;
 
     private FixedJoint holdJoint;
     private Rigidbody holdRb;
@@ -50,7 +58,15 @@ public class PickUp : MonoBehaviour
     void Update()
     {
         shelfDetector.UpdateLookedAtShelf();
-        ghostBookManager.UpdateGhostBook(heldObject, shelfDetector.CurrentLookedAtShelfSpot);
+        tableSpotDetector.UpdateLookedAtTable();
+
+        ghostBookManager.UpdateGhost(
+      heldObject,
+      shelfDetector.CurrentLookedAtShelfSpot,
+      tableSpotDetector.CurrentLookedAtTableSpot,
+      tableStackOffset
+  );
+
     }
 
 
@@ -95,6 +111,14 @@ public class PickUp : MonoBehaviour
                     info.currentSpot.SetOccupied(false);
                     info.ClearShelfSpot();
                 }
+
+                TableSpot tableSpot = heldObject.GetComponentInParent<TableSpot>();
+                if (tableSpot != null)
+                {
+                    Debug.Log($"Removing book {heldObject.name} from table spot {tableSpot.name}");
+                    tableSpot.RemoveBook(heldObject);
+                }
+
 
                 if (heldObjectRb != null)
                 {
@@ -182,14 +206,53 @@ public class PickUp : MonoBehaviour
 
     public void TryShelveBook()
     {
-        //Do not shelve books if holding nothing
-        if (heldObject == null) return;
+        if (heldObject == null)
+        {
+            //Debug.Log("Tried to shelve, but no object is held.");
+            return;
+        }
+        BookInfo bookInfo = heldObject.GetComponent<BookInfo>();
+        if (bookInfo == null)
+        {
+            Debug.LogWarning("Held object has no BookInfo component.");
+            return;
+        }
+
+        if (tableSpotDetector == null)
+        {
+            Debug.LogError("tableSpotDetector is not assigned!");
+            return;
+        }
 
         // Remove any joints
         if (holdJoint != null)
         {
             Destroy(holdJoint);
             holdJoint = null;
+        }
+
+        if (bookInfo != null)
+        {
+            TableSpot stackSpot = tableSpotDetector.CurrentLookedAtTableSpot;
+
+            if (stackSpot != null && stackSpot.CanStack(bookInfo))
+            {
+                stackSpot.StackBook(heldObject);
+
+                // Optional: update BookInfo if needed
+                bookInfo.ClearShelfSpot();
+
+                // Detach logic
+                Collider bookCol = heldObject.GetComponent<Collider>();
+                if (bookCol != null && playerCollider != null)
+                {
+                    Physics.IgnoreCollision(bookCol, playerCollider, false);
+                }
+
+                ClearHeldBook(); // <- move AFTER
+
+                return;
+            }
         }
 
         ShelfSpot targetSpot = shelfDetector.CurrentLookedAtShelfSpot;
@@ -219,6 +282,16 @@ public class PickUp : MonoBehaviour
             Debug.Log("No valid shelf spot found.");
             return;
         }
+
+        TableSpot targetTableSpot = tableSpotDetector.CurrentLookedAtTableSpot;
+
+        if (targetSpot == null && targetTableSpot != null)
+        {
+            bookStackManager.TryStackBook(heldObject, targetTableSpot);
+            ClearHeldBook();
+            return;
+        }
+
 
         GameObject occupyingBook = targetSpot.GetOccupyingBook();
 
@@ -481,5 +554,18 @@ public class PickUp : MonoBehaviour
             Gizmos.matrix = oldGizmosMatrix;
         }
     }
+
+    private void ClearHeldBook()
+    {
+        heldObject = null;
+        heldObjectRb = null;
+
+        if (holdJoint != null)
+        {
+            Destroy(holdJoint);
+            holdJoint = null;
+        }
+    }
+
 
 }

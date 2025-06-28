@@ -1,200 +1,231 @@
-using System.Collections.Generic;
-using UnityEngine;
-using System.IO;
 using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
 
 public class BookSaveManager : MonoBehaviour
 {
-    [System.Serializable]
-    public class BookSaveData
-    {
-        public string Genre;
-        public string Title;
-        public string SpineTitle;
-        public Color CoverColor;
-        public string ShelfID;
-        public int SpotIndex;
-        public Vector3 Position;     // Used if not shelved
-        public Quaternion Rotation;
-    }
 
     [System.Serializable]
     public class SaveDataWrapper
     {
-        public List<BookSaveData> allBooks;
-        public List<BookshelfSaveData> allShelves;
+        public List<BookSaveData> allBooks = new();
+        public List<BookshelfSaveData> allShelves = new();
+        public List<TableSaveData> allTables = new();
     }
 
-    [SerializeField] private GameObject bookPrefab;
-
-
-    private static BookSaveManager instance;
+    [SerializeField] private BookDatabase bookDatabase;
+    private static BookSaveManager _I;
 
     private void Awake()
     {
-        if (instance == null)
-            instance = this;
-        else
-            Destroy(gameObject);
+        if (_I == null) _I = this;
+        else { Destroy(gameObject); return; }
+
+        if (bookDatabase == null)
+            bookDatabase = Resources.Load<BookDatabase>("BookDatabase");
     }
 
-    public static void SaveBooks()
+    public void SaveAll()
     {
-        var allBookInfos = FindObjectsOfType<BookInfo>();
-        var allShelves = FindObjectsOfType<Bookshelf>();
+        var w = new SaveDataWrapper();
 
-        List<BookSaveData> bookDataList = new List<BookSaveData>();
-        List<BookshelfSaveData> shelfDataList = new List<BookshelfSaveData>();
-
-        foreach (var book in allBookInfos)
+        // --- books ---
+        foreach (var info in FindObjectsOfType<BookInfo>())
         {
-            var data = new BookSaveData
-            {
-                Genre = book.Genre,
-                Title = book.Title,
-                SpineTitle = book.SpineTitle,
-                CoverColor = book.CoverColor,
-                ShelfID = book.ShelfID,
-                SpotIndex = book.SpotIndex,
-                Position = book.transform.position,
-                Rotation = book.transform.rotation
-            };
 
-            bookDataList.Add(data);
+            w.allBooks.Add(new BookSaveData
+            {
+                bookID = info.bookID,
+                title = info.definition != null ? info.definition.title : "",
+                genre = info.definition != null ? info.definition.genre : "",
+                summary = info.definition != null ? info.definition.summary : "",
+                color = info.definition != null ? new float[] {
+        info.definition.color.r,
+        info.definition.color.g,
+        info.definition.color.b
+    } : new float[] { 1f, 1f, 1f },
+
+                shelfID = info.ObjectID,
+                spotIndex = info.SpotIndex,
+                position = info.transform.position,
+                rotation = info.transform.rotation
+            });
+
         }
 
-        foreach (var shelf in allShelves)
-        {
-            var data = new BookshelfSaveData
+        // --- shelves & tables ---
+        foreach (var shelf in FindObjectsOfType<Bookshelf>())
+            w.allShelves.Add(new BookshelfSaveData
             {
                 ShelfID = shelf.GetID(),
                 Position = shelf.transform.position,
                 Rotation = shelf.transform.rotation
-            };
+            });
 
-            shelfDataList.Add(data);
+        foreach (var table in FindObjectsOfType<BookTable>())
+        {
+            w.allTables.Add(new TableSaveData
+            {
+                tableID = table.GetID(), // You need a GetID() method if not already there
+                position = table.transform.position,
+                rotation = table.transform.rotation
+            });
         }
 
-        string json = JsonUtility.ToJson(new SaveDataWrapper
+        foreach (var book in w.allBooks)
         {
-            allBooks = bookDataList,
-            allShelves = shelfDataList
-        }, true);
+            Debug.Log($"[SAVE] Book '{book.bookID}' — shelfID: {book.shelfID}, spotIndex: {book.spotIndex}");
+        }
 
-        File.WriteAllText(Application.persistentDataPath + "/booksave.json", json);
-        Debug.Log("Saved books & shelves to: " + Application.persistentDataPath);
+        File.WriteAllText(Path.Combine(Application.persistentDataPath, "booksave.json"),
+                          JsonUtility.ToJson(w, true));
+        Debug.Log("Saved!");
     }
 
-
-    public static void LoadBooks()
+    public void LoadAll()
     {
-        string path = Application.persistentDataPath + "/booksave.json";
-        if (!File.Exists(path))
+        var path = Path.Combine(Application.persistentDataPath, "booksave.json");
+        if (!File.Exists(path)) { Debug.LogWarning("No save."); return; }
+
+        var w = JsonUtility.FromJson<SaveDataWrapper>(File.ReadAllText(path));
+
+        // destroy old books, shelves, and tables
+        foreach (var b in FindObjectsOfType<BookInfo>()) Destroy(b.gameObject);
+        foreach (var s in FindObjectsOfType<Bookshelf>()) Destroy(s.gameObject);
+        foreach (var t in FindObjectsOfType<BookTable>()) Destroy(t.gameObject);
+
+        // recreate shelves
+        foreach (var sd in w.allShelves)
         {
-            Debug.LogWarning("No save file found.");
-            return;
+            var go = Instantiate(Resources.Load<GameObject>("Bookshelf"));
+            go.transform.position = sd.Position;
+            go.transform.rotation = sd.Rotation;
+            go.GetComponent<Bookshelf>().SetID(sd.ShelfID);
         }
 
-        string json = File.ReadAllText(path);
-        var wrapper = JsonUtility.FromJson<SaveDataWrapper>(json);
-
-        // Cleanup old objects
-        foreach (var oldBook in FindObjectsOfType<BookInfo>())
-            Destroy(oldBook.gameObject);
-        foreach (var oldShelf in FindObjectsOfType<Bookshelf>())
-            Destroy(oldShelf.gameObject);
-
-        // Load shelves first
-        foreach (var shelfData in wrapper.allShelves)
+        // recreate ALL books — shelved AND table/loose
+        foreach (var bd in w.allBooks)
         {
-            GameObject shelfGO = Instantiate(Resources.Load<GameObject>("Bookshelf"));
-            shelfGO.transform.position = shelfData.Position;
-            shelfGO.transform.rotation = shelfData.Rotation;
+            var prefab = bookDatabase.GetBookPrefabByID(bd.bookID);
+            if (prefab == null) continue;
 
-            Bookshelf shelf = shelfGO.GetComponent<Bookshelf>();
-            if (shelf != null)
-                shelf.SetID(shelfData.ShelfID); // You'll need to add this method if it's not public
-        }
-
-        // Load books
-        foreach (var data in wrapper.allBooks)
-        {
-            GameObject newBook = Instantiate(Resources.Load<GameObject>("Book"));
-            RandomBookGenerator generator = newBook.GetComponent<RandomBookGenerator>();
-            BookInfo info = newBook.GetComponent<BookInfo>();
-
-            if (generator != null)
-                generator.ApplyBookInfo(data);
-
+            var go = Instantiate(prefab, bd.position, bd.rotation);
+            var info = go.GetComponent<BookInfo>();
             if (info != null)
             {
-                info.ShelfID = data.ShelfID;
-                info.SpotIndex = data.SpotIndex;
-            }
+                info.bookID = bd.bookID;
+                info.ObjectID = bd.shelfID;
+                info.SpotIndex = bd.spotIndex;
 
-            if (string.IsNullOrEmpty(data.ShelfID) || data.SpotIndex < 0)
-            {
-                newBook.transform.position = data.Position;
-                newBook.transform.rotation = data.Rotation;
+                // Create a definition from save
+                BookDefinition def = ScriptableObject.CreateInstance<BookDefinition>();
+                def.bookID = bd.bookID;
+                def.title = bd.title;
+                def.genre = bd.genre;
+                def.summary = bd.summary;
+
+                if (bd.color != null && bd.color.Length == 3)
+                    def.color = new Color(bd.color[0], bd.color[1], bd.color[2]);
+
+                info.ApplyDefinition(def);
+                info.UpdateVisuals();
             }
         }
 
-        instance.StartCoroutine(instance.ReconnectShelfSpotsAfterDelay());
+        foreach (var tableData in w.allTables)
+        {
+            var prefab = Resources.Load<GameObject>("BookTable"); // Adjust path if needed
+            var tableGO = Instantiate(prefab);
+            tableGO.transform.position = tableData.position;
+            tableGO.transform.rotation = tableData.rotation;
+
+            var tableComp = tableGO.GetComponent<BookTable>();
+            tableComp.SetID(tableData.tableID); // Add this method if missing
+        }
+
+
+        // **reload table?stacks on the *new* spots**  
+        foreach (var spot in FindObjectsOfType<TableSpot>())
+        {
+            var data = w.allTables.Find(t => t.tableID == spot.objectID);
+            if (data != null)
+                spot.LoadBooksFromData(data, bookDatabase);
+        }
+
+        // finally put the shelved books back on shelves
+        StartCoroutine(ReconnectShelves());
     }
 
 
-    private IEnumerator ReconnectShelfSpotsAfterDelay()
-    {
-        yield return new WaitForSeconds(0.25f); // Give shelves time to initialize
+    private IEnumerator ReconnectShelves()
+    {     
+        yield return new WaitForSeconds(0.2f);
 
-        Dictionary<string, Bookshelf> shelvesByID = new Dictionary<string, Bookshelf>();
-        foreach (var shelf in FindObjectsOfType<Bookshelf>())
+        var byID = new Dictionary<string, Bookshelf>();
+        foreach (var s in FindObjectsOfType<Bookshelf>())
+            byID[s.GetID()] = s;
+
+
+        foreach (var info in FindObjectsOfType<BookInfo>())
         {
-            shelvesByID[shelf.GetID()] = shelf;
-        }
+            // skip books that were just spawned onto tables (not shelved)
+            if (info.transform.parent != null && info.transform.parent.GetComponent<TableSpot>() != null)
+                continue;
 
-        foreach (var book in FindObjectsOfType<BookInfo>())
-        {
-            if (string.IsNullOrEmpty(book.ShelfID) || book.SpotIndex < 0) continue;
-
-            if (shelvesByID.TryGetValue(book.ShelfID, out Bookshelf shelf))
+            if (string.IsNullOrEmpty(info.ObjectID) || info.SpotIndex < 0)
             {
-                List<ShelfSpot> spots = shelf.GetShelfSpots();
-                if (book.SpotIndex >= 0 && book.SpotIndex < spots.Count)
-                {
-                    ShelfSpot targetSpot = spots[book.SpotIndex];
-
-                    if (targetSpot.IsOccupied())
-                    {
-                        Debug.LogWarning($"Spot {book.SpotIndex} on shelf {book.ShelfID} is already occupied.");
-                        continue;
-                    }
-
-                    Transform anchor = targetSpot.GetBookAnchor();
-                    if (anchor == null)
-                    {
-                        Debug.LogError($"Missing anchor on ShelfSpot '{targetSpot.name}'");
-                        continue;
-                    }
-
-                    // Parent the book to the anchor and reset its transform
-                    book.transform.SetParent(anchor);
-                    book.transform.localPosition = Vector3.zero;
-                    book.transform.localRotation = Quaternion.Euler(0, 90, 0);
-
-                    // Disable physics interaction
-                    Rigidbody rb = book.GetComponent<Rigidbody>();
-                    if (rb != null)
-                    {
-                        rb.isKinematic = true;
-                    }
-
-                    // Track spot data
-                    book.SetShelfSpot(targetSpot, book.ShelfID, book.SpotIndex);
-                    targetSpot.SetOccupied(true, book.gameObject);
-                }
+                Debug.LogWarning($"[Reconnect] Skipping book {info.name} — shelfID: {info.ObjectID}, spotIndex: {info.SpotIndex}");
+                continue;
             }
+
+
+            if (string.IsNullOrEmpty(info.ObjectID) || info.SpotIndex < 0)
+            {
+                Debug.LogWarning($"Book '{info.name}' missing shelfID or spot index.");
+                continue;
+            }
+
+            if (!byID.TryGetValue(info.ObjectID, out var shelf))
+            {
+                Debug.LogError($"Shelf '{info.ObjectID}' not found for book '{info.name}'.");
+                continue;
+            }
+
+            var spots = shelf.GetShelfSpots();
+            if (info.SpotIndex >= spots.Count)
+            {
+                Debug.LogError($"Invalid spot index '{info.SpotIndex}' for shelf '{shelf.GetID()}'.");
+                continue;
+            }
+
+            var target = spots[info.SpotIndex];
+            var anchor = target.GetBookAnchor();
+            if (anchor == null)
+            {
+                Debug.LogError($"Missing anchor for spot '{target.name}'.");
+                continue;
+            }
+
+            info.transform.SetParent(anchor, false);
+            info.transform.localPosition = Vector3.zero;
+            info.transform.localRotation = Quaternion.Euler(0, 90, 0);
+
+            var rb = info.GetComponent<Rigidbody>();
+            if (rb != null)
+            {
+                rb.isKinematic = true;
+                rb.interpolation = RigidbodyInterpolation.None;
+                rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+            }
+            
+            info.SetShelfSpot(target, info.ObjectID, info.SpotIndex);
+            target.SetOccupied(true, info.gameObject);
         }
+
     }
 
+    // static shortcuts
+    public static void TriggerSave() => _I?.SaveAll();
+    public static void TriggerLoad() => _I?.LoadAll();
 }

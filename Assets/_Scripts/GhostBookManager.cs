@@ -9,30 +9,62 @@ public class GhostBookManager : MonoBehaviour
     {
         ghostBookInstance = Instantiate(ghostBookPrefab);
         ghostBookInstance.SetActive(false);
+        Debug.Log("Ghost book initialized: " + ghostBookInstance.name);
     }
 
-    public void UpdateGhostBook(GameObject heldObject, ShelfSpot spot)
+    public void UpdateGhost(GameObject heldObject, ShelfSpot shelfSpot, TableSpot tableSpot, float stackOffset)
     {
-        if (heldObject != null && spot != null && spot.GetBookAnchor() != null)
+        if (heldObject == null)
         {
-            Transform anchor = spot.GetBookAnchor();
+            if (ghostBookInstance.activeSelf)
+                ghostBookInstance.SetActive(false);
+            return;
+        }
+
+        // First priority: Shelf
+        if (shelfSpot != null && shelfSpot.GetBookAnchor() != null)
+        {
+            Transform anchor = shelfSpot.GetBookAnchor();
 
             if (!ghostBookInstance.activeSelf)
                 ghostBookInstance.SetActive(true);
 
-            // Position and rotation relative to anchor
             ghostBookInstance.transform.SetPositionAndRotation(
                 anchor.position,
-                anchor.rotation * Quaternion.Euler(0, 0, 0)
+                anchor.rotation // original orientation for shelf
             );
-
-            // Scale to match held book (adjust if book visual is child)
             ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
+            return;
         }
-        else
+
+        // Second priority: Table
+        if (tableSpot != null && tableSpot.GetStackAnchor() != null)
         {
-            if (ghostBookInstance.activeSelf)
-                ghostBookInstance.SetActive(false);
+            if (!ghostBookInstance.activeSelf)
+                ghostBookInstance.SetActive(true);
+
+            Vector3 stackPosition = tableSpot.GetStackedPosition();
+            Vector3 playerDir = Camera.main.transform.forward;
+            playerDir.y = 0f;
+            playerDir.Normalize();
+
+            float angle = Mathf.Atan2(playerDir.x, playerDir.z) * Mathf.Rad2Deg;
+            float snappedAngle = Mathf.Round(angle / 90f) * 90f;
+
+            Quaternion baseRotation = Quaternion.Euler(-90f, 0f, 0f); // cover up
+            Quaternion facingRotation = Quaternion.Euler(0f, snappedAngle, 0f);
+            Quaternion finalRotation = facingRotation * baseRotation * Quaternion.Euler(0f, 90f, 180f);
+
+            ghostBookInstance.transform.SetPositionAndRotation(stackPosition, finalRotation);
+            ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
+            return;
         }
+
+        // No valid placement
+        if (ghostBookInstance.activeSelf)
+            ghostBookInstance.SetActive(false);
     }
+
+
+
 }

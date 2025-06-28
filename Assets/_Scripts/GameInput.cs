@@ -18,6 +18,15 @@ public class GameInput : MonoBehaviour
     public event EventHandler OnRotateLeftAction;
     public event EventHandler OnRotateRightAction;
 
+    [SerializeField] private PlayerInput playerInput;
+
+    public bool IsGamepadActive => playerInput != null && playerInput.currentControlScheme == "Gamepad";
+    public bool IsKeyboardMouseActive => playerInput != null && playerInput.currentControlScheme == "KeyboardMouse";
+
+
+    private enum ControlType { KeyboardMouse, Gamepad }
+    private ControlType lastUsedControlType = ControlType.KeyboardMouse;
+
 
 
     private PlayerInputActions playerInputActions;
@@ -27,8 +36,19 @@ public class GameInput : MonoBehaviour
     {
         Instance = this;
 
-        playerInputActions = new PlayerInputActions();
+        playerInput = GetComponent<PlayerInput>();
 
+        if (playerInput == null)
+        {
+            Debug.LogError("PlayerInput component not found!");
+            return;
+        }
+
+        Debug.Log("Initial scheme: " + playerInput.currentControlScheme);
+
+        playerInput.onControlsChanged += OnControlsChanged;
+
+        playerInputActions = new PlayerInputActions();
         playerInputActions.Player.Enable();
 
         playerInputActions.Player.PickUpObject.performed += PickUpObject_performed;
@@ -56,6 +76,16 @@ public class GameInput : MonoBehaviour
 
         playerInputActions.Dispose();
     }
+
+    private void OnEnable()
+    {
+        var playerInput = GetComponent<PlayerInput>();
+        playerInput.onControlsChanged += (input) =>
+        {
+            Debug.Log("Control scheme changed to: " + input.currentControlScheme);
+        };
+    }
+
 
     private void MoveFurniture_started(InputAction.CallbackContext context)
     {
@@ -94,18 +124,27 @@ public class GameInput : MonoBehaviour
 
     public Vector2 GetMovementVectorNormalized()
     {
-        Vector2 inputVector = playerInputActions.Player.Move.ReadValue<Vector2>();
+        Vector2 input = playerInputActions.Player.Move.ReadValue<Vector2>();
 
-        inputVector = inputVector.normalized;
+        if (Gamepad.current != null && input.sqrMagnitude > 0.01f)
+        {
+            lastUsedControlType = ControlType.Gamepad;
+        }
 
-        return inputVector;
+        return input.normalized;
     }
+
 
     public Vector2 GetMouseDelta()
     {
-        Vector2 inputLookVector = playerInputActions.Player.Look.ReadValue<Vector2>();
+        Vector2 input = playerInputActions.Player.Look.ReadValue<Vector2>();
 
-        return inputLookVector;
+        if (Mouse.current != null && input.sqrMagnitude > 0.01f)
+        {
+            lastUsedControlType = ControlType.KeyboardMouse;
+        }
+
+        return input;
     }
 
     public bool IsPrecisionModifierHeld()
@@ -127,6 +166,14 @@ public class GameInput : MonoBehaviour
     {
         return Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
     }
+
+    private void OnControlsChanged(PlayerInput input)
+    {
+        Debug.Log("Control Scheme Changed To: " + input.currentControlScheme);
+    }
+
+
+    public bool IsUsingGamepad() => IsGamepadActive;
 
 
 }

@@ -36,12 +36,12 @@ public class SaveLoadController : MonoBehaviour
     private void OnLoad(InputAction.CallbackContext context)
     {
         Debug.Log("Loading books...");
-        BookSaveManager.LoadBooks();
+        BookSaveManager.TriggerLoad();
     }
 
     private void OnSave(InputAction.CallbackContext context)
     {
         Debug.Log("Saving books...");
-        BookSaveManager.SaveBooks();
+        BookSaveManager.TriggerSave();
     }
 }

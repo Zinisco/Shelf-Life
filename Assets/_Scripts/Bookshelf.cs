@@ -6,7 +6,7 @@ using static UnityEngine.Rendering.DebugUI.Table;
 public class Bookshelf : MonoBehaviour
 {
     [Header("Shelf Metadata")]
-    [SerializeField] private string ShelfID = "NewGUID"; // Placeholder so we can detect and replace it
+    [SerializeField] private string ObjectID = "NewGUID"; // Placeholder so we can detect and replace it
 
 
     [Header("Shelf Spot Generation")]
@@ -32,10 +32,10 @@ public class Bookshelf : MonoBehaviour
     private void Awake()
     {
         // Only generate a new ShelfID if this one is empty
-        if (string.IsNullOrEmpty(ShelfID) || ShelfID == "NewGUID")
+        if (string.IsNullOrEmpty(ObjectID) || ObjectID == "NewGUID")
         {
-            ShelfID = Guid.NewGuid().ToString();
-            Debug.Log($"Generated new ShelfID: {ShelfID} for {gameObject.name}");
+            ObjectID = Guid.NewGuid().ToString();
+            //Debug.Log($"Generated new ShelfID: {ObjectID} for {gameObject.name}");
         }
 
         GenerateShelfSpots();
@@ -91,12 +91,12 @@ public class Bookshelf : MonoBehaviour
 
     public void SetID(string id)
     {
-        ShelfID = id;
+        ObjectID = id;
     }
 
     public string GetID()
     {
-        return ShelfID;
+        return ObjectID;
     }
 
 }

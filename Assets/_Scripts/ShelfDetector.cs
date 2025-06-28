@@ -23,7 +23,7 @@ public class ShelfDetector : MonoBehaviour
                 if (CurrentLookedAtShelfSpot != spot)
                 {
                     CurrentLookedAtShelfSpot = spot;
-                    Debug.Log($"Looking at ShelfSpot: {spot.gameObject.name}");
+                    //Debug.Log($"Looking at ShelfSpot: {spot.gameObject.name}");
                 }
                 timeSinceLostLook = 0f; // Reset timer when looking at a spot
                 return;
@@ -36,7 +36,7 @@ public class ShelfDetector : MonoBehaviour
             timeSinceLostLook += Time.deltaTime;
             if (timeSinceLostLook > loseLookDelay)
             {
-                Debug.Log("No longer looking at a shelf spot");
+                //Debug.Log("No longer looking at a shelf spot");
                 CurrentLookedAtShelfSpot = null;
                 timeSinceLostLook = 0f;
             }

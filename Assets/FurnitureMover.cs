@@ -1,10 +1,14 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Linq;
 
 public class FurnitureMover : MonoBehaviour
 {
     private PickUp pickUp;
+
+    [SerializeField] private Collider playerCollider;
+    public Collider PlayerCollider => playerCollider;
 
     [SerializeField] private Transform playerCamera;
     [SerializeField] private float moveDistance = 3f;
@@ -19,6 +23,9 @@ public class FurnitureMover : MonoBehaviour
     private Renderer[] originalRenderers;
     private Vector3 ghostOffset = Vector3.zero;
     private Renderer arrowRenderer;
+
+
+    private Collider playerCol;
 
     private bool isMoving = false;
     private float rotationAmount = 0f;
@@ -50,6 +57,9 @@ public class FurnitureMover : MonoBehaviour
     private void Start()
     {
         pickUp = FindObjectOfType<PickUp>();
+
+        // Grab the player’s collider
+        playerCol = PlayerCollider;
     }
 
     private void Update()
@@ -68,12 +78,29 @@ public class FurnitureMover : MonoBehaviour
 
     private void HandleStartMove(object sender, EventArgs e)
     {
+        Debug.Log("Trying to start furniture move...");
+
         if (pickUp != null && pickUp.IsHoldingObject()) return;
 
-        if (isMoving || !TryFindFurniture(out selectedFurniture)) return;
+        if (isMoving || !TryFindFurniture(out selectedFurniture))
+        {
+            Debug.Log("Cannot move: already moving or no furniture found.");
+            return;
+        }
+        Debug.Log($"Started moving: {selectedFurniture.name}");
 
         isMoving = true;
         ghostVisual = selectedFurniture.transform.Find("Ghost")?.gameObject;
+
+        // Cache all the furniture’s colliders
+        Collider[] furnitureCols = selectedFurniture.GetComponentsInChildren<Collider>();
+
+        // Turn OFF collisions between furniture and player
+        foreach (var c in furnitureCols)
+        {
+            Physics.IgnoreCollision(c, playerCol, true);
+        }
+
 
         // Assign ghostRenderer BEFORE disabling other renderers
         if (ghostVisual != null)
@@ -132,6 +159,16 @@ public class FurnitureMover : MonoBehaviour
 
         selectedFurniture.transform.rotation = ghostVisual.transform.rotation;
 
+        // Cache all the furniture’s colliders
+        Collider[] furnitureCols = selectedFurniture.GetComponentsInChildren<Collider>();
+
+        // Turn OFF collisions between furniture and player
+        foreach (var c in furnitureCols)
+        {
+            Physics.IgnoreCollision(c, playerCol, false);
+        }
+
+
         if (originalRenderers != null)
         {
             foreach (var rend in originalRenderers)
@@ -154,16 +191,28 @@ public class FurnitureMover : MonoBehaviour
     {
         furniture = null;
         Ray ray = new Ray(playerCamera.position, playerCamera.forward);
-        if (Physics.Raycast(ray, out RaycastHit hit, 3f))
+        if (!Physics.Raycast(ray, out RaycastHit hit, 3f))
+            return false;
+
+        // Look for your table component in the hit object or its parents:
+        var tableRoot = hit.collider.GetComponentInParent<BookTable>();
+        if (tableRoot != null)
         {
-            if (hit.collider.CompareTag("Furniture"))
-            {
-                furniture = hit.collider.gameObject;
-                return true;
-            }
+            furniture = tableRoot.gameObject;
+            return true;
         }
+
+        // fallback to any tagged Furniture root
+        if (hit.collider.CompareTag("Furniture"))
+        {
+            furniture = hit.collider.transform.root.gameObject;
+            return true;
+        }
+
         return false;
     }
+
+
 
     private void UpdateGhostPosition()
     {
@@ -189,6 +238,7 @@ public class FurnitureMover : MonoBehaviour
             if (arrowRenderer != null)
                 arrowRenderer.material = mat;
         }
+
 
     }
 
