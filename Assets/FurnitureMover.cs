@@ -12,6 +12,7 @@ public class FurnitureMover : MonoBehaviour
 
     [SerializeField] private Transform playerCamera;
     [SerializeField] private float moveDistance = 3f;
+    [SerializeField] private float rotationSmoothSpeed = 10f;
     [SerializeField] private LayerMask placementObstacles;
     [SerializeField] private GameInput gameInput;
     [SerializeField] private Material validMaterial;
@@ -23,6 +24,9 @@ public class FurnitureMover : MonoBehaviour
     private Renderer[] originalRenderers;
     private Vector3 ghostOffset = Vector3.zero;
     private Renderer arrowRenderer;
+
+    private float currentRotation = 0f;
+
 
 
     private Collider playerCol;
@@ -222,27 +226,22 @@ public class FurnitureMover : MonoBehaviour
         targetPos.y = 0f;
         selectedFurniture.transform.position = targetPos;
 
-        Quaternion targetRot = Quaternion.Euler(0f, rotationAmount, 0f);
+        // Smoothly interpolate rotation
+        currentRotation = Mathf.LerpAngle(currentRotation, rotationAmount, Time.deltaTime * rotationSmoothSpeed);
+        Quaternion targetRot = Quaternion.Euler(0f, currentRotation, 0f);
         selectedFurniture.transform.rotation = targetRot;
 
-        // Apply precomputed ghost offset to keep visual on the ground
         ghostVisual.transform.localPosition = ghostOffset;
 
         if (ghostRenderer != null)
         {
             bool canPlace = CanPlaceGhost();
             Material mat = canPlace ? validMaterial : invalidMaterial;
-
             ghostRenderer.material = mat;
-
             if (arrowRenderer != null)
                 arrowRenderer.material = mat;
         }
-
-
     }
-
-
 
     private void HandleRotationInput()
     {
