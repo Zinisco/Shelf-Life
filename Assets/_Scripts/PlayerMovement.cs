@@ -25,6 +25,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float aimAssistStrength = 2f; // Higher = faster adjustment
     [SerializeField] private LayerMask bookLayerMask;
 
+    private float currentSensitivity;
 
     private CharacterController controller;
     private float verticalVelocity;
@@ -39,6 +40,10 @@ public class PlayerMovement : MonoBehaviour
         controller = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        UpdateSensitivity(GameInput.Instance.IsGamepadActive ? "Gamepad" : "KeyboardMouse");
+
+        GameInput.Instance.OnControlSchemeChanged += UpdateSensitivity;
     }
 
     private void Update()
@@ -53,6 +58,12 @@ public class PlayerMovement : MonoBehaviour
 
         Debug.Log("Current Input: " + gameInput.IsUsingGamepad());
 
+    }
+
+    private void UpdateSensitivity(string controlScheme)
+    {
+        currentSensitivity = controlScheme == "Gamepad" ? controllerLookSensitivity : lookSensitivity;
+        Debug.Log("Sensitivity updated to: " + currentSensitivity);
     }
 
     void HandleMovement()
@@ -90,18 +101,7 @@ public class PlayerMovement : MonoBehaviour
     {
         Vector2 mouseDelta = gameInput.GetMouseDelta();
         mouseDelta = Vector2.ClampMagnitude(mouseDelta, 10f);
-        float sensitivity = gameInput.IsGamepadActive ? controllerLookSensitivity : lookSensitivity;
-
-        if (gameInput.IsGamepadActive)
-        {
-            // Analog stick is frame-rate independent
-            mouseDelta *= sensitivity * Time.deltaTime;
-        }
-        else
-        {
-            // Mouse is already delta-based
-            mouseDelta *= sensitivity;
-        }
+        mouseDelta *= currentSensitivity;
 
         xRotation -= mouseDelta.y;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
@@ -109,6 +109,13 @@ public class PlayerMovement : MonoBehaviour
         cam.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
         transform.Rotate(Vector3.up * mouseDelta.x);
     }
+
+    private void OnDestroy()
+    {
+        if (GameInput.Instance != null)
+            GameInput.Instance.OnControlSchemeChanged -= UpdateSensitivity;
+    }
+
 
     void ApplySoftAimAssist()
     {

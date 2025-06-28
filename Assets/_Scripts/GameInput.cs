@@ -17,9 +17,9 @@ public class GameInput : MonoBehaviour
     public event EventHandler OnPlaceFurnitureAction;
     public event EventHandler OnRotateLeftAction;
     public event EventHandler OnRotateRightAction;
+    public event EventHandler OnInteractAction;
 
     [SerializeField] private PlayerInput playerInput;
-
     public bool IsGamepadActive => playerInput != null && playerInput.currentControlScheme == "Gamepad";
     public bool IsKeyboardMouseActive => playerInput != null && playerInput.currentControlScheme == "KeyboardMouse";
 
@@ -27,6 +27,7 @@ public class GameInput : MonoBehaviour
     private enum ControlType { KeyboardMouse, Gamepad }
     private ControlType lastUsedControlType = ControlType.KeyboardMouse;
 
+    public event Action<string> OnControlSchemeChanged;
 
 
     private PlayerInputActions playerInputActions;
@@ -58,6 +59,7 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.MoveFurniture.performed += MoveFurniture_performed;
         playerInputActions.Player.RotateLeft.performed += RotateLeft_performed;
         playerInputActions.Player.RotateRight.performed += RotateRight_performed;
+        playerInputActions.Player.Interact.performed += Interact_performed;
 
 
     }
@@ -71,21 +73,12 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.MoveFurniture.performed -= MoveFurniture_performed;
         playerInputActions.Player.RotateLeft.performed -= RotateLeft_performed;
         playerInputActions.Player.RotateRight.performed -= RotateRight_performed;
+        playerInputActions.Player.Interact.performed -= Interact_performed;
 
 
 
         playerInputActions.Dispose();
     }
-
-    private void OnEnable()
-    {
-        var playerInput = GetComponent<PlayerInput>();
-        playerInput.onControlsChanged += (input) =>
-        {
-            Debug.Log("Control scheme changed to: " + input.currentControlScheme);
-        };
-    }
-
 
     private void MoveFurniture_started(InputAction.CallbackContext context)
     {
@@ -120,6 +113,11 @@ public class GameInput : MonoBehaviour
     private void ScrollRotate_performed(InputAction.CallbackContext context)
     {
         OnScrollRotate?.Invoke(this, context);
+    }
+
+    private void Interact_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
+    {
+        OnInteractAction?.Invoke(this, EventArgs.Empty);
     }
 
     public Vector2 GetMovementVectorNormalized()
@@ -170,8 +168,8 @@ public class GameInput : MonoBehaviour
     private void OnControlsChanged(PlayerInput input)
     {
         Debug.Log("Control Scheme Changed To: " + input.currentControlScheme);
+        OnControlSchemeChanged?.Invoke(input.currentControlScheme);
     }
-
 
     public bool IsUsingGamepad() => IsGamepadActive;
 

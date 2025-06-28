@@ -15,6 +15,6 @@ MonoBehaviour:
   bookID: 
   title: The Girl with the Dragon Fondue
   genre: Mystery
-  color: {r: 0, g: 0, b: 0, a: 0}
+  color: {r: 0.60031164, g: 0.6509434, b: 0, a: 0}
   prefab: {fileID: 940939929322109603, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
   summary: 

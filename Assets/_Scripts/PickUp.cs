@@ -211,6 +211,7 @@ public class PickUp : MonoBehaviour
             //Debug.Log("Tried to shelve, but no object is held.");
             return;
         }
+
         BookInfo bookInfo = heldObject.GetComponent<BookInfo>();
         if (bookInfo == null)
         {

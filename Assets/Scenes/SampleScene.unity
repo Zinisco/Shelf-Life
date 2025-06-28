@@ -466,9 +466,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c0e2f5f2fa6dc9c428b32619d7114799, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameInput: {fileID: 506512129}
   bookDatabase: {fileID: 11400000, guid: c463eee527b601c428f9fbd3b53edd72, type: 2}
   crateSize: 5
   allowDuplicates: 0
+  _opened: 0
+  _playerInRange: 0
 --- !u!65 &225231696
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -649,7 +652,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_ActionEvents: []
-  m_NeverAutoSwitchControlSchemes: 1
+  m_NeverAutoSwitchControlSchemes: 0
   m_DefaultControlScheme: KeyboardMouse
   m_DefaultActionMap: Player
   m_SplitScreenIndex: -1
@@ -1007,7 +1010,7 @@ MonoBehaviour:
     m_Bits: 4096
   lookSensitivity: 0.2
   cam: {fileID: 108303774}
-  controllerLookSensitivity: 2.5
+  controllerLookSensitivity: 0.4
   aimAssistRange: 4
   aimAssistStrength: 1
   bookLayerMask:

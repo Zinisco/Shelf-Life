@@ -15,6 +15,6 @@ MonoBehaviour:
   bookID: 
   title: Tomorrow and Tomorrow and Tamales
   genre: Sci-Fi
-  color: {r: 0, g: 0, b: 0, a: 0}
+  color: {r: 0.004182993, g: 0.7554842, b: 0.8867924, a: 0}
   prefab: {fileID: 940939929322109603, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
   summary: 

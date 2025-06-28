@@ -7,6 +7,9 @@ using UnityEngine.InputSystem;   // for Keyboard.current
 /// </summary>
 public class BookCrate : MonoBehaviour
 {
+    [Header("Game Input")]
+    [SerializeField] private GameInput gameInput;
+
     [Tooltip("The ScriptableObject holding all your BookDefinitions")]
     [SerializeField] private BookDatabase bookDatabase;
 
@@ -16,16 +19,22 @@ public class BookCrate : MonoBehaviour
     [Tooltip("If false, ensures each book is unique (requires crateSize <= database count)")]
     [SerializeField] private bool allowDuplicates = false;
 
-    private bool _opened = false;
-    private bool _playerInRange = false;
+    [SerializeField] private bool _opened = false;
+    [SerializeField] private bool _playerInRange = false;
 
-    private void Update()
+    private void Start()
     {
-        // as soon as E is pressed and we're in range, open it
-        if (!_opened && _playerInRange && Keyboard.current.eKey.wasPressedThisFrame)
+        gameInput = GameInput.Instance;
+        if (gameInput != null)
         {
-            Open();
+            gameInput.OnInteractAction += GameInput_OnInteractAction;
         }
+    }
+
+
+    private void GameInput_OnInteractAction(object sender, System.EventArgs e)
+    {
+        Open();
     }
 
     /// <summary>
@@ -33,7 +42,10 @@ public class BookCrate : MonoBehaviour
     /// </summary>
     public void Open()
     {
-        _opened = true;
+        if (_opened && !_playerInRange)
+        {
+            return;
+        }
 
         Debug.Log("Opening Crate...");
 
@@ -44,7 +56,6 @@ public class BookCrate : MonoBehaviour
             return;
         }
 
-        // pick your crate pool…
         List<BookDefinition> pool = new List<BookDefinition>(allDefs);
         if (!allowDuplicates && crateSize <= pool.Count)
             Shuffle(pool);
@@ -56,7 +67,7 @@ public class BookCrate : MonoBehaviour
                 : pool[i];
 
             Vector3 rnd = Random.insideUnitCircle * 0.3f;
-            Vector3 origin = transform.position;       // the crate’s position
+            Vector3 origin = transform.position;
             Vector3 spawnPos = origin + new Vector3(rnd.x, 0f, rnd.y);
             Quaternion spawnRot = Quaternion.Euler(0f, Random.Range(0f, 360f), 0f);
 
@@ -68,9 +79,21 @@ public class BookCrate : MonoBehaviour
                 info.ApplyDefinition(def);
         }
 
-        Destroy(this.gameObject);
+        _opened = true;
 
+        // Unsubscribe from input event BEFORE destroying this object
+        if (gameInput != null)
+            gameInput.OnInteractAction -= GameInput_OnInteractAction;
+
+        Destroy(this.gameObject);
     }
+
+    private void OnDestroy()
+    {
+        if (gameInput != null)
+            gameInput.OnInteractAction -= GameInput_OnInteractAction;
+    }
+
 
     private void Reset()
     {
