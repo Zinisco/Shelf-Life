@@ -80,12 +80,12 @@ public class PickUp : MonoBehaviour
         if (heldObject == null)
         {
             TryPickup();
-            Debug.Log("Pick Up Object");
+            //Debug.Log("Pick Up Object");
         }
         else
         {
             DropObject();
-            Debug.Log("Drop Up Object");
+           //Debug.Log("Dropped Object");
         }
     }
 

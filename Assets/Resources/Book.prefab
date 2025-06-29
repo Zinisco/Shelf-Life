@@ -161,15 +161,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a8c8bc492bfdb647aac58da3804a9fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  titleText: {fileID: 8574068824914450158}
+  spineText: {fileID: 6103417470195975679}
+  definition: {fileID: 0}
   currentSpot: {fileID: 0}
-  Genre: 
-  Title: 
-  SpineTitle: 
-  CoverColor: {r: 0, g: 0, b: 0, a: 0}
   Position: {x: 0, y: 0, z: 0}
   Rotation: {x: 0, y: 0, z: 0, w: 0}
-  tempShelfSpotName: 
-  bookID: 
   ObjectID: 
   SpotIndex: 0
 --- !u!65 &5011039745262841221
@@ -220,7 +217,7 @@ GameObject:
   - component: {fileID: 6941525272992320843}
   - component: {fileID: 8574068824914450158}
   m_Layer: 0
-  m_Name: Cover Title (1)
+  m_Name: Cover Title
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -391,7 +388,7 @@ GameObject:
   - component: {fileID: 5951153379258993471}
   - component: {fileID: 6103417470195975679}
   m_Layer: 0
-  m_Name: Spine Title (1)
+  m_Name: Spine Title
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

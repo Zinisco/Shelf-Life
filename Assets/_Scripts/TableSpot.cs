@@ -42,25 +42,31 @@ public class TableSpot : MonoBehaviour
         TableSaveData data = new TableSaveData();
         data.tableID = objectID;
 
-        foreach (GameObject book in stackedBooks)
+        foreach (Transform child in StackAnchor)
         {
-            BookInfo info = book.GetComponent<BookInfo>();
+            BookInfo info = child.GetComponent<BookInfo>();
             if (info != null)
             {
                 data.stackedBooks.Add(new BookSaveData
                 {
                     bookID = info.bookID,
-                    position = book.transform.position,
-                    rotation = book.transform.rotation
+                    position = child.position,
+                    rotation = child.rotation
                 });
             }
         }
+
+        Debug.Log($"[Save] Table {objectID} saving {data.stackedBooks.Count} books from StackAnchor children.");
         return data;
     }
+
 
     public void LoadBooksFromData(TableSaveData data, BookDatabase bookDatabase)
     {
         if (data == null || bookDatabase == null) return;
+
+        Debug.Log($"[LoadBooksFromData] Loading {data.stackedBooks.Count} books for table {data.tableID}");
+
 
         // 1) clear out the old children
         foreach (Transform c in StackAnchor)
@@ -84,35 +90,18 @@ public class TableSpot : MonoBehaviour
             {
                 info.ObjectID = this.objectID;
                 info.SpotIndex = -1; // stacked books aren't on shelves
+
+                BookDefinition def = ScriptableObject.CreateInstance<BookDefinition>();
+                def.bookID = entry.bookID;
+                def.title = entry.title;
+                def.genre = entry.genre;
+                def.summary = entry.summary;
+                def.color = new Color(entry.color[0], entry.color[1], entry.color[2]);
+
+                info.ApplyDefinition(def);
             }
 
-            // parent under the anchor, *without* preserving world coords
-            book.transform.SetParent(StackAnchor, false);
-
-            // slot it at the correct *local* height
-            book.transform.localPosition = new Vector3(0f, i * stackHeightOffset, 0f);
-
-            // orient so cover is up, spine to player’s left
-            Vector3 dir = Camera.main.transform.forward;
-            dir.y = 0f; dir.Normalize();
-            float snapped = Mathf.Round(Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg / 90f) * 90f;
-            Quaternion baseRot = Quaternion.Euler(-90f, 0f, 0f);
-            Quaternion faceY = Quaternion.Euler(0f, snapped, 0f);
-            Quaternion flipZ = Quaternion.Euler(0f, 0f, 180f);
-            book.transform.localRotation = faceY * baseRot * flipZ;
-
-            // d) Disable physics
-            FreezeBookPhysics(book);
-
-            stackedBooks.Add(book);
-
-            // Add this to mark the book as stacked but NOT shelved
-            if (info != null)
-            {
-                info.bookID = entry.bookID;
-                info.ObjectID = ""; // Not on a shelf
-                info.SpotIndex = -1;
-            }
+            StackBook(book);
         }
     }
 
@@ -296,6 +285,23 @@ public class TableSpot : MonoBehaviour
             rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
         }
     }
+
+    public void RefreshStack()
+    {
+        stackedBooks.Clear();
+
+        foreach (Transform child in StackAnchor)
+        {
+            var book = child.GetComponent<BookInfo>();
+            if (book != null)
+            {
+                stackedBooks.Add(child.gameObject);
+            }
+        }
+
+        Debug.Log($"[RefreshStack] {objectID} found {stackedBooks.Count} stacked books.");
+    }
+
 
     public Transform GetStackAnchor() => StackAnchor;
 }

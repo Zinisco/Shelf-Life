@@ -1,8 +1,13 @@
+using TMPro;
 using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
 public class BookInfo : MonoBehaviour
 {
+    [Header("UI")]
+    [SerializeField] private TMP_Text titleText;
+    [SerializeField] private TMP_Text spineText;
+
     [Header("Definition")]
     [Tooltip("Reference to the ScriptableObject definition for this book")]
     public BookDefinition definition;
@@ -26,7 +31,7 @@ public class BookInfo : MonoBehaviour
     /// </summary>
     public void ApplyDefinition(BookDefinition def)
 {
-    definition = def;
+    this.definition = def;
     bookID = def.bookID;
     UpdateVisuals();
 
@@ -38,10 +43,17 @@ public class BookInfo : MonoBehaviour
         // Update the mesh color
         GetComponentInChildren<MeshRenderer>().material.color = definition.color;
 
-        // Update title/genre UI text if present
-        var titleText = GetComponentInChildren<TMPro.TextMeshProUGUI>();
+        // Update title UI if assigned
         if (titleText != null)
+        {
             titleText.text = definition.title;
+            spineText.text = definition.title; 
+            //Debug.Log($"[UpdateVisuals] Set title: {definition.title}");
+        }
+        else
+        {
+            Debug.LogWarning($"[BookInfo] Missing titleText reference on: {gameObject.name}");
+        }
 
         // You can also update genre, summary, etc. here
     }

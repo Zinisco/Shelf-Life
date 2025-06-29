@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -56,15 +58,16 @@ public class PlayerMovement : MonoBehaviour
             ApplySoftAimAssist();
         }
 
-        Debug.Log("Current Input: " + gameInput.IsUsingGamepad());
+        //Debug.Log("Current Input: " + gameInput.IsUsingGamepad());
 
     }
 
     private void UpdateSensitivity(string controlScheme)
     {
         currentSensitivity = controlScheme == "Gamepad" ? controllerLookSensitivity : lookSensitivity;
-        Debug.Log("Sensitivity updated to: " + currentSensitivity);
+        //Debug.Log("Sensitivity updated to: " + currentSensitivity);
     }
+
 
     void HandleMovement()
     {
@@ -72,7 +75,7 @@ public class PlayerMovement : MonoBehaviour
 
         if (isGrounded && verticalVelocity < 0)
         {
-            verticalVelocity = -2f; // Small downward force to keep grounded
+            verticalVelocity = -2f;
         }
         else
         {
@@ -84,9 +87,12 @@ public class PlayerMovement : MonoBehaviour
 
         float currentSpeed = moveSpeed;
 
-        // Disable running if moving furniture
         bool isMovingFurniture = FindObjectOfType<FurnitureMover>()?.IsMovingFurniture() ?? false;
-        bool canRun = gameInput.IsRunHeld() && !isMovingFurniture;
+
+        //  Check if Run is held
+        bool isRunInputHeld = gameInput.IsRunHeld();
+
+        bool canRun = isRunInputHeld && !isMovingFurniture;
 
         if (canRun)
         {
@@ -94,8 +100,8 @@ public class PlayerMovement : MonoBehaviour
         }
 
         controller.Move((move * currentSpeed + Vector3.up * verticalVelocity) * Time.deltaTime);
-
     }
+
 
     void HandleLook()
     {

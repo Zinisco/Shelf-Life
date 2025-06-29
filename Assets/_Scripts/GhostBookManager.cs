@@ -9,7 +9,7 @@ public class GhostBookManager : MonoBehaviour
     {
         ghostBookInstance = Instantiate(ghostBookPrefab);
         ghostBookInstance.SetActive(false);
-        Debug.Log("Ghost book initialized: " + ghostBookInstance.name);
+        //Debug.Log("Ghost book initialized: " + ghostBookInstance.name);
     }
 
     public void UpdateGhost(GameObject heldObject, ShelfSpot shelfSpot, TableSpot tableSpot, float stackOffset)

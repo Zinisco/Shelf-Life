@@ -1046,7 +1046,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerCollider: {fileID: 739533915}
   playerCamera: {fileID: 108303774}
-  moveDistance: 3
+  moveDistance: 4
   rotationSmoothSpeed: 10
   placementObstacles:
     serializedVersion: 2

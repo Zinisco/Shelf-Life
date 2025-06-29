@@ -33,7 +33,11 @@ public class BookSaveManager : MonoBehaviour
         // --- books ---
         foreach (var info in FindObjectsOfType<BookInfo>())
         {
+            // SKIP if book is stacked (parented to a TableSpot)
+            if (info.transform.parent != null && info.transform.parent.GetComponent<TableSpot>() != null)
+                continue;
 
+            // Save only if shelved or loose
             w.allBooks.Add(new BookSaveData
             {
                 bookID = info.bookID,
@@ -41,17 +45,16 @@ public class BookSaveManager : MonoBehaviour
                 genre = info.definition != null ? info.definition.genre : "",
                 summary = info.definition != null ? info.definition.summary : "",
                 color = info.definition != null ? new float[] {
-        info.definition.color.r,
-        info.definition.color.g,
-        info.definition.color.b
-    } : new float[] { 1f, 1f, 1f },
+            info.definition.color.r,
+            info.definition.color.g,
+            info.definition.color.b
+        } : new float[] { 1f, 1f, 1f },
 
                 shelfID = info.ObjectID,
                 spotIndex = info.SpotIndex,
                 position = info.transform.position,
                 rotation = info.transform.rotation
             });
-
         }
 
         // --- shelves & tables ---
@@ -65,13 +68,25 @@ public class BookSaveManager : MonoBehaviour
 
         foreach (var table in FindObjectsOfType<BookTable>())
         {
-            w.allTables.Add(new TableSaveData
+            var data = new TableSaveData
             {
-                tableID = table.GetID(), // You need a GetID() method if not already there
+                tableID = table.GetID(),
                 position = table.transform.position,
                 rotation = table.transform.rotation
-            });
+            };
+
+            var spot = table.GetComponentInChildren<TableSpot>();
+            if (spot != null)
+            {
+                spot.RefreshStack();
+                var stacked = spot.GetSaveData(); // this returns a TableSaveData with stackedBooks
+                data.stackedBooks = stacked.stackedBooks;
+            }
+
+            w.allTables.Add(data);
+            Debug.Log($"[SAVE] Table '{data.tableID}' has {data.stackedBooks.Count} books.");
         }
+
 
         foreach (var book in w.allBooks)
         {
@@ -133,28 +148,44 @@ public class BookSaveManager : MonoBehaviour
             }
         }
 
+
+
         foreach (var tableData in w.allTables)
         {
-            var prefab = Resources.Load<GameObject>("BookTable"); // Adjust path if needed
+            var prefab = Resources.Load<GameObject>("BookTable");
             var tableGO = Instantiate(prefab);
             tableGO.transform.position = tableData.position;
             tableGO.transform.rotation = tableData.rotation;
 
             var tableComp = tableGO.GetComponent<BookTable>();
-            tableComp.SetID(tableData.tableID); // Add this method if missing
+            tableComp.SetID(tableData.tableID);
+
+            // Now safely get the TableSpot and load books
+            var tableSpot = tableGO.GetComponentInChildren<TableSpot>();
+            if (tableSpot != null)
+            {
+                tableSpot.LoadBooksFromData(tableData, bookDatabase);
+            }
+            else
+            {
+                Debug.LogWarning($"[LoadAll] No TableSpot found under {tableGO.name}");
+            }
+
+            Debug.Log($"[LoadAll] Loaded table '{tableData.tableID}' and applied book data with {tableData.stackedBooks.Count} books.");
+
         }
+
 
 
         // **reload table?stacks on the *new* spots**  
-        foreach (var spot in FindObjectsOfType<TableSpot>())
-        {
-            var data = w.allTables.Find(t => t.tableID == spot.objectID);
-            if (data != null)
-                spot.LoadBooksFromData(data, bookDatabase);
-        }
+        //StartCoroutine(DelayedTableRestore(w));
+
 
         // finally put the shelved books back on shelves
         StartCoroutine(ReconnectShelves());
+
+        Debug.Log("[LoadAll] Completed book table restore phase.");
+
     }
 
 
@@ -221,9 +252,31 @@ public class BookSaveManager : MonoBehaviour
             
             info.SetShelfSpot(target, info.ObjectID, info.SpotIndex);
             target.SetOccupied(true, info.gameObject);
+            info.UpdateVisuals();
         }
 
     }
+
+    private IEnumerator DelayedTableRestore(SaveDataWrapper w)
+    {
+        yield return new WaitForSeconds(0.1f); // Let Unity finish instantiating the hierarchy
+
+        foreach (var spot in FindObjectsOfType<TableSpot>())
+        {
+            Debug.Log($"[DelayedRestore] Found TableSpot with ID: {spot.objectID}");
+            var data = w.allTables.Find(t => t.tableID == spot.objectID);
+            if (data != null)
+            {
+                Debug.Log($"[DelayedRestore] Found table data with {data.stackedBooks.Count} books");
+                spot.LoadBooksFromData(data, bookDatabase);
+            }
+            else
+            {
+                Debug.LogWarning($"[DelayedRestore] No data found for table ID: {spot.objectID}");
+            }
+        }
+    }
+
 
     // static shortcuts
     public static void TriggerSave() => _I?.SaveAll();

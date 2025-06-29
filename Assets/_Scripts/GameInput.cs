@@ -18,6 +18,7 @@ public class GameInput : MonoBehaviour
     public event EventHandler OnRotateLeftAction;
     public event EventHandler OnRotateRightAction;
     public event EventHandler OnInteractAction;
+    public event EventHandler OnRunAction;
 
     [SerializeField] private PlayerInput playerInput;
     public bool IsGamepadActive => playerInput != null && playerInput.currentControlScheme == "Gamepad";
@@ -60,6 +61,7 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.RotateLeft.performed += RotateLeft_performed;
         playerInputActions.Player.RotateRight.performed += RotateRight_performed;
         playerInputActions.Player.Interact.performed += Interact_performed;
+        playerInputActions.Player.Run.performed += Run_performed;
 
 
     }
@@ -74,6 +76,7 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.RotateLeft.performed -= RotateLeft_performed;
         playerInputActions.Player.RotateRight.performed -= RotateRight_performed;
         playerInputActions.Player.Interact.performed -= Interact_performed;
+        playerInputActions.Player.Run.performed -= Run_performed;
 
 
 
@@ -120,6 +123,11 @@ public class GameInput : MonoBehaviour
         OnInteractAction?.Invoke(this, EventArgs.Empty);
     }
 
+    private void Run_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
+    {
+        OnRunAction?.Invoke(this, EventArgs.Empty);
+    }
+
     public Vector2 GetMovementVectorNormalized()
     {
         Vector2 input = playerInputActions.Player.Move.ReadValue<Vector2>();
@@ -162,12 +170,12 @@ public class GameInput : MonoBehaviour
 
     public bool IsRunHeld()
     {
-        return Keyboard.current != null && Keyboard.current.leftShiftKey.isPressed;
+        return playerInputActions.Player.Run.IsPressed();
     }
 
     private void OnControlsChanged(PlayerInput input)
     {
-        Debug.Log("Control Scheme Changed To: " + input.currentControlScheme);
+        //Debug.Log("Control Scheme Changed To: " + input.currentControlScheme);
         OnControlSchemeChanged?.Invoke(input.currentControlScheme);
     }
 
