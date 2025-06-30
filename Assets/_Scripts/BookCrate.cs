@@ -42,7 +42,7 @@ public class BookCrate : MonoBehaviour
     /// </summary>
     public void Open()
     {
-        if (_opened && !_playerInRange)
+        if (_opened || !_playerInRange)
         {
             return;
         }

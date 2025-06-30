@@ -118,8 +118,7 @@ public class TableSpot : MonoBehaviour
                 info.UpdateVisuals();
             }
 
-
-            StackBook(book);
+            StackBookWithSavedRotation(book, entry.rotation);
             Debug.Log(info.definition.title);
         }
     }
@@ -322,6 +321,26 @@ public class TableSpot : MonoBehaviour
     {
         SpotIndex = index;
     }
+
+    public void StackBookWithSavedRotation(GameObject book, Quaternion savedRotation)
+    {
+        if (book == null || StackAnchor == null) return;
+
+        // Detach from any previous stack
+        TableSpot oldSpot = book.GetComponentInParent<TableSpot>();
+        if (oldSpot != null && oldSpot != this)
+        {
+            oldSpot.RemoveBook(book);
+        }
+
+        book.transform.SetParent(StackAnchor, false);
+        book.transform.localPosition = new Vector3(0f, stackedBooks.Count * stackHeightOffset, 0f);
+        book.transform.localRotation = savedRotation;
+
+        FreezeBookPhysics(book);
+        stackedBooks.Add(book);
+    }
+
 
 
     public Transform GetStackAnchor() => StackAnchor;

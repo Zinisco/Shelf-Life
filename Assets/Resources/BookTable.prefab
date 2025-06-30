@@ -28,7 +28,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3, y: 2, z: 3}
+  m_LocalScale: {x: 2.7, y: 2, z: 2.7}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4528768009525580858}
@@ -154,8 +154,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   tableID: 
   rows: 4
-  columns: 5
-  spacing: {x: 0.6, y: 0.75}
+  columns: 4
+  spacing: {x: 0.7, y: 0.7}
   offset: {x: 0, y: 0.05, z: 0}
   spotVisualPrefab: {fileID: 1176274225462170385, guid: e7721abe2430c164396ce59aa5f78c8a, type: 3}
 --- !u!114 &3428738085837626550
