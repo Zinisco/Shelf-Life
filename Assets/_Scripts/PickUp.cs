@@ -281,6 +281,7 @@ public class PickUp : MonoBehaviour
         if (targetSpot == null)
         {
             Debug.Log("No valid shelf spot found.");
+            ClearHeldBook(); // Ensure we clean up properly
             return;
         }
 
