@@ -9,9 +9,11 @@ public class BookSaveManager : MonoBehaviour
     [System.Serializable]
     public class SaveDataWrapper
     {
+        public int saveVersion = 1;
         public List<BookSaveData> allBooks = new();
         public List<BookshelfSaveData> allShelves = new();
         public List<TableSaveData> allTables = new();
+        public List<TableSpotSaveData> allTableSpots = new();
     }
 
     [SerializeField] private BookDatabase bookDatabase;
@@ -29,31 +31,31 @@ public class BookSaveManager : MonoBehaviour
     public void SaveAll()
     {
         var w = new SaveDataWrapper();
+        w.saveVersion = 1; // current format version
 
         // --- books ---
         foreach (var info in FindObjectsOfType<BookInfo>())
         {
-            // SKIP if book is stacked (parented to a TableSpot)
-            if (info.transform.parent != null && info.transform.parent.GetComponent<TableSpot>() != null)
-                continue;
+            if (info.currentTableSpot != null)
+                continue; // skip stacked books
 
-            // Save only if shelved or loose
+            // only shelved books should set shelfID and spotIndex
             w.allBooks.Add(new BookSaveData
             {
                 bookID = info.bookID,
-                title = info.definition != null ? info.definition.title : "",
-                genre = info.definition != null ? info.definition.genre : "",
-                summary = info.definition != null ? info.definition.summary : "",
-                color = info.definition != null ? new float[] {
-            info.definition.color.r,
-            info.definition.color.g,
-            info.definition.color.b
-        } : new float[] { 1f, 1f, 1f },
-
+                title = info.definition?.title ?? "",
+                genre = info.definition?.genre ?? "",
+                summary = info.definition?.summary ?? "",
+                color = new float[] {
+        info.definition.color.r,
+        info.definition.color.g,
+        info.definition.color.b
+    },
+                tags = new List<string>(info.tags),
                 shelfID = info.ObjectID,
                 spotIndex = info.SpotIndex,
                 position = info.transform.position,
-                rotation = info.transform.rotation
+                rotation = info.transform.rotation,
             });
         }
 
@@ -72,19 +74,25 @@ public class BookSaveManager : MonoBehaviour
             {
                 tableID = table.GetID(),
                 position = table.transform.position,
-                rotation = table.transform.rotation
+                rotation = table.transform.rotation,
+                stackedBooks = new List<BookSaveData>()
             };
 
-            var spot = table.GetComponentInChildren<TableSpot>();
-            if (spot != null)
+            var spots = table.GetTableSpots();
+            foreach (var spot in spots)
             {
-                spot.RefreshStack();
-                var stacked = spot.GetSaveData(); // this returns a TableSaveData with stackedBooks
-                data.stackedBooks = stacked.stackedBooks;
+                spot.RefreshStack(); // rebuild internal list
+                var spotData = spot.GetSaveData();
+
+                foreach (var book in spotData.stackedBooks)
+                {
+                    book.spotIndex = spot.SpotIndex; // save correct spot index
+                    data.stackedBooks.Add(book);
+                }
             }
 
             w.allTables.Add(data);
-            Debug.Log($"[SAVE] Table '{data.tableID}' has {data.stackedBooks.Count} books.");
+            Debug.Log($"[SAVE] Table '{data.tableID}' saved with {data.stackedBooks.Count} books.");
         }
 
 
@@ -105,12 +113,24 @@ public class BookSaveManager : MonoBehaviour
 
         var w = JsonUtility.FromJson<SaveDataWrapper>(File.ReadAllText(path));
 
-        // destroy old books, shelves, and tables
+        // handle versioning
+        if (w.saveVersion < 1)
+        {
+            Debug.LogWarning($"[Load] Unsupported save version: {w.saveVersion}");
+            return;
+        }
+        else if (w.saveVersion < 2)
+        {
+            // Upgrade logic here: Add missing fields, change defaults, etc.
+            MigrateV1ToV2(w);
+        }
+
+        // Destroy old books, shelves, tables
         foreach (var b in FindObjectsOfType<BookInfo>()) Destroy(b.gameObject);
         foreach (var s in FindObjectsOfType<Bookshelf>()) Destroy(s.gameObject);
         foreach (var t in FindObjectsOfType<BookTable>()) Destroy(t.gameObject);
 
-        // recreate shelves
+        // Recreate shelves
         foreach (var sd in w.allShelves)
         {
             var go = Instantiate(Resources.Load<GameObject>("Bookshelf"));
@@ -119,7 +139,67 @@ public class BookSaveManager : MonoBehaviour
             go.GetComponent<Bookshelf>().SetID(sd.ShelfID);
         }
 
-        // recreate ALL books — shelved AND table/loose
+        // Recreate tables
+        foreach (var td in w.allTables)
+        {
+            var go = Instantiate(Resources.Load<GameObject>("BookTable"));
+            go.transform.position = td.position;
+            go.transform.rotation = td.rotation;
+
+            var table = go.GetComponent<BookTable>();
+            table.SetID(td.tableID);
+
+            var spots = table.GetTableSpots();
+
+            // Group books by SpotIndex
+            var booksBySpot = new Dictionary<int, List<BookSaveData>>();
+            foreach (var book in td.stackedBooks)
+            {
+                if (!booksBySpot.ContainsKey(book.spotIndex))
+                    booksBySpot[book.spotIndex] = new List<BookSaveData>();
+                booksBySpot[book.spotIndex].Add(book);
+            }
+
+            foreach (var spot in spots)
+            {
+                if (booksBySpot.TryGetValue(spot.SpotIndex, out var stack))
+                {
+                    var tableData = new TableSaveData
+                    {
+                        tableID = td.tableID,
+                        stackedBooks = stack
+                    };
+
+                    spot.LoadBooksFromData(tableData, bookDatabase);
+                }
+            }
+        }
+
+        // STEP 1: Collect all stacked books from table data
+        var stackedBookHashes = new HashSet<string>();
+
+        foreach (var table in w.allTables)
+        {
+            foreach (var stackedBook in table.stackedBooks)
+            {
+                string hash = GenerateBookHash(stackedBook);
+                stackedBookHashes.Add(hash);
+            }
+        }
+
+        // STEP 2: Filter out any books from allBooks that match stacked books
+        int beforeCount = w.allBooks.Count;
+        w.allBooks.RemoveAll(book =>
+        {
+            string hash = GenerateBookHash(book);
+            return stackedBookHashes.Contains(hash);
+        });
+        int afterCount = w.allBooks.Count;
+        Debug.Log($"[Cleaner] Removed {beforeCount - afterCount} duplicate stacked books from allBooks.");
+
+
+
+        // Recreate books (stacked & shelved)
         foreach (var bd in w.allBooks)
         {
             var prefab = bookDatabase.GetBookPrefabByID(bd.bookID);
@@ -133,7 +213,7 @@ public class BookSaveManager : MonoBehaviour
                 info.ObjectID = bd.shelfID;
                 info.SpotIndex = bd.spotIndex;
 
-                // Create a definition from save
+                // Rebuild definition
                 BookDefinition def = ScriptableObject.CreateInstance<BookDefinition>();
                 def.bookID = bd.bookID;
                 def.title = bd.title;
@@ -144,50 +224,24 @@ public class BookSaveManager : MonoBehaviour
                     def.color = new Color(bd.color[0], bd.color[1], bd.color[2]);
 
                 info.ApplyDefinition(def);
+                info.tags = new List<string>(bd.tags ?? new List<string>());
                 info.UpdateVisuals();
+
+                Debug.Log($"[LoadAll] Spawned shelved book: {def.title}, shelfID={bd.shelfID}, spot={bd.spotIndex}");
             }
         }
 
 
-
-        foreach (var tableData in w.allTables)
-        {
-            var prefab = Resources.Load<GameObject>("BookTable");
-            var tableGO = Instantiate(prefab);
-            tableGO.transform.position = tableData.position;
-            tableGO.transform.rotation = tableData.rotation;
-
-            var tableComp = tableGO.GetComponent<BookTable>();
-            tableComp.SetID(tableData.tableID);
-
-            // Now safely get the TableSpot and load books
-            var tableSpot = tableGO.GetComponentInChildren<TableSpot>();
-            if (tableSpot != null)
-            {
-                tableSpot.LoadBooksFromData(tableData, bookDatabase);
-            }
-            else
-            {
-                Debug.LogWarning($"[LoadAll] No TableSpot found under {tableGO.name}");
-            }
-
-            Debug.Log($"[LoadAll] Loaded table '{tableData.tableID}' and applied book data with {tableData.stackedBooks.Count} books.");
-
-        }
-
-
-
-        // **reload table?stacks on the *new* spots**  
-        //StartCoroutine(DelayedTableRestore(w));
-
-
-        // finally put the shelved books back on shelves
         StartCoroutine(ReconnectShelves());
-
-        Debug.Log("[LoadAll] Completed book table restore phase.");
-
     }
 
+    private static string GenerateBookHash(BookSaveData book)
+    {
+        Vector3 pos = book.position;
+        int spot = book.spotIndex;
+
+        return $"{book.bookID}_{Mathf.RoundToInt(pos.x * 100f)}_{Mathf.RoundToInt(pos.y * 100f)}_{Mathf.RoundToInt(pos.z * 100f)}_{spot}";
+    }
 
     private IEnumerator ReconnectShelves()
     {     
@@ -257,24 +311,16 @@ public class BookSaveManager : MonoBehaviour
 
     }
 
-    private IEnumerator DelayedTableRestore(SaveDataWrapper w)
+    private void MigrateV1ToV2(SaveDataWrapper w)
     {
-        yield return new WaitForSeconds(0.1f); // Let Unity finish instantiating the hierarchy
-
-        foreach (var spot in FindObjectsOfType<TableSpot>())
+        foreach (var book in w.allBooks)
         {
-            Debug.Log($"[DelayedRestore] Found TableSpot with ID: {spot.objectID}");
-            var data = w.allTables.Find(t => t.tableID == spot.objectID);
-            if (data != null)
-            {
-                Debug.Log($"[DelayedRestore] Found table data with {data.stackedBooks.Count} books");
-                spot.LoadBooksFromData(data, bookDatabase);
-            }
-            else
-            {
-                Debug.LogWarning($"[DelayedRestore] No data found for table ID: {spot.objectID}");
-            }
+            if (book.tags == null)
+                book.tags = new List<string>(); // new field
         }
+
+        w.saveVersion = 2;
+        Debug.Log("[Migration] Upgraded save file to version 2.");
     }
 
 

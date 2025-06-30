@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
@@ -10,10 +11,9 @@ public class TableSpot : MonoBehaviour
 
     [SerializeField] public Transform StackAnchor;
 
+    public int SpotIndex { get; private set; }
 
     private List<GameObject> stackedBooks = new List<GameObject>();
-
-    public string objectID;
 
     private void Awake()
     {
@@ -22,51 +22,63 @@ public class TableSpot : MonoBehaviour
         {
             var found = transform.Find("Anchor");
             if (found != null)
+            {
                 StackAnchor = found;
+                StackAnchor.localPosition = Vector3.zero;
+                StackAnchor.localRotation = Quaternion.identity;
+                StackAnchor.localScale = Vector3.one;
+            }
             else
             {
                 var go = new GameObject("Anchor");
                 go.transform.SetParent(transform, false);
                 StackAnchor = go.transform;
+                StackAnchor.localPosition = Vector3.zero;
+                StackAnchor.localRotation = Quaternion.identity;
+                StackAnchor.localScale = Vector3.one;
             }
         }
 
-        // 2) if you forgot to assign an ID in the inspector, give it one now
-        if (string.IsNullOrEmpty(objectID))
-            objectID = GUID.Generate().ToString();
     }
 
-
-    public TableSaveData GetSaveData()
+    public TableSpotSaveData GetSaveData()
     {
-        TableSaveData data = new TableSaveData();
-        data.tableID = objectID;
-
-        foreach (Transform child in StackAnchor)
+        TableSpotSaveData data = new TableSpotSaveData();
+        for (int i = 0; i < stackedBooks.Count; i++)
         {
-            BookInfo info = child.GetComponent<BookInfo>();
+            GameObject book = stackedBooks[i];
+            BookInfo info = book.GetComponent<BookInfo>();
             if (info != null)
             {
                 data.stackedBooks.Add(new BookSaveData
                 {
                     bookID = info.bookID,
-                    position = child.position,
-                    rotation = child.rotation
+                    title = info.definition?.title ?? "",
+                    genre = info.definition?.genre ?? "",
+                    summary = info.definition?.summary ?? "",
+                    color = info.definition != null
+        ? new float[] { info.definition.color.r, info.definition.color.g, info.definition.color.b }
+        : new float[] { 1f, 1f, 1f },
+                    position = book.transform.position,
+                    rotation = book.transform.rotation,
+                    spotIndex = SpotIndex,
+                    stackIndex = i
                 });
+
             }
         }
 
-        Debug.Log($"[Save] Table {objectID} saving {data.stackedBooks.Count} books from StackAnchor children.");
         return data;
     }
 
 
+
     public void LoadBooksFromData(TableSaveData data, BookDatabase bookDatabase)
     {
+
         if (data == null || bookDatabase == null) return;
 
         Debug.Log($"[LoadBooksFromData] Loading {data.stackedBooks.Count} books for table {data.tableID}");
-
 
         // 1) clear out the old children
         foreach (Transform c in StackAnchor)
@@ -78,9 +90,10 @@ public class TableSpot : MonoBehaviour
         {
             var entry = data.stackedBooks[i];
             GameObject prefab = bookDatabase.GetBookPrefabByID(entry.bookID);
+
             if (prefab == null)
             {
-                Debug.LogWarning($"[TableSpot:{objectID}] no prefab for '{entry.bookID}'");
+                Debug.LogWarning($"[TableSpot] Missing prefab for bookID '{entry.bookID}' — skipping.");
                 continue;
             }
 
@@ -88,7 +101,6 @@ public class TableSpot : MonoBehaviour
             BookInfo info = book.GetComponent<BookInfo>();
             if (info != null)
             {
-                info.ObjectID = this.objectID;
                 info.SpotIndex = -1; // stacked books aren't on shelves
 
                 BookDefinition def = ScriptableObject.CreateInstance<BookDefinition>();
@@ -96,12 +108,19 @@ public class TableSpot : MonoBehaviour
                 def.title = entry.title;
                 def.genre = entry.genre;
                 def.summary = entry.summary;
-                def.color = new Color(entry.color[0], entry.color[1], entry.color[2]);
+
+                if (entry.color != null && entry.color.Length >= 3)
+                    def.color = new Color(entry.color[0], entry.color[1], entry.color[2]);
+                else
+                    def.color = Color.white;
 
                 info.ApplyDefinition(def);
+                info.UpdateVisuals();
             }
 
+
             StackBook(book);
+            Debug.Log(info.definition.title);
         }
     }
 
@@ -126,6 +145,13 @@ public class TableSpot : MonoBehaviour
             oldSpot.RemoveBook(book);
         }
 
+        var info = book.GetComponent<BookInfo>();
+        if (info != null)
+        {
+            info.currentTableSpot = this;
+            // Don’t set ObjectID or SpotIndex
+        }
+
         // Match ghost logic
         Vector3 stackPosition = GetStackedPosition();
         Vector3 playerDir = Camera.main.transform.forward;
@@ -144,6 +170,8 @@ public class TableSpot : MonoBehaviour
         Quaternion finalRotation = facingRotation * baseRotation * Quaternion.Euler(0f, 0f, 180f);
 
         book.transform.SetParent(StackAnchor, false); // local space preserved
+        Debug.Log($"[TableSpot] Parented book '{book.name}' to StackAnchor of '{gameObject.name}'");
+
         book.transform.localPosition = new Vector3(0f, stackedBooks.Count * stackHeightOffset, 0f);
         book.transform.localRotation = finalRotation;
 
@@ -265,16 +293,6 @@ public class TableSpot : MonoBehaviour
         stackedBooks.Clear();
     }
 
-    private void OnValidate()
-    {
-        if (string.IsNullOrEmpty(objectID))
-        {
-            objectID = GUID.Generate().ToString();
-            EditorUtility.SetDirty(this);
-            //Debug.Log("Generated persistent objectID: " + objectID);
-        }
-    }
-
     private void FreezeBookPhysics(GameObject book)
     {
         var rb = book.GetComponent<Rigidbody>();
@@ -298,8 +316,11 @@ public class TableSpot : MonoBehaviour
                 stackedBooks.Add(child.gameObject);
             }
         }
+    }
 
-        Debug.Log($"[RefreshStack] {objectID} found {stackedBooks.Count} stacked books.");
+    public void SetIndex(int index)
+    {
+        SpotIndex = index;
     }
 
 

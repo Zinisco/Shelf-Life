@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -12,9 +13,17 @@ public class BookInfo : MonoBehaviour
     [Tooltip("Reference to the ScriptableObject definition for this book")]
     public BookDefinition definition;
 
+    [Header("Book Metadata")]
+    public List<string> tags = new(); // Default empty
+
+
     [Header("Shelf/Stack Tracking")]
     [Tooltip("Current shelf spot this book occupies (if any)")]
     public ShelfSpot currentSpot;
+
+    [Header("Table Tracking")]
+    [Tooltip("Current table spot this book occupies (if any)")]
+    public TableSpot currentTableSpot;
 
     [HideInInspector] public Vector3 Position;
     [HideInInspector] public Quaternion Rotation;
@@ -78,4 +87,35 @@ public class BookInfo : MonoBehaviour
         ObjectID = string.Empty;
         SpotIndex = -1;
     }
+
+    public void SetTableSpot(TableSpot spot, string objectID, int index)
+    {
+        currentTableSpot = spot;
+        ObjectID = objectID;
+        SpotIndex = index; 
+    }
+
+    public void ClearTableSpot()
+    {
+        currentTableSpot = null;
+        ObjectID = string.Empty;
+        SpotIndex = -1;
+    }
+
+    public void AddTag(string tag)
+    {
+        if (!tags.Contains(tag))
+            tags.Add(tag);
+    }
+
+    public void RemoveTag(string tag)
+    {
+        tags.Remove(tag);
+    }
+
+    public bool HasTag(string tag)
+    {
+        return tags.Contains(tag);
+    }
+
 }

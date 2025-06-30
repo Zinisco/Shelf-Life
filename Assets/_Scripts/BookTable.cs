@@ -38,6 +38,8 @@ public class BookTable : MonoBehaviour
         float startZ = origin.z - ((rows - 1) * spacing.y) / 2f;
         float y = bounds.max.y + offset.y; // Slightly above the surface
 
+        int spotIndex = 0;
+
         for (int row = 0; row < rows; row++)
         {
             for (int col = 0; col < columns; col++)
@@ -49,6 +51,7 @@ public class BookTable : MonoBehaviour
 
                 TableSpot tableSpot = spot.AddComponent<TableSpot>();
                 tableSpots.Add(tableSpot);
+                tableSpot.SetIndex(spotIndex++);
 
                 if (spotVisualPrefab)
                 {
