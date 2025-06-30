@@ -14,6 +14,8 @@ public class BookSaveManager : MonoBehaviour
         public List<BookshelfSaveData> allShelves = new();
         public List<TableSaveData> allTables = new();
         public List<TableSpotSaveData> allTableSpots = new();
+        public List<CrateSaveData> allCrates = new();
+
     }
 
     [SerializeField] private BookDatabase bookDatabase;
@@ -67,6 +69,16 @@ public class BookSaveManager : MonoBehaviour
                 Position = shelf.transform.position,
                 Rotation = shelf.transform.rotation
             });
+
+        foreach (var crate in FindObjectsOfType<BookCrate>())
+        {
+            w.allCrates.Add(new CrateSaveData
+            {
+                position = crate.transform.position,
+                rotation = crate.transform.rotation,
+                opened = crate.IsOpened()
+            });
+        }
 
         foreach (var table in FindObjectsOfType<BookTable>())
         {
@@ -137,6 +149,17 @@ public class BookSaveManager : MonoBehaviour
             go.transform.position = sd.Position;
             go.transform.rotation = sd.Rotation;
             go.GetComponent<Bookshelf>().SetID(sd.ShelfID);
+        }
+
+        foreach (var crateData in w.allCrates)
+        {
+            if (crateData.opened) continue; // don't respawn used crates
+
+            var prefab = Resources.Load<GameObject>("BookCrate"); // or assign via inspector
+            var go = Instantiate(prefab, crateData.position, crateData.rotation);
+
+            var crate = go.GetComponent<BookCrate>();
+            crate.MarkUnopened(); // sets _opened = false if needed
         }
 
         // Recreate tables

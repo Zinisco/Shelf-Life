@@ -190,6 +190,11 @@ public class PickUp : MonoBehaviour
             Physics.IgnoreCollision(bookCol, playerCollider, false);
         }
 
+        if (heldObject.CompareTag("BookCrate"))
+        {
+            heldObject.transform.rotation = Quaternion.Euler(0f, heldObject.transform.rotation.eulerAngles.y, 0f);
+        }
+
         // Remove the joint if it exists
         if (holdJoint != null)
         {

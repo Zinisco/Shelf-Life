@@ -115,6 +115,12 @@ public class BookCrate : MonoBehaviour
             _playerInRange = false;
     }
 
+    public void MarkUnopened()
+    {
+        _opened = false;
+    }
+
+
     // Fisher–Yates shuffle
     private static void Shuffle<T>(List<T> list)
     {
@@ -126,4 +132,6 @@ public class BookCrate : MonoBehaviour
             list[j] = tmp;
         }
     }
+
+    public bool IsOpened() => _opened;
 }
