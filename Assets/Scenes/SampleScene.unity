@@ -1951,7 +1951,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1222076401034301047, guid: 25c4cbe5eeee25e49a3f880674106778, type: 3}
       propertyPath: m_TagString
-      value: Pickable
+      value: BookCrate
       objectReference: {fileID: 0}
     - target: {fileID: 4399248429373014596, guid: 25c4cbe5eeee25e49a3f880674106778, type: 3}
       propertyPath: m_LocalPosition.x

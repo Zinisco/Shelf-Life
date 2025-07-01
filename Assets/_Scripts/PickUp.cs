@@ -17,6 +17,7 @@ public class PickUp : MonoBehaviour
 
 
     [SerializeField] private LayerMask pickableLayerMask;
+    private LayerMask heldObjectOriginalLayer;
 
     [SerializeField] private TableSpotDetector tableSpotDetector; // Like ShelfDetector
     //[SerializeField] private float tableSnapRange = 1.5f;
@@ -99,10 +100,23 @@ public class PickUp : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit, pickupRange, pickableLayerMask))
         {
-            if (hit.collider.gameObject.CompareTag("Pickable"))
+            if (hit.collider.gameObject.CompareTag("Pickable") || hit.collider.gameObject.CompareTag("BookCrate"))
             {
                 heldObject = hit.collider.gameObject;
                 heldObjectRb = heldObject.GetComponent<Rigidbody>();
+
+                var crate = heldObject.GetComponent<BookCrate>();
+                if (crate != null)
+                {
+                    crate.SetHeld(true);
+
+                    Rigidbody crateRb = heldObject.GetComponent<Rigidbody>();
+                    if (crateRb != null)
+                        crateRb.constraints = RigidbodyConstraints.None; // unfreeze all while held
+                }
+
+                heldObjectOriginalLayer = heldObject.layer;
+                heldObject.layer = LayerMask.NameToLayer("HeldObject");
 
                 BookInfo info = heldObject.GetComponent<BookInfo>();
                 if (info != null && info.currentSpot != null)
@@ -130,13 +144,6 @@ public class PickUp : MonoBehaviour
                     Vector3 forward = -Camera.main.transform.forward; // cover toward camera
                     Vector3 up = Vector3.up; // top up
                     heldObject.transform.rotation = Quaternion.LookRotation(forward, up);
-                }
-
-                // Ignore collision between player and held book
-                Collider bookCollider = heldObject.GetComponent<Collider>();
-                if (bookCollider != null && playerCollider != null)
-                {
-                    Physics.IgnoreCollision(bookCollider, playerCollider, true);
                 }
 
                 // Attach FixedJoint
@@ -183,16 +190,21 @@ public class PickUp : MonoBehaviour
             heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
         }
 
-        // Re-enable collision with player
-        Collider bookCol = heldObject.GetComponent<Collider>();
-        if (bookCol != null && playerCollider != null)
-        {
-            Physics.IgnoreCollision(bookCol, playerCollider, false);
-        }
+        heldObject.layer = LayerMask.NameToLayer("Pickable");
 
         if (heldObject.CompareTag("BookCrate"))
         {
-            heldObject.transform.rotation = Quaternion.Euler(0f, heldObject.transform.rotation.eulerAngles.y, 0f);
+            // Force upright rotation (optional visual polish)
+            Vector3 currentEuler = heldObject.transform.rotation.eulerAngles;
+            heldObject.transform.rotation = Quaternion.Euler(0f, currentEuler.y, 0f);
+
+            Rigidbody crateRb = heldObject.GetComponent<Rigidbody>();
+            if (crateRb != null)
+            {
+                crateRb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+                crateRb.velocity = Vector3.zero;
+                crateRb.angularVelocity = Vector3.zero;
+            }
         }
 
         // Remove the joint if it exists
@@ -201,6 +213,9 @@ public class PickUp : MonoBehaviour
             Destroy(holdJoint);
             holdJoint = null;
         }
+
+        var crate = heldObject.GetComponent<BookCrate>();
+        if (crate != null) crate.SetHeld(false);
 
         // Clear references
         heldObject = null;

@@ -74,6 +74,7 @@ public class BookSaveManager : MonoBehaviour
         {
             w.allCrates.Add(new CrateSaveData
             {
+                crateID = crate.GetCrateID(),
                 position = crate.transform.position,
                 rotation = crate.transform.rotation,
                 opened = crate.IsOpened()
@@ -141,6 +142,7 @@ public class BookSaveManager : MonoBehaviour
         foreach (var b in FindObjectsOfType<BookInfo>()) Destroy(b.gameObject);
         foreach (var s in FindObjectsOfType<Bookshelf>()) Destroy(s.gameObject);
         foreach (var t in FindObjectsOfType<BookTable>()) Destroy(t.gameObject);
+        foreach (var c in FindObjectsOfType<BookCrate>()) Destroy(c.gameObject);
 
         // Recreate shelves
         foreach (var sd in w.allShelves)
@@ -150,16 +152,24 @@ public class BookSaveManager : MonoBehaviour
             go.transform.rotation = sd.Rotation;
             go.GetComponent<Bookshelf>().SetID(sd.ShelfID);
         }
+        //recreate crates (if any)
+        openedCrateIDs.Clear();
+        foreach (var crateData in w.allCrates)
+        {
+            if (crateData.opened && !string.IsNullOrEmpty(crateData.crateID))
+                openedCrateIDs.Add(crateData.crateID);
+        }
 
         foreach (var crateData in w.allCrates)
         {
-            if (crateData.opened) continue; // don't respawn used crates
+            if (openedCrateIDs.Contains(crateData.crateID)) continue;
 
-            var prefab = Resources.Load<GameObject>("BookCrate"); // or assign via inspector
+            var prefab = Resources.Load<GameObject>("BookCrate");
             var go = Instantiate(prefab, crateData.position, crateData.rotation);
 
             var crate = go.GetComponent<BookCrate>();
-            crate.MarkUnopened(); // sets _opened = false if needed
+            crate.MarkUnopened();
+            crate.SetCrateID(crateData.crateID); // We'll create this next
         }
 
         // Recreate tables
@@ -350,4 +360,6 @@ public class BookSaveManager : MonoBehaviour
     // static shortcuts
     public static void TriggerSave() => _I?.SaveAll();
     public static void TriggerLoad() => _I?.LoadAll();
+
+    private static HashSet<string> openedCrateIDs = new();
 }

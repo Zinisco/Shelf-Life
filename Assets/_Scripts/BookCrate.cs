@@ -7,6 +7,10 @@ using UnityEngine.InputSystem;   // for Keyboard.current
 /// </summary>
 public class BookCrate : MonoBehaviour
 {
+
+    [SerializeField] private string crateID;
+
+
     [Header("Game Input")]
     [SerializeField] private GameInput gameInput;
 
@@ -22,15 +26,30 @@ public class BookCrate : MonoBehaviour
     [SerializeField] private bool _opened = false;
     [SerializeField] private bool _playerInRange = false;
 
+    [SerializeField] private bool isHeld = false;
+
+    private void Awake()
+    {
+        if (string.IsNullOrEmpty(crateID))
+            crateID = System.Guid.NewGuid().ToString();
+    }
+
     private void Start()
     {
+
+        Rigidbody rb = GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+        }
+
         gameInput = GameInput.Instance;
         if (gameInput != null)
         {
             gameInput.OnInteractAction += GameInput_OnInteractAction;
         }
-    }
 
+    }
 
     private void GameInput_OnInteractAction(object sender, System.EventArgs e)
     {
@@ -42,12 +61,14 @@ public class BookCrate : MonoBehaviour
     /// </summary>
     public void Open()
     {
-        if (_opened || !_playerInRange)
+        if (_opened || !_playerInRange || isHeld)
         {
             return;
         }
 
         Debug.Log("Opening Crate...");
+
+        _opened = true;
 
         var allDefs = bookDatabase.allBooks;
         if (allDefs == null || allDefs.Count == 0)
@@ -78,8 +99,6 @@ public class BookCrate : MonoBehaviour
             if (go.TryGetComponent<BookInfo>(out var info))
                 info.ApplyDefinition(def);
         }
-
-        _opened = true;
 
         // Unsubscribe from input event BEFORE destroying this object
         if (gameInput != null)
@@ -120,6 +139,10 @@ public class BookCrate : MonoBehaviour
         _opened = false;
     }
 
+    public void SetCrateID(string id)
+    {
+        crateID = id;
+    }
 
     // Fisher–Yates shuffle
     private static void Shuffle<T>(List<T> list)
@@ -134,4 +157,8 @@ public class BookCrate : MonoBehaviour
     }
 
     public bool IsOpened() => _opened;
+    public string GetCrateID() => crateID;
+
+    public void SetHeld(bool held) => isHeld = held;
+
 }
