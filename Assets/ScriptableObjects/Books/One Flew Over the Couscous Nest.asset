@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 50055c5c1b265bb4bbcbf5a2390861e1, type: 3}
-  m_Name: Napoleon Bon-a-partay
+  m_Name: One Flew Over the Couscous Nest
   m_EditorClassIdentifier: 
   bookID: 
-  title: Napoleon Bon-a-partay
-  genre: Historical Fiction
+  title: One Flew Over the Couscous Nest
+  genre: Fiction
   color: {r: 0, g: 0, b: 0, a: 0}
   prefab: {fileID: 940939929322109603, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
   summary: 

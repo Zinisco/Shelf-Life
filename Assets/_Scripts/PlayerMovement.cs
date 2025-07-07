@@ -36,8 +36,12 @@ public class PlayerMovement : MonoBehaviour
     private bool isGrounded;
     private Vector3 groundCheckOffset = new Vector3(0, -0.5f, 0); // Adjust if needed
 
+    public bool IsLocked { get; set; } = false;
+
+
     private void Start()
     {
+
         pickUp = FindObjectOfType<PickUp>(); // Or GetComponentInChildren/FindObjectOfType if needed
         controller = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
@@ -50,6 +54,20 @@ public class PlayerMovement : MonoBehaviour
 
     private void Update()
     {
+        // Allow Escape to close the UI even when locked
+        if (IsLocked && Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            if (GameObject.FindObjectOfType<ComputerUI>() is ComputerUI ui)
+            {
+                ui.ToggleUI(false);
+                ExitUI();
+            }
+        }
+
+        // Prevent player movement or look if UI is active
+        if (IsLocked)
+            return;
+
         HandleLook();
         HandleMovement();
 
@@ -57,10 +75,8 @@ public class PlayerMovement : MonoBehaviour
         {
             ApplySoftAimAssist();
         }
-
-        //Debug.Log("Current Input: " + gameInput.IsUsingGamepad());
-
     }
+
 
     private void UpdateSensitivity(string controlScheme)
     {
@@ -105,6 +121,8 @@ public class PlayerMovement : MonoBehaviour
 
     void HandleLook()
     {
+
+        // --- Normal camera control ---
         Vector2 mouseDelta = gameInput.GetMouseDelta();
         mouseDelta = Vector2.ClampMagnitude(mouseDelta, 10f);
         mouseDelta *= currentSensitivity;
@@ -115,6 +133,15 @@ public class PlayerMovement : MonoBehaviour
         cam.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
         transform.Rotate(Vector3.up * mouseDelta.x);
     }
+
+    public void ExitUI()
+    {
+        IsLocked = false;
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
 
     private void OnDestroy()
     {

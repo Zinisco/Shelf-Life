@@ -344,6 +344,8 @@ public class PickUp : MonoBehaviour
 
             // Shelve the current held book
             shelvedBook = heldObject;
+            shelvedBook.layer = LayerMask.NameToLayer("Pickable");
+
             StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.GetBookAnchor()));
 
             BookInfo newInfo = heldObject.GetComponent<BookInfo>();
@@ -408,8 +410,6 @@ public class PickUp : MonoBehaviour
             holdJoint.breakForce = Mathf.Infinity;
             holdJoint.breakTorque = Mathf.Infinity;
 
-
-
         }
         else
         {
@@ -425,6 +425,7 @@ public class PickUp : MonoBehaviour
 
             StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.GetBookAnchor()));
 
+            heldObject.layer = LayerMask.NameToLayer("Pickable");
             heldObject = null;
             heldObjectRb = null;
         }
@@ -579,6 +580,7 @@ public class PickUp : MonoBehaviour
 
     private void ClearHeldBook()
     {
+        heldObject.layer = LayerMask.NameToLayer("Pickable");
         heldObject = null;
         heldObjectRb = null;
 
