@@ -12,6 +12,9 @@ public class BuyPanelController : MonoBehaviour
     public Transform reviewContentParent;
     public GameObject reviewEntryPrefab;
     public TMP_Text bookCountText;
+    public TMP_Text walletText;
+    public TMP_Text totalCostTextFirstPage;
+    public TMP_Text totalCostText;
     public Button reviewButton;
     public Button backButton;
     public Button confirmButton;
@@ -26,12 +29,14 @@ public class BuyPanelController : MonoBehaviour
     public List<BookDefinition> availableBooks = new List<BookDefinition>();
     private Dictionary<BookDefinition, int> currentOrder = new Dictionary<BookDefinition, int>();
 
-
     private void Start()
     {
         // Auto-fill from BookDatabase
         if (bookDatabase != null)
             availableBooks = bookDatabase.allBooks;
+
+        UpdateWalletUI();
+        UpdateConfirmButtonState(); // shows "Total: $0" on load
 
         reviewPanel.SetActive(false);
         PopulateAvailableBooks();
@@ -51,6 +56,8 @@ public class BuyPanelController : MonoBehaviour
             Button plusButton = entry.transform.Find("PlusButton").GetComponent<Button>();
             Button minusButton = entry.transform.Find("MinusButton").GetComponent<Button>();
             TMP_Text quantityText = entry.transform.Find("QuantityText").GetComponent<TMP_Text>();
+            TMP_Text priceText = entry.transform.Find("PriceText").GetComponent<TMP_Text>();
+
 
             quantityText.text = "0";
 
@@ -78,6 +85,7 @@ public class BuyPanelController : MonoBehaviour
         currentOrder[book]++;
         quantityText.text = currentOrder[book].ToString();
         UpdateBookCountText();
+        UpdateConfirmButtonState();
     }
 
     private void RemoveBook(BookDefinition book, TMP_Text quantityText)
@@ -91,7 +99,9 @@ public class BuyPanelController : MonoBehaviour
 
         quantityText.text = currentOrder.ContainsKey(book) ? currentOrder[book].ToString() : "0";
         UpdateBookCountText();
+        UpdateConfirmButtonState();
     }
+
 
     private int GetTotalBookCount()
     {
@@ -125,35 +135,100 @@ public class BuyPanelController : MonoBehaviour
                     txt.text = pair.Key.title;
                 else if (txt.name == "QuantityText")
                     txt.text = $"x{pair.Value}";
-                else if(txt.name == "GenreText")
+                else if (txt.name == "GenreText")
                     txt.text = pair.Key.genre;
+                else if (txt.name == "PriceText")
+                    txt.text = $"${pair.Key.cost}";
             }
         }
+
+        int totalCost = GetTotalCost();
+
+        if (totalCostText != null)
+            totalCostText.text = $"Total: ${totalCost}";
+
+        UpdateConfirmButtonState();
     }
+
+    private void UpdateConfirmButtonState()
+    {
+        int totalCost = GetTotalCost();
+
+        confirmButton.interactable = CurrencyManager.Instance != null && CurrencyManager.Instance.CanAfford(totalCost);
+
+        if (totalCostText != null)
+            totalCostText.text = $"Total: ${totalCost}";
+
+        if (totalCostTextFirstPage != null)
+            totalCostTextFirstPage.text = $"Total: ${totalCost}";
+    }
+
 
     private void CloseReviewPanel()
     {
         reviewPanel.SetActive(false);
     }
 
+    private void UpdateWalletUI()
+    {
+        if (walletText != null && CurrencyManager.Instance != null)
+            walletText.text = $"$ {CurrencyManager.Instance.GetBalance()}";
+    }
+
 
     private void ConfirmOrder()
     {
-        if (deliveryManager != null)
+        List<BookDefinition> finalOrder = GetFinalOrder();
+        int totalCost = 0;
+        foreach (var book in finalOrder)
+            totalCost += book.cost;
+
+        if (CurrencyManager.Instance != null && CurrencyManager.Instance.Spend(totalCost))
         {
-            List<BookDefinition> finalOrder = GetFinalOrder();
             deliveryManager.DeliverCrate(finalOrder);
+            Debug.Log($"Spent ${totalCost} on crate with {finalOrder.Count} books.");
+        }
+        else
+        {
+            Debug.LogWarning("Not enough money!");
+            return;
         }
 
         currentOrder.Clear();
         CloseReviewPanel();
         UpdateBookCountText();
+        UpdateWalletUI(); // Refresh after spending
+        UpdateConfirmButtonState();
+
         foreach (Transform child in contentParent)
         {
             TMP_Text qtyText = child.Find("QuantityText").GetComponent<TMP_Text>();
             qtyText.text = "0";
         }
     }
+
+    private int GetTotalCost()
+    {
+        int total = 0;
+        foreach (var pair in currentOrder)
+            total += pair.Key.cost * pair.Value;
+        return total;
+    }
+
+    public void ResetOrder()
+    {
+        currentOrder.Clear();
+        UpdateBookCountText();
+        UpdateConfirmButtonState();
+
+        foreach (Transform child in contentParent)
+        {
+            TMP_Text qtyText = child.Find("QuantityText").GetComponent<TMP_Text>();
+            if (qtyText != null)
+                qtyText.text = "0";
+        }
+    }
+
 
     public List<BookDefinition> GetFinalOrder()
     {

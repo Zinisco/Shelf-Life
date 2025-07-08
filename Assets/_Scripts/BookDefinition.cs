@@ -6,6 +6,8 @@ public class BookDefinition : ScriptableObject
     public string bookID;
     public string title;
     public string genre;
+    public int cost = 10;
+    public int price = 20;
     public Color color;
     public GameObject prefab;
     [TextArea] public string summary;

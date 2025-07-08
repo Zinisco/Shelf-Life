@@ -8,6 +8,8 @@ public class BookSaveData
 
     public string title;
     public string genre;
+    public int cost;
+    public int price;
     public string summary;
     public float[] color;             // RGB format
     public List<string> tags = new();

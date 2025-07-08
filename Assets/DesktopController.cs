@@ -6,6 +6,9 @@ public class DesktopMenuController : MonoBehaviour
     public GameObject booksPanel;
     public GameObject designPanel;
     public GameObject managePanel;
+    public GameObject sellPanel;
+
+    public BuyPanelController buyPanelController;
 
     public void OpenBuy()
     {
@@ -23,11 +26,17 @@ public class DesktopMenuController : MonoBehaviour
         ShowOnly(managePanel);
     }
 
+    public void OpenSell()
+    {
+        ShowOnly(sellPanel);
+    }
+
     private void ShowOnly(GameObject panelToShow)
     {
         booksPanel.SetActive(false);
         designPanel.SetActive(false);
         managePanel.SetActive(false);
+        sellPanel.SetActive(false);
 
         if (panelToShow != null)
             panelToShow.SetActive(true);
@@ -35,6 +44,7 @@ public class DesktopMenuController : MonoBehaviour
 
     public void CloseAll()
     {
+        buyPanelController.ResetOrder();
         ShowOnly(null); // Hides all sub-panels
     }
 }

@@ -6,7 +6,7 @@ public class CurrencyManager : MonoBehaviour
     public static CurrencyManager Instance { get; private set; }
 
     [SerializeField] private int startingMoney = 100;
-    [SerializeField] private TMP_Text currencyText;
+    [SerializeField] private TMP_Text walletText;
 
     private int currentMoney;
 
@@ -52,7 +52,7 @@ public class CurrencyManager : MonoBehaviour
 
     private void UpdateUI()
     {
-        if (currencyText != null)
-            currencyText.text = $"$ {currentMoney}";
+        if (walletText != null)
+            walletText.text = $"$ {currentMoney}";
     }
 }

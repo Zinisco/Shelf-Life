@@ -16,6 +16,8 @@ public class BookSaveManager : MonoBehaviour
         public List<TableSpotSaveData> allTableSpots = new();
         public List<CrateSaveData> allCrates = new();
 
+        public ComputerSaveData terminalData;
+
     }
 
     [SerializeField] private BookDatabase bookDatabase;
@@ -48,6 +50,8 @@ public class BookSaveManager : MonoBehaviour
                 title = info.definition?.title ?? "",
                 genre = info.definition?.genre ?? "",
                 summary = info.definition?.summary ?? "",
+                price = info.definition?.price ?? 0,
+                cost = info.definition?.cost ?? 0,
                 color = new float[] {
         info.definition.color.r,
         info.definition.color.g,
@@ -79,6 +83,16 @@ public class BookSaveManager : MonoBehaviour
                 rotation = crate.transform.rotation,
                 opened = crate.IsOpened()
             });
+        }
+
+        var terminal = FindObjectOfType<ComputerTerminal>();
+        if (terminal != null)
+        {
+            w.terminalData = new ComputerSaveData
+            {
+                Position = terminal.transform.position,
+                Rotation = terminal.transform.rotation
+            };
         }
 
         foreach (var table in FindObjectsOfType<BookTable>())
@@ -144,6 +158,11 @@ public class BookSaveManager : MonoBehaviour
         foreach (var t in FindObjectsOfType<BookTable>()) Destroy(t.gameObject);
         foreach (var c in FindObjectsOfType<BookCrate>()) Destroy(c.gameObject);
 
+        var existingTerminal = FindObjectOfType<ComputerTerminal>();
+        if (existingTerminal != null)
+            Destroy(existingTerminal.gameObject);
+
+
         // Recreate shelves
         foreach (var sd in w.allShelves)
         {
@@ -152,6 +171,19 @@ public class BookSaveManager : MonoBehaviour
             go.transform.rotation = sd.Rotation;
             go.GetComponent<Bookshelf>().SetID(sd.ShelfID);
         }
+
+        //Recreate ComputerTerminal
+        if (w.terminalData != null)
+        {
+            var go = Instantiate(Resources.Load<GameObject>("ComputerTerminal"));
+            go.transform.position = w.terminalData.Position;
+            go.transform.rotation = w.terminalData.Rotation;
+        }
+        else
+        {
+            Debug.LogWarning("No terminal data found in save.");
+        }
+
         //recreate crates (if any)
         openedCrateIDs.Clear();
         foreach (var crateData in w.allCrates)
@@ -251,6 +283,8 @@ public class BookSaveManager : MonoBehaviour
                 def.bookID = bd.bookID;
                 def.title = bd.title;
                 def.genre = bd.genre;
+                def.price = bd.price;
+                def.cost = bd.cost;
                 def.summary = bd.summary;
 
                 if (bd.color != null && bd.color.Length == 3)
