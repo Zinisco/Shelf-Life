@@ -8,6 +8,8 @@ public class ComputerUI : MonoBehaviour
 {
     public GameObject uiRoot;
 
+    public static bool IsUIOpen { get; private set; }
+
     private void Start()
     {
         uiRoot.SetActive(false);
@@ -24,6 +26,7 @@ public class ComputerUI : MonoBehaviour
     public void ToggleUI(bool show)
     {
         Debug.Log("Showing UI");
+        IsUIOpen = show;
         StopAllCoroutines(); // Stop any previous animations
 
         if (show)

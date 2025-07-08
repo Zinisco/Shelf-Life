@@ -68,6 +68,9 @@ public class FurnitureMover : MonoBehaviour
 
     private void Update()
     {
+
+        if (ComputerUI.IsUIOpen) return; // Don't allow moving while interacting with computer
+
         // Completely prevent all moving logic while holding a book
         if (pickUp != null && pickUp.IsHoldingObject())
             return;
@@ -83,6 +86,8 @@ public class FurnitureMover : MonoBehaviour
     private void HandleStartMove(object sender, EventArgs e)
     {
         Debug.Log("Trying to start furniture move...");
+
+        if (ComputerUI.IsUIOpen) return; // Prevent initiating furniture move
 
         if (pickUp != null && pickUp.IsHoldingObject()) return;
 
