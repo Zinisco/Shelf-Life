@@ -4,7 +4,9 @@ using UnityEngine.InputSystem;
 public class ComputerTerminal : MonoBehaviour
 {
     [SerializeField] private ComputerUI computerUI;
+    [SerializeField] private float lookThreshold = 0.95f;
     private bool playerInRange = false;
+    private Transform playerCamera;
     private GameInput gameInput;
 
     private void Start()
@@ -25,9 +27,8 @@ public class ComputerTerminal : MonoBehaviour
 
     private void OnInteract(object sender, System.EventArgs e)
     {
-        if (playerInRange && computerUI != null)
+        if (playerInRange && playerCamera != null && IsPlayerLookingAtTerminal())
         {
-            Debug.Log("Interacted!");
             bool showUI = !computerUI.uiRoot.activeSelf;
             computerUI.ToggleUI(showUI);
         }
@@ -57,5 +58,16 @@ public class ComputerTerminal : MonoBehaviour
         Vector3 toPlayer = (player.position - transform.position).normalized;
         float dot = Vector3.Dot(localForward, toPlayer);
         return dot > 0.5f;
+    }
+
+    private bool IsPlayerLookingAtTerminal()
+    {
+        if (playerCamera == null)
+            return false;
+
+        Vector3 toTerminal = (transform.position - playerCamera.position).normalized;
+        float dot = Vector3.Dot(playerCamera.forward, toTerminal);
+
+        return dot >= lookThreshold;
     }
 }

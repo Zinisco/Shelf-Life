@@ -25,7 +25,7 @@ public class ComputerUI : MonoBehaviour
 
     public void ToggleUI(bool show)
     {
-        Debug.Log("Showing UI");
+        //Debug.Log("Showing UI");
         IsUIOpen = show;
         StopAllCoroutines(); // Stop any previous animations
 

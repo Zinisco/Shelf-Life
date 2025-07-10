@@ -41,6 +41,11 @@ public class PickUp : MonoBehaviour
     private FixedJoint holdJoint;
     private Rigidbody holdRb;
 
+    private void Awake()
+    {
+        pickableLayerMask = LayerMask.GetMask("Pickable", "Book");
+    }
+
     private void Start()
     {
         gameInput.OnPickUpObjectAction += GameInput_OnPickUpObjectAction;
@@ -190,7 +195,7 @@ public class PickUp : MonoBehaviour
             heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
         }
 
-        heldObject.layer = LayerMask.NameToLayer("Pickable");
+        heldObject.layer = heldObjectOriginalLayer;
 
         if (heldObject.CompareTag("BookCrate"))
         {
@@ -344,7 +349,7 @@ public class PickUp : MonoBehaviour
 
             // Shelve the current held book
             shelvedBook = heldObject;
-            shelvedBook.layer = LayerMask.NameToLayer("Pickable");
+            shelvedBook.layer = LayerMask.NameToLayer("Book");
 
             StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.GetBookAnchor()));
 
@@ -425,7 +430,7 @@ public class PickUp : MonoBehaviour
 
             StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.GetBookAnchor()));
 
-            heldObject.layer = LayerMask.NameToLayer("Pickable");
+            heldObject.layer = LayerMask.NameToLayer("Book");
             heldObject = null;
             heldObjectRb = null;
         }
@@ -501,7 +506,7 @@ public class PickUp : MonoBehaviour
         Vector3 halfExtents = col.bounds.extents;
         Quaternion rotation = heldObject.transform.rotation; // Match book orientation
 
-        LayerMask obstacleMask = LayerMask.GetMask("Default", "Bookshelf", "Walls");
+        LayerMask obstacleMask = LayerMask.GetMask("Default", "Bookshelf", "Walls", "Furniture");
         return !Physics.CheckBox(position, halfExtents, rotation, obstacleMask);
     }
 
@@ -520,7 +525,7 @@ public class PickUp : MonoBehaviour
         Vector3 halfExtents = col.bounds.extents;
         Quaternion rotation = heldObject.transform.rotation;
 
-        LayerMask obstacleMask = LayerMask.GetMask("Default", "Bookshelf", "Walls");
+        LayerMask obstacleMask = LayerMask.GetMask("Default", "Bookshelf", "Walls", "Furniture");
 
         float stepDistance = 0.05f;
         int steps = 30;
@@ -580,7 +585,8 @@ public class PickUp : MonoBehaviour
 
     private void ClearHeldBook()
     {
-        heldObject.layer = LayerMask.NameToLayer("Pickable");
+        heldObject.layer = heldObjectOriginalLayer;
+
         heldObject = null;
         heldObjectRb = null;
 

@@ -31,7 +31,7 @@ public class BookCrate : MonoBehaviour
 
     [SerializeField] private bool isHeld = false;
 
-    [SerializeField] private float animationDuration = 1.5f; // Adjust to your animation length
+    [SerializeField] private float animationDuration = 0.1f; // Adjust to your animation length
 
     private List<BookDefinition> customBooks = null;
 

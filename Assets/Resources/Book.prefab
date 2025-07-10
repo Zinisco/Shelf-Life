@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: -8679921383154817045}
   - component: {fileID: -5754084199372789682}
   - component: {fileID: -7511558181221131132}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: BookModsApplied
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -99,7 +99,7 @@ GameObject:
   - component: {fileID: 6298778966942306572}
   - component: {fileID: 5011039745262841221}
   - component: {fileID: 6324312024836018304}
-  m_Layer: 11
+  m_Layer: 15
   m_Name: Book
   m_TagString: Pickable
   m_Icon: {fileID: 0}
@@ -164,7 +164,9 @@ MonoBehaviour:
   titleText: {fileID: 8574068824914450158}
   spineText: {fileID: 6103417470195975679}
   definition: {fileID: 0}
+  tags: []
   currentSpot: {fileID: 0}
+  currentTableSpot: {fileID: 0}
   Position: {x: 0, y: 0, z: 0}
   Rotation: {x: 0, y: 0, z: 0, w: 0}
   ObjectID: 
@@ -216,7 +218,7 @@ GameObject:
   - component: {fileID: 4431940061504583557}
   - component: {fileID: 6941525272992320843}
   - component: {fileID: 8574068824914450158}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: Cover Title
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -304,7 +306,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Tender \nHearts \n& \nPassionate \nSouls"
+  m_text: Template
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -387,7 +389,7 @@ GameObject:
   - component: {fileID: 9074184442869064281}
   - component: {fileID: 5951153379258993471}
   - component: {fileID: 6103417470195975679}
-  m_Layer: 0
+  m_Layer: 15
   m_Name: Spine Title
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -475,7 +477,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Tender Hearts & Passionate Souls
+  m_text: Template
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

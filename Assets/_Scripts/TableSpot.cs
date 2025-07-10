@@ -169,7 +169,7 @@ public class TableSpot : MonoBehaviour
         Quaternion finalRotation = facingRotation * baseRotation * Quaternion.Euler(0f, 0f, 180f);
 
         book.transform.SetParent(StackAnchor, false); // local space preserved
-        Debug.Log($"[TableSpot] Parented book '{book.name}' to StackAnchor of '{gameObject.name}'");
+        //Debug.Log($"[TableSpot] Parented book '{book.name}' to StackAnchor of '{gameObject.name}'");
 
         book.transform.localPosition = new Vector3(0f, stackedBooks.Count * stackHeightOffset, 0f);
         book.transform.localRotation = finalRotation;
@@ -177,7 +177,7 @@ public class TableSpot : MonoBehaviour
         FreezeBookPhysics(book);
 
         stackedBooks.Add(book);
-        Debug.Log($"Book stacked. New count: {stackedBooks.Count}");
+        //Debug.Log($"Book stacked. New count: {stackedBooks.Count}");
     }
 
 

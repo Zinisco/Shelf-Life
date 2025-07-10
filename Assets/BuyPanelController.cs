@@ -195,7 +195,7 @@ public class BuyPanelController : MonoBehaviour
         }
 
         currentOrder.Clear();
-        CloseReviewPanel();
+        CloseAll();
         UpdateBookCountText();
         UpdateWalletUI(); // Refresh after spending
         UpdateConfirmButtonState();
@@ -205,6 +205,11 @@ public class BuyPanelController : MonoBehaviour
             TMP_Text qtyText = child.Find("QuantityText").GetComponent<TMP_Text>();
             qtyText.text = "0";
         }
+    }
+
+    public void CloseAll()
+    {
+        this.gameObject.SetActive(false);
     }
 
     private int GetTotalCost()

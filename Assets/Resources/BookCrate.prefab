@@ -54,7 +54,7 @@ MonoBehaviour:
   gameInput: {fileID: 0}
   openParticles: {fileID: 9154481334877522972}
   bookDatabase: {fileID: 11400000, guid: c463eee527b601c428f9fbd3b53edd72, type: 2}
-  crateSize: 5
+  crateSize: 10
   allowDuplicates: 0
   _opened: 0
   _playerInRange: 0
