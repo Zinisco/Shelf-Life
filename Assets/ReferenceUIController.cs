@@ -13,12 +13,12 @@ public class ReferenceUIController : MonoBehaviour
 
     void Awake()
     {
-        Debug.Log("[ReferenceUIController] Awake called!");
+       // Debug.Log("[ReferenceUIController] Awake called!");
     }
 
     void Start()
     {
-        Debug.Log("[ReferenceUIController] Start called!");
+        //Debug.Log("[ReferenceUIController] Start called!");
     }
 
     public void Show(BookDefinition def, Transform followTarget)

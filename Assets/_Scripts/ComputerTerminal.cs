@@ -4,7 +4,6 @@ using UnityEngine.InputSystem;
 public class ComputerTerminal : MonoBehaviour
 {
     [SerializeField] private ComputerUI computerUI;
-    [SerializeField] private float lookThreshold = 0.95f;
     private bool playerInRange = false;
     private Transform playerCamera;
     private GameInput gameInput;
@@ -37,13 +36,23 @@ public class ComputerTerminal : MonoBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Player") && IsPlayerInFront(other.transform))
+        {
             playerInRange = true;
+
+            // Assign camera reference so we can check where the player is looking
+            var cam = other.GetComponentInChildren<Camera>();
+            if (cam != null)
+                playerCamera = cam.transform;
+        }
     }
 
     private void OnTriggerExit(Collider other)
     {
         if (other.CompareTag("Player"))
+        {
             playerInRange = false;
+            playerCamera = null;
+        }
     }
 
     private void OnTriggerStay(Collider other)
@@ -65,9 +74,16 @@ public class ComputerTerminal : MonoBehaviour
         if (playerCamera == null)
             return false;
 
-        Vector3 toTerminal = (transform.position - playerCamera.position).normalized;
-        float dot = Vector3.Dot(playerCamera.forward, toTerminal);
+        Ray ray = new Ray(playerCamera.position, playerCamera.forward);
+        RaycastHit hit;
 
-        return dot >= lookThreshold;
+        if (Physics.Raycast(ray, out hit, 5f)) // adjust range as needed
+        {
+            // Check if this terminal was hit
+            return hit.transform == this.transform;
+        }
+
+        return false;
     }
+
 }
