@@ -9,7 +9,12 @@ public class PickUp : MonoBehaviour
     private ShelfSpot currentShelfSpot; // Tracks where the book is shelved
     private GameObject shelvedBook;
 
+    [SerializeField] private LayerMask tableSurfaceMask;
+    private float currentYRotation = 0f;
+
+
     [SerializeField] private Collider playerCollider;
+    [SerializeField] private Camera playerCamera;
 
     [SerializeField] private ShelfDetector shelfDetector;
     [SerializeField] private GhostBookManager ghostBookManager;
@@ -66,13 +71,23 @@ public class PickUp : MonoBehaviour
         shelfDetector.UpdateLookedAtShelf();
         tableSpotDetector.UpdateLookedAtTable();
 
-        ghostBookManager.UpdateGhost(
-      heldObject,
-      shelfDetector.CurrentLookedAtShelfSpot,
-      tableSpotDetector.CurrentLookedAtTableSpot,
-      tableStackOffset
-  );
+        if (heldObject != null)
+        {
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            if (Mathf.Abs(scroll) > 0.01f)
+            {
+                currentYRotation += scroll > 0 ? 15f : -15f;
+                currentYRotation = Mathf.Repeat(currentYRotation, 360f);
+            }
 
+            ghostBookManager.UpdateGhost(
+             heldObject,
+             shelfDetector.CurrentLookedAtShelfSpot,
+             playerCamera,
+            tableSurfaceMask,
+            ref currentYRotation
+             );
+        }
     }
 
 
@@ -228,14 +243,10 @@ public class PickUp : MonoBehaviour
 
     }
 
-
     public void TryShelveBook()
     {
         if (heldObject == null)
-        {
-            //Debug.Log("Tried to shelve, but no object is held.");
             return;
-        }
 
         BookInfo bookInfo = heldObject.GetComponent<BookInfo>();
         if (bookInfo == null)
@@ -244,197 +255,138 @@ public class PickUp : MonoBehaviour
             return;
         }
 
-        if (tableSpotDetector == null)
+        // 1. Try to stack
+        if (TryStackOnTable(bookInfo)) return;
+
+        // 2. Try to shelve
+        ShelfSpot targetSpot = GetTargetShelfSpot();
+        if (targetSpot != null)
         {
-            Debug.LogError("tableSpotDetector is not assigned!");
+            GameObject occupyingBook = targetSpot.GetOccupyingBook();
+            if (occupyingBook != null)
+                SwapBooks(bookInfo, targetSpot, occupyingBook);
+            else
+                PlaceBookOnEmptyShelf(bookInfo, targetSpot);
             return;
         }
 
-        // Remove any joints
-        if (holdJoint != null)
-        {
-            Destroy(holdJoint);
-            holdJoint = null;
-        }
+        // 3. Try placing on table surface
+        TryPlaceOnSurface();
+    }
 
-        if (bookInfo != null)
+    private void TryPlaceOnSurface()
+    {
+        Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+        if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableSurfaceMask))
         {
-            TableSpot stackSpot = tableSpotDetector.CurrentLookedAtTableSpot;
-
-            if (stackSpot != null && stackSpot.CanStack(bookInfo))
+            if (Vector3.Dot(hit.normal, Vector3.up) > 0.9f)
             {
-                stackSpot.StackBook(heldObject);
+                Vector3 point = hit.point + hit.normal * 0.1f;
 
-                // Optional: update BookInfo if needed
-                bookInfo.ClearShelfSpot();
+                Quaternion baseRotation = Quaternion.Euler(-90f, 90f, 90f);
+                Quaternion facingRotation = Quaternion.Euler(0f, currentYRotation, 0f);
+                Quaternion finalRotation = facingRotation * baseRotation;
 
-                // Detach logic
-                Collider bookCol = heldObject.GetComponent<Collider>();
-                if (bookCol != null && playerCollider != null)
+                Collider[] overlaps = Physics.OverlapBox(
+                    point,
+                    heldObject.GetComponent<Collider>().bounds.extents * 0.9f,
+                    finalRotation,
+                    LayerMask.GetMask("Book")
+                );
+
+                if (overlaps.Length > 0)
                 {
-                    Physics.IgnoreCollision(bookCol, playerCollider, false);
+                    Debug.Log("Cannot place book: another book is already there.");
+                    return;
                 }
 
-                ClearHeldBook(); // <- move AFTER
+                heldObject.transform.SetPositionAndRotation(point, finalRotation);
+                heldObject.transform.SetParent(hit.transform); //Follows table movement
 
+                Rigidbody rb = heldObject.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.isKinematic = true;
+                    rb.interpolation = RigidbodyInterpolation.None;
+                    rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+                }
+
+                heldObject.layer = LayerMask.NameToLayer("Book");
+                EnablePlayerCollision(heldObject);
+                ClearHeldBook();
+                ghostBookManager.HideGhost();
                 return;
             }
         }
+    }
 
-        ShelfSpot targetSpot = shelfDetector.CurrentLookedAtShelfSpot;
+    private bool TryStackOnTable(BookInfo bookInfo)
+    {
+        TableSpot stackSpot = tableSpotDetector.CurrentLookedAtTableSpot;
 
-        // No spot at all? Fallback to nearest valid spot
-        if (targetSpot == null)
+        if (stackSpot != null && stackSpot.CanStack(bookInfo))
         {
-            Bookshelf[] bookshelves = FindObjectsOfType<Bookshelf>();
-            float closestDistance = Mathf.Infinity;
+            stackSpot.StackBook(heldObject);
+            bookInfo.ClearShelfSpot();
+            EnablePlayerCollision(heldObject);
+            ClearHeldBook();
+            return true;
+        }
 
-            foreach (Bookshelf shelf in bookshelves)
+        return false;
+    }
+
+    private ShelfSpot GetTargetShelfSpot()
+    {
+        ShelfSpot target = shelfDetector.CurrentLookedAtShelfSpot;
+
+        if (target != null)
+            return target;
+
+        // Fallback: find nearest available shelf spot
+        Bookshelf[] shelves = FindObjectsOfType<Bookshelf>();
+        float closestDist = Mathf.Infinity;
+
+        foreach (Bookshelf shelf in shelves)
+        {
+            foreach (ShelfSpot spot in shelf.GetShelfSpots())
             {
-                foreach (ShelfSpot spot in shelf.GetShelfSpots())
+                float dist = Vector3.Distance(heldObject.transform.position, spot.transform.position);
+                if (dist < shelfSnapRange && dist < closestDist)
                 {
-                    float distance = Vector3.Distance(heldObject.transform.position, spot.transform.position);
-                    if (distance < shelfSnapRange && distance < closestDistance)
-                    {
-                        closestDistance = distance;
-                        targetSpot = spot;
-                    }
+                    target = spot;
+                    closestDist = dist;
                 }
             }
         }
 
-        if (targetSpot == null)
-        {
-            Debug.Log("No valid shelf spot found.");
-            ClearHeldBook(); // Ensure we clean up properly
-            return;
-        }
-
-        TableSpot targetTableSpot = tableSpotDetector.CurrentLookedAtTableSpot;
-
-        if (targetSpot == null && targetTableSpot != null)
-        {
-            bookStackManager.TryStackBook(heldObject, targetTableSpot);
-            ClearHeldBook();
-            return;
-        }
-
-
-        GameObject occupyingBook = targetSpot.GetOccupyingBook();
-
-        if (occupyingBook != null)
-        {
-            Debug.Log($"Swapping books: placing '{heldObject.name}' and picking up '{occupyingBook.name}'");
-
-            // Detach occupying book and pick it up
-            BookInfo info = occupyingBook.GetComponent<BookInfo>();
-            if (info != null && info.currentSpot != null)
-            {
-                info.currentSpot.SetOccupied(false);
-                info.ClearShelfSpot();
-            }
-
-            Rigidbody occupyingRb = occupyingBook.GetComponent<Rigidbody>();
-            if (occupyingRb != null)
-            {
-                occupyingRb.isKinematic = true;
-
-            }
-
-            Collider occupyingCollider = occupyingBook.GetComponent<Collider>();
-            if (occupyingCollider != null && playerCollider != null)
-            {
-                Physics.IgnoreCollision(occupyingCollider, playerCollider, true);
-            }
-
-            // Shelve the current held book
-            shelvedBook = heldObject;
-            shelvedBook.layer = LayerMask.NameToLayer("Book");
-
-            StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.GetBookAnchor()));
-
-            BookInfo newInfo = heldObject.GetComponent<BookInfo>();
-            if (newInfo != null)
-            {
-                targetSpot.Occupy(newInfo);
-            }
-
-
-            if (heldObjectRb != null)
-            {
-                heldObjectRb.isKinematic = true;
-                heldObjectRb.interpolation = RigidbodyInterpolation.None;
-                heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Discrete;
-
-            }
-
-            Collider shelvedCol = shelvedBook.GetComponent<Collider>();
-            if (shelvedCol != null && playerCollider != null)
-            {
-                Physics.IgnoreCollision(shelvedCol, playerCollider, false);
-            }
-
-            // Final cleanup for shelved book
-            shelvedBook = null;
-            heldObjectRb = null;
-
-            // Don't assign currentShelfSpot to the swapped book
-            // The new heldObject is not shelved
-
-            // Now pick up the occupying book
-            heldObject = occupyingBook;
-            heldObjectRb = occupyingBook.GetComponent<Rigidbody>();
-
-
-            if (heldObjectRb != null)
-            {
-                heldObjectRb.isKinematic = false;
-                heldObjectRb.interpolation = RigidbodyInterpolation.Interpolate;
-                heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-
-            }
-
-            // Detach from any parent and set position/rotation
-            heldObject.transform.SetParent(null);
-            heldObject.transform.position = holdPosition.position;
-            // Align book so cover faces player, spine left, top up
-            Vector3 forward = -Camera.main.transform.forward; // cover toward camera
-            Vector3 up = Vector3.up; // top up
-            heldObject.transform.rotation = Quaternion.LookRotation(forward, up);
-
-            // Re-ignore collision
-            Collider occupyingCol = heldObject.GetComponent<Collider>();
-            if (occupyingCol != null && playerCollider != null)
-            {
-                Physics.IgnoreCollision(occupyingCol, playerCollider, true);
-            }
-
-            // Recreate FixedJoint
-            holdJoint = holdPosition.gameObject.AddComponent<FixedJoint>();
-            holdJoint.connectedBody = heldObjectRb;
-            holdJoint.breakForce = Mathf.Infinity;
-            holdJoint.breakTorque = Mathf.Infinity;
-
-        }
-        else
-        {
-            // Normal shelving if spot is unoccupied
-            currentShelfSpot = targetSpot;
-            shelvedBook = heldObject;
-            BookInfo newInfo = heldObject.GetComponent<BookInfo>();
-            if (newInfo != null)
-            {
-                targetSpot.Occupy(newInfo);
-            }
-
-
-            StartCoroutine(SmoothPlaceOnShelf(heldObject, targetSpot.GetBookAnchor()));
-
-            heldObject.layer = LayerMask.NameToLayer("Book");
-            heldObject = null;
-            heldObjectRb = null;
-        }
+        return target;
     }
+
+    private void SwapBooks(BookInfo heldInfo, ShelfSpot targetSpot, GameObject occupyingBook)
+    {
+        BookInfo occupyingInfo = occupyingBook.GetComponent<BookInfo>();
+        if (occupyingInfo != null && occupyingInfo.currentSpot != null)
+        {
+            occupyingInfo.currentSpot.SetOccupied(false);
+            occupyingInfo.ClearShelfSpot();
+        }
+
+        PrepareBookForPickup(occupyingBook);
+        ShelveBookToSpot(heldObject, heldInfo, targetSpot);
+
+        heldObject = occupyingBook;
+        heldObjectRb = occupyingBook.GetComponent<Rigidbody>();
+        AttachHeldBook();
+    }
+
+    private void PlaceBookOnEmptyShelf(BookInfo heldInfo, ShelfSpot targetSpot)
+    {
+        currentShelfSpot = targetSpot;
+        ShelveBookToSpot(heldObject, heldInfo, targetSpot);
+        ClearHeldBook();
+    }
+
 
     IEnumerator SmoothPlaceOnShelf(GameObject book, Transform anchorTransform)
     {
@@ -551,38 +503,6 @@ public class PickUp : MonoBehaviour
         return heldObject != null;
     }
 
-
-    private void OnDrawGizmos()
-    {
-        if (heldObject != null)
-        {
-            BoxCollider boxCol = heldObject.GetComponent<BoxCollider>();
-            if (boxCol == null) return;
-
-            Vector3 size = boxCol.size;            // local size of the collider
-            Vector3 scale = heldObject.transform.lossyScale;  // global scale of the object
-
-            Vector3 scaledSize = new Vector3(
-                size.x * scale.x,
-                size.y * scale.y,
-                size.z * scale.z
-            );
-
-            // Save old Gizmos matrix
-            Matrix4x4 oldGizmosMatrix = Gizmos.matrix;
-
-            // Set Gizmos matrix to the book's position and rotation (no scale because we scale the size manually)
-            Gizmos.matrix = Matrix4x4.TRS(heldObject.transform.position, heldObject.transform.rotation, Vector3.one);
-            Gizmos.color = Color.red;
-
-            // Draw wire cube centered at zero with scaled size
-            Gizmos.DrawWireCube(Vector3.zero, scaledSize);
-
-            // Restore Gizmos matrix
-            Gizmos.matrix = oldGizmosMatrix;
-        }
-    }
-
     private void ClearHeldBook()
     {
         heldObject.layer = heldObjectOriginalLayer;
@@ -595,6 +515,51 @@ public class PickUp : MonoBehaviour
             Destroy(holdJoint);
             holdJoint = null;
         }
+    }
+
+
+    private void ShelveBookToSpot(GameObject book, BookInfo info, ShelfSpot spot)
+    {
+        spot.Occupy(info);
+        StartCoroutine(SmoothPlaceOnShelf(book, spot.GetBookAnchor()));
+        book.layer = LayerMask.NameToLayer("Book");
+    }
+
+    private void PrepareBookForPickup(GameObject book)
+    {
+        book.transform.SetParent(null);
+        book.transform.position = holdPosition.position;
+        book.transform.rotation = Quaternion.LookRotation(-Camera.main.transform.forward, Vector3.up);
+
+        Rigidbody rb = book.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = false;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        }
+
+        Collider col = book.GetComponent<Collider>();
+        if (col != null && playerCollider != null)
+            Physics.IgnoreCollision(col, playerCollider, true);
+    }
+
+    private void AttachHeldBook()
+    {
+        if (heldObjectRb == null)
+            return;
+
+        holdJoint = holdPosition.gameObject.AddComponent<FixedJoint>();
+        holdJoint.connectedBody = heldObjectRb;
+        holdJoint.breakForce = Mathf.Infinity;
+        holdJoint.breakTorque = Mathf.Infinity;
+    }
+
+    private void EnablePlayerCollision(GameObject obj)
+    {
+        Collider col = obj.GetComponent<Collider>();
+        if (col != null && playerCollider != null)
+            Physics.IgnoreCollision(col, playerCollider, false);
     }
 
 
