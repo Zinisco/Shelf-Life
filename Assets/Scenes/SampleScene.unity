@@ -10686,7 +10686,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ghostBookPrefab: {fileID: 2402301105610687113, guid: 2dbce75e20038eb4e8a627408acc1a3f, type: 3}
-  surfaceOffset: 0.1
+  surfaceOffset: 0.08
 --- !u!1 &1790967058
 GameObject:
   m_ObjectHideFlags: 0

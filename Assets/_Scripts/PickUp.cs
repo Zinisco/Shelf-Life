@@ -281,7 +281,7 @@ public class PickUp : MonoBehaviour
         {
             if (Vector3.Dot(hit.normal, Vector3.up) > 0.9f)
             {
-                Vector3 point = hit.point + hit.normal * 0.1f;
+                Vector3 point = hit.point + hit.normal * 0.07f;
 
                 Quaternion baseRotation = Quaternion.Euler(-90f, 90f, 90f);
                 Quaternion facingRotation = Quaternion.Euler(0f, currentYRotation, 0f);
