@@ -279,18 +279,17 @@ public class PickUp : MonoBehaviour
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableSurfaceMask))
         {
-            // First, try to stack on existing book
-            if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Book"))
+            GameObject stackTarget = ghostBookManager.GetStackTargetBook();
+            if (stackTarget != null)
             {
-                GameObject targetBook = hit.collider.gameObject;
-                BookInfo targetInfo = targetBook.GetComponent<BookInfo>();
                 BookInfo heldInfo = heldObject.GetComponent<BookInfo>();
+                BookInfo targetInfo = stackTarget.GetComponent<BookInfo>();
 
-                if (bookStackManager.CanStack(targetBook, heldObject) && targetBook.transform.childCount < 5)
+                if (bookStackManager.CanStack(stackTarget, heldObject) && stackTarget.transform.childCount < 5)
                 {
-                    Vector3 stackPos = targetBook.transform.position + Vector3.up * 0.12f;
-                    heldObject.transform.SetPositionAndRotation(stackPos, targetBook.transform.rotation);
-                    heldObject.transform.SetParent(targetBook.transform);
+                    Vector3 stackPos = stackTarget.transform.position + Vector3.up * 0.12f;
+                    heldObject.transform.SetPositionAndRotation(stackPos, stackTarget.transform.rotation);
+                    heldObject.transform.SetParent(stackTarget.transform);
 
                     Rigidbody rb = heldObject.GetComponent<Rigidbody>();
                     if (rb != null) rb.isKinematic = true;

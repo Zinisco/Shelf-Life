@@ -6,6 +6,7 @@ public class GhostBookManager : MonoBehaviour
     [SerializeField] private float surfaceOffset = 0.02f;
 
     private GameObject ghostBookInstance;
+    private GameObject stackTargetBook;
     private bool rotationLocked = false;
     private float lockedYRotation = 0f;
 
@@ -65,6 +66,7 @@ public class GhostBookManager : MonoBehaviour
             }
 
             bool isStacking = false;
+            stackTargetBook = null; // reset each frame
 
             // STACKING CHECK (do this first so we know if rotation should be locked)
             if (Physics.Raycast(ray, out RaycastHit stackHit, 3f, LayerMask.GetMask("Book")))
@@ -86,11 +88,12 @@ public class GhostBookManager : MonoBehaviour
                     ghostBookInstance.transform.SetPositionAndRotation(topStackPos, finalRotation);
                     ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
 
-                    isStacking = true;
-                    rotationLocked = false; // disable locking while stacking
+                    stackTargetBook = targetBook; // <-- store this
+                    rotationLocked = false;
                     return;
                 }
             }
+
 
             // Only allow rotation when not stacking
             if (!isStacking)
@@ -120,6 +123,12 @@ public class GhostBookManager : MonoBehaviour
             ghostBookInstance.SetActive(false);
         rotationLocked = false;
     }
+
+    public GameObject GetStackTargetBook()
+    {
+        return stackTargetBook;
+    }
+
 
     public void HideGhost()
     {
