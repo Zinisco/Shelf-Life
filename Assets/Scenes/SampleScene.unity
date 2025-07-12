@@ -11380,7 +11380,7 @@ GameObject:
   - component: {fileID: 1907961216}
   - component: {fileID: 1907961215}
   m_Layer: 16
-  m_Name: GameObject
+  m_Name: BookTable2.0
   m_TagString: Furniture
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

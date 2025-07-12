@@ -99,4 +99,14 @@ public class BookStackManager : MonoBehaviour
         if (rb != null) rb.isKinematic = true;
     }
 
+    public bool CanStack(GameObject baseBook, GameObject incomingBook)
+    {
+        var baseInfo = baseBook.GetComponent<BookInfo>();
+        var incomingInfo = incomingBook.GetComponent<BookInfo>();
+        if (baseInfo == null || incomingInfo == null) return false;
+
+        return baseInfo.bookID == incomingInfo.bookID || baseInfo.title == incomingInfo.title;
+    }
+
+
 }

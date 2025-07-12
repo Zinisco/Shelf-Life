@@ -28,6 +28,7 @@ public class BookInfo : MonoBehaviour
     [HideInInspector] public Vector3 Position;
     [HideInInspector] public Quaternion Rotation;
     [HideInInspector] public string ObjectID;
+    [HideInInspector] public string title;
     [HideInInspector] public int SpotIndex = -1;
 
     /// <summary>
@@ -42,6 +43,7 @@ public class BookInfo : MonoBehaviour
 {
     this.definition = def;
     bookID = def.bookID;
+    title = def.title;
     UpdateVisuals();
 
     }

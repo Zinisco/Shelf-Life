@@ -279,6 +279,31 @@ public class PickUp : MonoBehaviour
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableSurfaceMask))
         {
+            // First, try to stack on existing book
+            if (hit.collider.gameObject.layer == LayerMask.NameToLayer("Book"))
+            {
+                GameObject targetBook = hit.collider.gameObject;
+                BookInfo targetInfo = targetBook.GetComponent<BookInfo>();
+                BookInfo heldInfo = heldObject.GetComponent<BookInfo>();
+
+                if (bookStackManager.CanStack(targetBook, heldObject) && targetBook.transform.childCount < 5)
+                {
+                    Vector3 stackPos = targetBook.transform.position + Vector3.up * 0.12f;
+                    heldObject.transform.SetPositionAndRotation(stackPos, targetBook.transform.rotation);
+                    heldObject.transform.SetParent(targetBook.transform);
+
+                    Rigidbody rb = heldObject.GetComponent<Rigidbody>();
+                    if (rb != null) rb.isKinematic = true;
+
+                    heldObject.layer = LayerMask.NameToLayer("Book");
+                    EnablePlayerCollision(heldObject);
+                    ClearHeldBook();
+                    ghostBookManager.HideGhost();
+                    return;
+                }
+            }
+
+            // Else, place on surface normally
             if (Vector3.Dot(hit.normal, Vector3.up) > 0.9f)
             {
                 Vector3 point = hit.point + hit.normal * 0.07f;
@@ -294,31 +319,21 @@ public class PickUp : MonoBehaviour
                     LayerMask.GetMask("Book")
                 );
 
-                if (overlaps.Length > 0)
-                {
-                    Debug.Log("Cannot place book: another book is already there.");
-                    return;
-                }
+                if (overlaps.Length > 0) return;
 
                 heldObject.transform.SetPositionAndRotation(point, finalRotation);
-                heldObject.transform.SetParent(hit.transform); //Follows table movement
-
+                heldObject.transform.SetParent(hit.transform); // Attach to table
                 Rigidbody rb = heldObject.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.isKinematic = true;
-                    rb.interpolation = RigidbodyInterpolation.None;
-                    rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
-                }
+                if (rb != null) rb.isKinematic = true;
 
                 heldObject.layer = LayerMask.NameToLayer("Book");
                 EnablePlayerCollision(heldObject);
                 ClearHeldBook();
                 ghostBookManager.HideGhost();
-                return;
             }
         }
     }
+
 
     private bool TryStackOnTable(BookInfo bookInfo)
     {
@@ -443,9 +458,10 @@ public class PickUp : MonoBehaviour
             rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
         }
 
+        ghostBookManager.HideGhost();
+
         //Debug.Log($"Final Book Position: {book.transform.position}, Local Scale: {book.transform.localScale}");
     }
-
 
 
     private bool IsDropPositionSafe(Vector3 position)
