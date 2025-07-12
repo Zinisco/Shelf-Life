@@ -289,10 +289,27 @@ public class PickUp : MonoBehaviour
                 {
                     Vector3 stackPos = stackTarget.transform.position + Vector3.up * 0.12f;
                     heldObject.transform.SetPositionAndRotation(stackPos, stackTarget.transform.rotation);
-                    heldObject.transform.SetParent(stackTarget.transform);
+
+                    // Make the stack parented to the table instead of book-to-book
+                    Transform tableTransform = hit.transform;
+                    Transform baseBook = stackTarget.transform;
+
+                    // If not already parented to the table, set the base
+                    if (baseBook.parent != tableTransform)
+                    {
+                        baseBook.SetParent(tableTransform, true);
+                    }
+
+                    heldObject.transform.SetParent(baseBook); // Keeps stacking logic, but still ultimately parented to table
+
 
                     Rigidbody rb = heldObject.GetComponent<Rigidbody>();
-                    if (rb != null) rb.isKinematic = true;
+                    if (rb != null)
+                    {
+                        rb.isKinematic = true;
+                        rb.interpolation = RigidbodyInterpolation.None;
+                        rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+                    }
 
                     heldObject.layer = LayerMask.NameToLayer("Book");
                     EnablePlayerCollision(heldObject);
@@ -323,7 +340,12 @@ public class PickUp : MonoBehaviour
                 heldObject.transform.SetPositionAndRotation(point, finalRotation);
                 heldObject.transform.SetParent(hit.transform); // Attach to table
                 Rigidbody rb = heldObject.GetComponent<Rigidbody>();
-                if (rb != null) rb.isKinematic = true;
+                if (rb != null)
+                {
+                    rb.isKinematic = true;
+                    rb.interpolation = RigidbodyInterpolation.None;
+                    rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+                }
 
                 heldObject.layer = LayerMask.NameToLayer("Book");
                 EnablePlayerCollision(heldObject);
