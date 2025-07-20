@@ -24,10 +24,6 @@ public class PickUp : MonoBehaviour
     [SerializeField] private LayerMask pickableLayerMask;
     private LayerMask heldObjectOriginalLayer;
 
-    [SerializeField] private TableSpotDetector tableSpotDetector; // Like ShelfDetector
-    //[SerializeField] private float tableSnapRange = 1.5f;
-
-
     [Header("Game Input")]
     [SerializeField] private GameInput gameInput;
 
@@ -39,9 +35,6 @@ public class PickUp : MonoBehaviour
 
     [Header("Bookshelf Settings")]
     [SerializeField] private float shelfSnapRange = 1.5f; // How close the book needs to be to snap
-
-    [Header("Table Stack Settings")]
-    [SerializeField] private float tableStackOffset = 0.12f;
 
     private FixedJoint holdJoint;
     private Rigidbody holdRb;
@@ -69,8 +62,7 @@ public class PickUp : MonoBehaviour
     void Update()
     {
         shelfDetector.UpdateLookedAtShelf();
-        tableSpotDetector.UpdateLookedAtTable();
-
+   
         if (heldObject != null)
         {
             float scroll = Input.GetAxis("Mouse ScrollWheel");
@@ -145,14 +137,6 @@ public class PickUp : MonoBehaviour
                     info.currentSpot.SetOccupied(false);
                     info.ClearShelfSpot();
                 }
-
-                TableSpot tableSpot = heldObject.GetComponentInParent<TableSpot>();
-                if (tableSpot != null)
-                {
-                    Debug.Log($"Removing book {heldObject.name} from table spot {tableSpot.name}");
-                    tableSpot.RemoveBook(heldObject);
-                }
-
 
                 if (heldObjectRb != null)
                 {
@@ -255,10 +239,7 @@ public class PickUp : MonoBehaviour
             return;
         }
 
-        // 1. Try to stack
-        if (TryStackOnTable(bookInfo)) return;
-
-        // 2. Try to shelve
+        // Try to shelve
         ShelfSpot targetSpot = GetTargetShelfSpot();
         if (targetSpot != null)
         {
@@ -354,24 +335,6 @@ public class PickUp : MonoBehaviour
             }
         }
     }
-
-
-    private bool TryStackOnTable(BookInfo bookInfo)
-    {
-        TableSpot stackSpot = tableSpotDetector.CurrentLookedAtTableSpot;
-
-        if (stackSpot != null && stackSpot.CanStack(bookInfo))
-        {
-            stackSpot.StackBook(heldObject);
-            bookInfo.ClearShelfSpot();
-            EnablePlayerCollision(heldObject);
-            ClearHeldBook();
-            return true;
-        }
-
-        return false;
-    }
-
     private ShelfSpot GetTargetShelfSpot()
     {
         ShelfSpot target = shelfDetector.CurrentLookedAtShelfSpot;

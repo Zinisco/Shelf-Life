@@ -21,10 +21,6 @@ public class BookInfo : MonoBehaviour
     [Tooltip("Current shelf spot this book occupies (if any)")]
     public ShelfSpot currentSpot;
 
-    [Header("Table Tracking")]
-    [Tooltip("Current table spot this book occupies (if any)")]
-    public TableSpot currentTableSpot;
-
     [HideInInspector] public Vector3 Position;
     [HideInInspector] public Quaternion Rotation;
     [HideInInspector] public string ObjectID;
@@ -89,35 +85,4 @@ public class BookInfo : MonoBehaviour
         ObjectID = string.Empty;
         SpotIndex = -1;
     }
-
-    public void SetTableSpot(TableSpot spot, string objectID, int index)
-    {
-        currentTableSpot = spot;
-        ObjectID = objectID;
-        SpotIndex = index; 
-    }
-
-    public void ClearTableSpot()
-    {
-        currentTableSpot = null;
-        ObjectID = string.Empty;
-        SpotIndex = -1;
-    }
-
-    public void AddTag(string tag)
-    {
-        if (!tags.Contains(tag))
-            tags.Add(tag);
-    }
-
-    public void RemoveTag(string tag)
-    {
-        tags.Remove(tag);
-    }
-
-    public bool HasTag(string tag)
-    {
-        return tags.Contains(tag);
-    }
-
 }

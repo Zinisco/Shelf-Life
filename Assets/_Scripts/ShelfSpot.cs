@@ -35,7 +35,7 @@ public class ShelfSpot : MonoBehaviour
         spotRenderer = visual.GetComponentInChildren<MeshRenderer>();
         if (spotRenderer == null)
         {
-            Debug.LogWarning($"ShelfSpot '{name}' could not find MeshRenderer in visual prefab!");
+            //Debug.LogWarning($"ShelfSpot '{name}' could not find MeshRenderer in visual prefab!");
         }
 
         UpdateSpotColor();

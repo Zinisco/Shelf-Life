@@ -56,8 +56,8 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.PickUpObject.performed += PickUpObject_performed;
         playerInputActions.Player.ShelveObject.performed += ShelveObject_performed;
         playerInputActions.Player.ScrollRotate.performed += ScrollRotate_performed;
-        playerInputActions.Player.MoveFurniture.started += MoveFurniture_started;
-        playerInputActions.Player.MoveFurniture.performed += MoveFurniture_performed;
+        //playerInputActions.Player.MoveFurniture.started += MoveFurniture_started;
+       // playerInputActions.Player.MoveFurniture.performed += MoveFurniture_performed;
         playerInputActions.Player.RotateLeft.performed += RotateLeft_performed;
         playerInputActions.Player.RotateRight.performed += RotateRight_performed;
         playerInputActions.Player.Interact.performed += Interact_performed;
@@ -71,8 +71,8 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.PickUpObject.performed -= PickUpObject_performed;
         playerInputActions.Player.ShelveObject.performed -= ShelveObject_performed;
         playerInputActions.Player.ScrollRotate.performed -= ScrollRotate_performed;
-        playerInputActions.Player.MoveFurniture.started -= MoveFurniture_started;
-        playerInputActions.Player.MoveFurniture.performed -= MoveFurniture_performed;
+       // playerInputActions.Player.MoveFurniture.started -= MoveFurniture_started;
+       // playerInputActions.Player.MoveFurniture.performed -= MoveFurniture_performed;
         playerInputActions.Player.RotateLeft.performed -= RotateLeft_performed;
         playerInputActions.Player.RotateRight.performed -= RotateRight_performed;
         playerInputActions.Player.Interact.performed -= Interact_performed;
@@ -85,14 +85,19 @@ public class GameInput : MonoBehaviour
 
     private void MoveFurniture_started(InputAction.CallbackContext context)
     {
-        OnStartMoveFurnitureAction?.Invoke(this, EventArgs.Empty); // Hold initiated
+        if (context.interaction is UnityEngine.InputSystem.Interactions.HoldInteraction)
+        {
+            OnStartMoveFurnitureAction?.Invoke(this, EventArgs.Empty); // Hold starts moving
+        }
     }
 
     private void MoveFurniture_performed(InputAction.CallbackContext context)
     {
-        OnPlaceFurnitureAction?.Invoke(this, EventArgs.Empty); // Press again to place
+        if (context.interaction is UnityEngine.InputSystem.Interactions.TapInteraction)
+        {
+            OnPlaceFurnitureAction?.Invoke(this, EventArgs.Empty); // Tap confirms placement
+        }
     }
-
 
     private void PickUpObject_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {

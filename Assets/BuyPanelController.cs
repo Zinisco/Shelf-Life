@@ -20,7 +20,8 @@ public class BuyPanelController : MonoBehaviour
     public Button confirmButton;
 
     [Header("Settings")]
-    public int maxBooksPerOrder = 10;
+    public int maxBooksPerOrder = 20;
+    public int maxPerBookType = 5;
 
     [Header("Systems")]
     public CrateDeliveryManager deliveryManager;
@@ -82,11 +83,22 @@ public class BuyPanelController : MonoBehaviour
         if (!currentOrder.ContainsKey(book))
             currentOrder[book] = 0;
 
+        // Check per-book limit
+        if (currentOrder[book] >= maxPerBookType)
+            return;
+
+        if (currentOrder[book] >= maxPerBookType)
+        {
+            Debug.Log("Can't order more than 5 of the same book.");
+            return;
+        }
+
         currentOrder[book]++;
         quantityText.text = currentOrder[book].ToString();
         UpdateBookCountText();
         UpdateConfirmButtonState();
     }
+
 
     private void RemoveBook(BookDefinition book, TMP_Text quantityText)
     {

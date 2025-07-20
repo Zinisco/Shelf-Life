@@ -59,7 +59,7 @@ MonoBehaviour:
   _opened: 0
   _playerInRange: 0
   isHeld: 0
-  animationDuration: 2
+  animationDuration: 0.1
 --- !u!95 &8686126383559891251
 Animator:
   serializedVersion: 5

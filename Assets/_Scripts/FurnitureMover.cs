@@ -27,7 +27,9 @@ public class FurnitureMover : MonoBehaviour
 
     private float currentRotation = 0f;
 
-
+    private float holdTime = 2f;
+    private float holdTimer = 0f;
+    private bool isHoldingToMove = false;
 
     private Collider playerCol;
 
@@ -42,8 +44,8 @@ public class FurnitureMover : MonoBehaviour
             return;
         }
 
-        gameInput.OnStartMoveFurnitureAction += HandleStartMove;
-        gameInput.OnPlaceFurnitureAction += HandlePlaceFurniture;
+        //gameInput.OnStartMoveFurnitureAction += HandleStartMove;
+       // gameInput.OnPlaceFurnitureAction += HandlePlaceFurniture;
 
         gameInput.OnRotateLeftAction += OnRotateLeft;
         gameInput.OnRotateRightAction += OnRotateRight;
@@ -51,8 +53,8 @@ public class FurnitureMover : MonoBehaviour
 
     private void OnDisable()
     {
-        gameInput.OnStartMoveFurnitureAction -= HandleStartMove;
-        gameInput.OnPlaceFurnitureAction -= HandlePlaceFurniture;
+       // gameInput.OnStartMoveFurnitureAction -= HandleStartMove;
+        //gameInput.OnPlaceFurnitureAction -= HandlePlaceFurniture;
 
         gameInput.OnRotateLeftAction += OnRotateLeft;
         gameInput.OnRotateRightAction += OnRotateRight;
@@ -68,19 +70,48 @@ public class FurnitureMover : MonoBehaviour
 
     private void Update()
     {
-
-        if (ComputerUI.IsUIOpen) return; // Don't allow moving while interacting with computer
-
-        // Completely prevent all moving logic while holding a book
-        if (pickUp != null && pickUp.IsHoldingObject())
+        if (ComputerUI.IsUIOpen || (pickUp != null && pickUp.IsHoldingObject()))
             return;
 
         if (!isMoving)
-            return;
+        {
+            if (Mouse.current.rightButton.isPressed)
+            {
+                if (!isHoldingToMove)
+                {
+                    isHoldingToMove = true;
+                    holdTimer = holdTime;
+                }
 
-        UpdateGhostPosition();
-        HandleRotationInput();
+                holdTimer -= Time.deltaTime;
+
+                if (holdTimer <= 0f)
+                {
+                    HandleStartMove(this, EventArgs.Empty);
+                    isHoldingToMove = false;
+                }
+            }
+            else
+            {
+                isHoldingToMove = false;
+                holdTimer = holdTime;
+            }
+        }
+        else
+        {
+            UpdateGhostPosition();
+            HandleRotationInput();
+
+            // Confirm placement with LEFT mouse button
+            if (Mouse.current.rightButton.wasPressedThisFrame)
+            {
+                Debug.Log("Left mouse click detected while moving.");
+                HandlePlaceFurniture(this, EventArgs.Empty);
+            }
+        }
     }
+
+
 
 
     private void HandleStartMove(object sender, EventArgs e)
@@ -203,14 +234,6 @@ public class FurnitureMover : MonoBehaviour
         if (!Physics.Raycast(ray, out RaycastHit hit, 3f))
             return false;
 
-        // Look for your table component in the hit object or its parents:
-        var tableRoot = hit.collider.GetComponentInParent<BookTable>();
-        if (tableRoot != null)
-        {
-            furniture = tableRoot.gameObject;
-            return true;
-        }
-
         // fallback to any tagged Furniture root
         if (hit.collider.CompareTag("Furniture"))
         {
@@ -220,8 +243,6 @@ public class FurnitureMover : MonoBehaviour
 
         return false;
     }
-
-
 
     private void UpdateGhostPosition()
     {
