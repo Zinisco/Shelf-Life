@@ -98,18 +98,34 @@ public class FurnitureMover : MonoBehaviour
                     holdTimer = holdTime;
                 }
 
-                holdTimer -= Time.deltaTime;
-
-                if (progressRingUI != null)
+                // Only continue hold logic if we're aiming at furniture
+                if (TryFindFurniture(out GameObject previewFurniture))
                 {
-                    progressRingUI.fillAmount = 1f - (holdTimer / holdTime);
-                    progressRingUI.gameObject.SetActive(true);
+                    holdTimer -= Time.deltaTime;
+
+                    if (progressRingUI != null)
+                    {
+                        progressRingUI.fillAmount = 1f - (holdTimer / holdTime);
+                        progressRingUI.gameObject.SetActive(true);
+                    }
+
+                    if (holdTimer <= 0f)
+                    {
+                        HandleStartMove(this, EventArgs.Empty);
+                        isHoldingToMove = false;
+
+                        if (progressRingUI != null)
+                        {
+                            progressRingUI.fillAmount = 0f;
+                            progressRingUI.gameObject.SetActive(false);
+                        }
+                    }
                 }
-
-                if (holdTimer <= 0f)
+                else
                 {
-                    HandleStartMove(this, EventArgs.Empty);
+                    // Not close to furniture – reset timer and hide ring
                     isHoldingToMove = false;
+                    holdTimer = holdTime;
 
                     if (progressRingUI != null)
                     {
@@ -117,7 +133,6 @@ public class FurnitureMover : MonoBehaviour
                         progressRingUI.gameObject.SetActive(false);
                     }
                 }
-
             }
             else
             {
@@ -131,6 +146,7 @@ public class FurnitureMover : MonoBehaviour
                 }
             }
         }
+
         else
         {
             UpdateGhostPosition();
