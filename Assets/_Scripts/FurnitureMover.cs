@@ -2,6 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Linq;
+using UnityEngine.UI;
 
 public class FurnitureMover : MonoBehaviour
 {
@@ -18,14 +19,22 @@ public class FurnitureMover : MonoBehaviour
     [SerializeField] private Material validMaterial;
     [SerializeField] private Material invalidMaterial;
 
+    [SerializeField] private Image progressRingUI;
+
     private GameObject selectedFurniture;
     private GameObject ghostVisual;
     private Renderer ghostRenderer;
     private Renderer[] originalRenderers;
     private Vector3 ghostOffset = Vector3.zero;
     private Renderer arrowRenderer;
+    private Vector3 originalPosition;
+    private Quaternion originalRotation;
+
 
     private float currentRotation = 0f;
+    private float postPlaceCooldown = 0.2f; // short buffer after placement
+    private float postPlaceTimer = 0f;
+
 
     private float holdTime = 2f;
     private float holdTimer = 0f;
@@ -73,6 +82,12 @@ public class FurnitureMover : MonoBehaviour
         if (ComputerUI.IsUIOpen || (pickUp != null && pickUp.IsHoldingObject()))
             return;
 
+        if (postPlaceTimer > 0f)
+        {
+            postPlaceTimer -= Time.deltaTime;
+            return; // Don't allow starting move or showing ring yet
+        }
+
         if (!isMoving)
         {
             if (Mouse.current.rightButton.isPressed)
@@ -85,22 +100,47 @@ public class FurnitureMover : MonoBehaviour
 
                 holdTimer -= Time.deltaTime;
 
+                if (progressRingUI != null)
+                {
+                    progressRingUI.fillAmount = 1f - (holdTimer / holdTime);
+                    progressRingUI.gameObject.SetActive(true);
+                }
+
                 if (holdTimer <= 0f)
                 {
                     HandleStartMove(this, EventArgs.Empty);
                     isHoldingToMove = false;
+
+                    if (progressRingUI != null)
+                    {
+                        progressRingUI.fillAmount = 0f;
+                        progressRingUI.gameObject.SetActive(false);
+                    }
                 }
+
             }
             else
             {
                 isHoldingToMove = false;
                 holdTimer = holdTime;
+
+                if (progressRingUI != null)
+                {
+                    progressRingUI.fillAmount = 0f;
+                    progressRingUI.gameObject.SetActive(false);
+                }
             }
         }
         else
         {
             UpdateGhostPosition();
             HandleRotationInput();
+
+            if (Keyboard.current.escapeKey.wasPressedThisFrame && isMoving)
+            {
+                CancelMove();
+                return; // Exit early so we don’t allow placement right after cancel
+            }
 
             // Confirm placement with LEFT mouse button
             if (Mouse.current.rightButton.wasPressedThisFrame)
@@ -131,6 +171,10 @@ public class FurnitureMover : MonoBehaviour
 
         isMoving = true;
         ghostVisual = selectedFurniture.transform.Find("Ghost")?.gameObject;
+
+        originalPosition = selectedFurniture.transform.position;
+        originalRotation = selectedFurniture.transform.rotation;
+
 
         // Cache all the furniture’s colliders
         Collider[] furnitureCols = selectedFurniture.GetComponentsInChildren<Collider>();
@@ -225,6 +269,8 @@ public class FurnitureMover : MonoBehaviour
         ghostRenderer = null;
         rotationAmount = 0f;
         isMoving = false;
+
+        postPlaceTimer = postPlaceCooldown;
     }
 
     private bool TryFindFurniture(out GameObject furniture)
@@ -351,6 +397,30 @@ public class FurnitureMover : MonoBehaviour
     public bool IsMovingFurniture()
     {
         return isMoving;
+    }
+
+    private void CancelMove()
+    {
+        if (selectedFurniture == null) return;
+
+        // Restore original transform
+        selectedFurniture.transform.position = originalPosition;
+        selectedFurniture.transform.rotation = originalRotation;
+
+        // Re-enable renderers
+        foreach (var rend in originalRenderers)
+            if (rend != null) rend.enabled = true;
+
+        // Turn off ghost
+        if (ghostVisual != null)
+            ghostVisual.SetActive(false);
+
+        // Reset state
+        selectedFurniture = null;
+        ghostVisual = null;
+        ghostRenderer = null;
+        rotationAmount = 0f;
+        isMoving = false;
     }
 
 
