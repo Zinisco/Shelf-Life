@@ -27,6 +27,8 @@ public class BookInfo : MonoBehaviour
     [HideInInspector] public string title;
     [HideInInspector] public int SpotIndex = -1;
 
+    public BookStackRoot currentStackRoot;
+
     /// <summary>
     /// Computed ID from the definition (if assigned)
     /// </summary>

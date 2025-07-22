@@ -112,9 +112,11 @@ public class PickUp : MonoBehaviour
 
         if (Physics.Raycast(ray, out hit, pickupRange, pickableLayerMask))
         {
-            if (hit.collider.gameObject.CompareTag("Pickable") || hit.collider.gameObject.CompareTag("BookCrate"))
+            if (hit.collider.gameObject.CompareTag("Pickable") || hit.collider.gameObject.CompareTag("BookCrate") || hit.collider.gameObject.CompareTag("Book"))
             {
-                heldObject = hit.collider.gameObject;
+                GameObject baseBook = hit.collider.gameObject;
+                heldObject = GetTopmostBook(baseBook);
+
                 heldObjectRb = heldObject.GetComponent<Rigidbody>();
 
                 var crate = heldObject.GetComponent<BookCrate>();
@@ -136,6 +138,12 @@ public class PickUp : MonoBehaviour
                     Debug.Log($"Clearing spot {info.currentSpot.name} from book {heldObject.name}");
                     info.currentSpot.SetOccupied(false);
                     info.ClearShelfSpot();
+                }
+
+                if (info != null && info.currentStackRoot != null)
+                {
+                    info.currentStackRoot.RemoveBook(heldObject);
+                    info.currentStackRoot = null;
                 }
 
                 if (heldObjectRb != null)
@@ -260,81 +268,74 @@ public class PickUp : MonoBehaviour
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableSurfaceMask))
         {
-            GameObject stackTarget = ghostBookManager.GetStackTargetBook();
-            if (stackTarget != null)
+            Transform tableTransform = hit.transform;
+            GameObject targetStackBook = ghostBookManager.GetStackTargetBook();
+            BookInfo heldInfo = heldObject.GetComponent<BookInfo>();
+            if (heldInfo == null) return;
+
+            // Check if we're stacking
+            if (targetStackBook != null && bookStackManager.CanStack(targetStackBook, heldObject))
             {
-                BookInfo heldInfo = heldObject.GetComponent<BookInfo>();
-                BookInfo targetInfo = stackTarget.GetComponent<BookInfo>();
-
-                if (bookStackManager.CanStack(stackTarget, heldObject) && stackTarget.transform.childCount < 5)
+                BookInfo targetInfo = targetStackBook.GetComponent<BookInfo>();
+                BookStackRoot root = targetInfo.currentStackRoot;
+                if (root == null)
                 {
-                    Vector3 stackPos = stackTarget.transform.position + Vector3.up * 0.12f;
-                    heldObject.transform.SetPositionAndRotation(stackPos, stackTarget.transform.rotation);
+                    // Create new root and assign existing book
+                    GameObject rootObj = new GameObject("StackRoot");
+                    rootObj.transform.parent = tableTransform;
+                    root = rootObj.AddComponent<BookStackRoot>();
+                    root.stackTitle = targetInfo.title;
+                    root.AddBook(targetStackBook);
+                    targetInfo.currentStackRoot = root;
+                }
 
-                    // Make the stack parented to the table instead of book-to-book
-                    Transform tableTransform = hit.transform;
-                    Transform baseBook = stackTarget.transform;
-
-                    // If not already parented to the table, set the base
-                    if (baseBook.parent != tableTransform)
-                    {
-                        baseBook.SetParent(tableTransform, true);
-                    }
-
-                    heldObject.transform.SetParent(baseBook); // Keeps stacking logic, but still ultimately parented to table
-
-
-                    Rigidbody rb = heldObject.GetComponent<Rigidbody>();
-                    if (rb != null)
-                    {
-                        rb.isKinematic = true;
-                        rb.interpolation = RigidbodyInterpolation.None;
-                        rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
-                    }
-
-                    heldObject.layer = LayerMask.NameToLayer("Book");
-                    EnablePlayerCollision(heldObject);
-                    ClearHeldBook();
-                    ghostBookManager.HideGhost();
+                if (root.GetCount() >= 4)
+                {
+                    Debug.Log("Stack limit reached.");
                     return;
                 }
-            }
 
-            // Else, place on surface normally
-            if (Vector3.Dot(hit.normal, Vector3.up) > 0.9f)
-            {
-                Vector3 point = hit.point + hit.normal * 0.07f;
+                root.AddBook(heldObject);
+                heldInfo.currentStackRoot = root;
+
+
+                Vector3 finalPos = targetStackBook.transform.position + Vector3.up * 0.12f;
 
                 Quaternion baseRotation = Quaternion.Euler(-90f, 90f, 90f);
                 Quaternion facingRotation = Quaternion.Euler(0f, currentYRotation, 0f);
                 Quaternion finalRotation = facingRotation * baseRotation;
 
-                Collider[] overlaps = Physics.OverlapBox(
-                    point,
-                    heldObject.GetComponent<Collider>().bounds.extents * 0.9f,
-                    finalRotation,
-                    LayerMask.GetMask("Book")
-                );
+                heldObject.transform.SetPositionAndRotation(finalPos, finalRotation);
+                heldObject.transform.SetParent(tableTransform);
 
-                if (overlaps.Length > 0) return;
-
-                heldObject.transform.SetPositionAndRotation(point, finalRotation);
-                heldObject.transform.SetParent(hit.transform); // Attach to table
-                Rigidbody rb = heldObject.GetComponent<Rigidbody>();
-                if (rb != null)
-                {
-                    rb.isKinematic = true;
-                    rb.interpolation = RigidbodyInterpolation.None;
-                    rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
-                }
-
-                heldObject.layer = LayerMask.NameToLayer("Book");
-                EnablePlayerCollision(heldObject);
-                ClearHeldBook();
-                ghostBookManager.HideGhost();
+                FinalizeBookPlacement();
+                return;
             }
+
+            // Not stacking - place directly on surface
+            Vector3 surfacePos = hit.point + Vector3.up * 0.07f;
+            Quaternion baseRot = Quaternion.Euler(-90f, 90f, 90f);
+            Quaternion faceRot = Quaternion.Euler(0f, currentYRotation, 0f);
+            Quaternion finalRot = faceRot * baseRot;
+
+            Collider[] overlaps = Physics.OverlapBox(
+                surfacePos,
+                heldObject.GetComponent<Collider>().bounds.extents * 0.9f,
+                finalRot,
+                LayerMask.GetMask("Book")
+            );
+            if (overlaps.Length > 0) return;
+
+            heldObject.transform.SetPositionAndRotation(surfacePos, finalRot);
+            heldObject.transform.SetParent(tableTransform);
+
+            FinalizeBookPlacement();
         }
     }
+
+
+
+
     private ShelfSpot GetTargetShelfSpot()
     {
         ShelfSpot target = shelfDetector.CurrentLookedAtShelfSpot;
@@ -448,21 +449,6 @@ public class PickUp : MonoBehaviour
     }
 
 
-    private bool IsDropPositionSafe(Vector3 position)
-    {
-        if (heldObject == null) return false;
-
-        Collider col = heldObject.GetComponent<Collider>();
-        if (col == null) return false;
-
-        Vector3 halfExtents = col.bounds.extents;
-        Quaternion rotation = heldObject.transform.rotation; // Match book orientation
-
-        LayerMask obstacleMask = LayerMask.GetMask("Default", "Bookshelf", "Walls", "Furniture");
-        return !Physics.CheckBox(position, halfExtents, rotation, obstacleMask);
-    }
-
-
     private Vector3 FindSafeDropPosition()
     {
         if (heldObject == null) return holdPosition.position;
@@ -562,5 +548,96 @@ public class PickUp : MonoBehaviour
             Physics.IgnoreCollision(col, playerCollider, false);
     }
 
+    private GameObject GetTopmostBook(GameObject baseBook)
+    {
+        GameObject current = baseBook;
+        float yOffset = 0.12f;
+        string baseTitle = baseBook.GetComponent<BookInfo>()?.title;
+
+        if (string.IsNullOrEmpty(baseTitle)) return current;
+
+        for (int i = 0; i < 3; i++)
+        {
+            Vector3 checkPos = current.transform.position + Vector3.up * yOffset;
+            Collider[] hits = Physics.OverlapSphere(checkPos, 0.05f, LayerMask.GetMask("Book"));
+
+            bool found = false;
+            foreach (var hit in hits)
+            {
+                if (hit.gameObject == current) continue;
+
+                string title = hit.GetComponent<BookInfo>()?.title;
+                if (title == baseTitle)
+                {
+                    current = hit.gameObject;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) break;
+        }
+
+        return current;
+    }
+
+
+    private int CountBooksInStack(GameObject baseBook)
+    {
+        int count = 1;
+        float yOffset = 0.12f;
+        float checkRadius = 0.08f;
+
+        string baseTitle = baseBook.GetComponent<BookInfo>()?.title;
+        if (string.IsNullOrEmpty(baseTitle)) return count;
+
+        GameObject current = baseBook;
+
+        for (int i = 0; i < 3; i++) // check 3 books above
+        {
+            Vector3 checkPos = current.transform.position + Vector3.up * yOffset;
+            Collider[] hits = Physics.OverlapSphere(checkPos, checkRadius, LayerMask.GetMask("Book"));
+
+            // Sort hits by Y height to prefer higher books
+            System.Array.Sort(hits, (a, b) => a.transform.position.y.CompareTo(b.transform.position.y));
+
+            bool found = false;
+            foreach (var hit in hits)
+            {
+                if (hit.gameObject == current) continue;
+
+                string title = hit.GetComponent<BookInfo>()?.title;
+                if (title == baseTitle)
+                {
+                    current = hit.gameObject;
+                    count++;
+                    found = true;
+                    break;
+                }
+            }
+
+            if (!found) break;
+        }
+
+        return count;
+    }
+
+
+
+    private void FinalizeBookPlacement()
+    {
+        Rigidbody rb = heldObject.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.interpolation = RigidbodyInterpolation.None;
+            rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+        }
+
+        heldObject.layer = LayerMask.NameToLayer("Book");
+        EnablePlayerCollision(heldObject);
+        ClearHeldBook();
+        ghostBookManager.HideGhost();
+    }
 
 }

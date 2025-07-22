@@ -222,6 +222,7 @@ public class BuyPanelController : MonoBehaviour
     public void CloseAll()
     {
         this.gameObject.SetActive(false);
+        reviewPanel.gameObject.SetActive(false);
     }
 
     private int GetTotalCost()
