@@ -318,13 +318,27 @@ public class PickUp : MonoBehaviour
             Quaternion faceRot = Quaternion.Euler(0f, currentYRotation, 0f);
             Quaternion finalRot = faceRot * baseRot;
 
-            Collider[] overlaps = Physics.OverlapBox(
-                surfacePos,
-                heldObject.GetComponent<Collider>().bounds.extents * 0.9f,
-                finalRot,
-                LayerMask.GetMask("Book")
-            );
-            if (overlaps.Length > 0) return;
+            BoxCollider bookCollider = heldObject.GetComponent<BoxCollider>();
+            if (bookCollider != null)
+            {
+                Vector3 size = Vector3.Scale(bookCollider.size, heldObject.transform.lossyScale);
+                Vector3 halfExtents = size * 0.5f;
+
+                bool blocked = Physics.CheckBox(
+                    surfacePos,
+                    halfExtents,
+                    finalRot,
+                    LayerMask.GetMask("Book"),
+                    QueryTriggerInteraction.Ignore
+                );
+
+                if (blocked)
+                {
+                    Debug.Log("Placement blocked: would overlap another book.");
+                    return;
+                }
+            }
+
 
             heldObject.transform.SetPositionAndRotation(surfacePos, finalRot);
             heldObject.transform.SetParent(tableTransform);

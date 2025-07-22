@@ -171,6 +171,7 @@ MonoBehaviour:
   ObjectID: 
   title: 
   SpotIndex: 0
+  currentStackRoot: {fileID: 0}
 --- !u!65 &5011039745262841221
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -190,8 +191,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.4173627, y: 0.62080634, z: 0.109324455}
-  m_Center: {x: -0.0018913746, y: -0.0033764243, z: -0.00093984604}
+  m_Size: {x: 0.46148586, y: 0.66104966, z: 0.109324455}
+  m_Center: {x: 0.0009822845, y: -0.00049987435, z: -0.00093984604}
 --- !u!114 &6324312024836018304
 MonoBehaviour:
   m_ObjectHideFlags: 0

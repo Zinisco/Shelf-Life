@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using UnityEngine;
 
 public class GhostBookManager : MonoBehaviour
@@ -71,28 +72,40 @@ public class GhostBookManager : MonoBehaviour
             // STACKING CHECK (do this first so we know if rotation should be locked)
             if (Physics.Raycast(ray, out RaycastHit stackHit, 3f, LayerMask.GetMask("Book")))
             {
-                GameObject targetBook = stackHit.collider.gameObject;
-                BookInfo targetInfo = targetBook.GetComponent<BookInfo>();
+                GameObject hitBook = stackHit.collider.gameObject;
+                BookInfo hitInfo = hitBook.GetComponent<BookInfo>();
                 BookInfo heldInfo = heldObject.GetComponent<BookInfo>();
 
-                if (targetInfo != null && heldInfo != null &&
-                    targetInfo.title == heldInfo.title &&
-                    targetBook.transform.childCount < 5)
+                if (hitInfo != null && heldInfo != null && hitInfo.title == heldInfo.title)
                 {
-                    Vector3 topStackPos = targetBook.transform.position + Vector3.up * 0.12f;
+                    BookStackRoot root = hitInfo.currentStackRoot;
 
-                    Quaternion baseRotation = Quaternion.Euler(0f, 90f, 90f);
-                    Quaternion facingRotation = Quaternion.Euler(0f, currentRotationY, 0f);
-                    Quaternion finalRotation = facingRotation * baseRotation;
+                    // Find the topmost book in the stack
+                    GameObject topBook = hitBook;
+                    if (root != null && root.books.Count > 0)
+                    {
+                        topBook = root.books[root.books.Count - 1];
+                    }
 
-                    ghostBookInstance.transform.SetPositionAndRotation(topStackPos, finalRotation);
-                    ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
+                    int stackCount = root != null ? root.GetCount() : 1;
+                    if (stackCount < 4)
+                    {
+                        Vector3 topStackPos = topBook.transform.position + Vector3.up * 0.12f;
 
-                    stackTargetBook = targetBook; // <-- store this
-                    rotationLocked = false;
-                    return;
+                        Quaternion baseRotation = Quaternion.Euler(0f, 90f, 90f);
+                        Quaternion facingRotation = Quaternion.Euler(0f, currentRotationY, 0f);
+                        Quaternion finalRotation = facingRotation * baseRotation;
+
+                        ghostBookInstance.transform.SetPositionAndRotation(topStackPos, finalRotation);
+                        ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
+
+                        stackTargetBook = topBook;
+                        rotationLocked = false;
+                        return;
+                    }
                 }
             }
+
 
 
             // Only allow rotation when not stacking
