@@ -301,9 +301,7 @@ public class PickUp : MonoBehaviour
 
                 Vector3 finalPos = targetStackBook.transform.position + Vector3.up * 0.12f;
 
-                Quaternion baseRotation = Quaternion.Euler(-90f, 90f, 90f);
-                Quaternion facingRotation = Quaternion.Euler(0f, currentYRotation, 0f);
-                Quaternion finalRotation = facingRotation * baseRotation;
+                Quaternion finalRotation = targetStackBook.transform.rotation;
 
                 heldObject.transform.SetPositionAndRotation(finalPos, finalRotation);
                 heldObject.transform.SetParent(tableTransform);

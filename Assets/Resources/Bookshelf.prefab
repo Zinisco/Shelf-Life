@@ -81,11 +81,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae7e401f88d687045b8bda3a9681aa43, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ShelfID: 
+  ObjectID: NewGUID
   rows: 5
   columns: 21
   spacing: {x: 0.1, y: 0.8}
-  offset: {x: 0, y: 0, z: 0}
+  offset: {x: 0, y: -0.2, z: 0}
   spotVisualPrefab: {fileID: 1176274225462170385, guid: 33fb23be5ce25cd4cbae503a47ae86a5, type: 3}
 --- !u!114 &8802689297527563965
 MonoBehaviour:

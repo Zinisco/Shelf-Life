@@ -92,9 +92,7 @@ public class GhostBookManager : MonoBehaviour
                     {
                         Vector3 topStackPos = topBook.transform.position + Vector3.up * 0.12f;
 
-                        Quaternion baseRotation = Quaternion.Euler(0f, 90f, 90f);
-                        Quaternion facingRotation = Quaternion.Euler(0f, currentRotationY, 0f);
-                        Quaternion finalRotation = facingRotation * baseRotation;
+                        Quaternion finalRotation = topBook.transform.rotation * Quaternion.Euler(0f, -90f, 0f);
 
                         ghostBookInstance.transform.SetPositionAndRotation(topStackPos, finalRotation);
                         ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
