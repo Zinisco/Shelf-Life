@@ -36,7 +36,7 @@ public class FurnitureMover : MonoBehaviour
     private float postPlaceTimer = 0f;
 
 
-    private float holdTime = 2f;
+    [SerializeField] private float holdTime = 1.5f;
     private float holdTimer = 0f;
     private bool isHoldingToMove = false;
 

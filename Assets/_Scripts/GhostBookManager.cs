@@ -148,4 +148,7 @@ public class GhostBookManager : MonoBehaviour
 
         rotationLocked = false;
     }
+
+    public GameObject GhostBookInstance => ghostBookInstance;
+
 }

@@ -142,8 +142,20 @@ public class PickUp : MonoBehaviour
 
                 if (info != null && info.currentStackRoot != null)
                 {
-                    info.currentStackRoot.RemoveBook(heldObject);
+                    BookStackRoot root = info.currentStackRoot;
                     info.currentStackRoot = null;
+
+                    heldObject.transform.SetParent(null); // Unparent the book from the stack root
+
+                    StartCoroutine(DelayedRemoveFromStack(root, heldObject));
+                }
+
+
+
+                if (heldObject == null)
+                {
+                    Debug.LogWarning("Picked up object was null after stack logic.");
+                    return;
                 }
 
                 if (heldObjectRb != null)
@@ -280,14 +292,20 @@ public class PickUp : MonoBehaviour
                 BookStackRoot root = targetInfo.currentStackRoot;
                 if (root == null)
                 {
-                    // Create new root and assign existing book
+                    // Create new stack root at base book's position and rotation
                     GameObject rootObj = new GameObject("StackRoot");
+                    rootObj.transform.SetPositionAndRotation(targetStackBook.transform.position, targetStackBook.transform.rotation);
                     rootObj.transform.parent = tableTransform;
+
                     root = rootObj.AddComponent<BookStackRoot>();
                     root.stackTitle = targetInfo.title;
+
+                    // Parent base book to root and register it
+                    targetStackBook.transform.SetParent(rootObj.transform);
                     root.AddBook(targetStackBook);
                     targetInfo.currentStackRoot = root;
                 }
+
 
                 if (root.GetCount() >= 4)
                 {
@@ -304,7 +322,7 @@ public class PickUp : MonoBehaviour
                 Quaternion finalRotation = targetStackBook.transform.rotation;
 
                 heldObject.transform.SetPositionAndRotation(finalPos, finalRotation);
-                heldObject.transform.SetParent(tableTransform);
+                heldObject.transform.SetParent(root.transform);
 
                 FinalizeBookPlacement();
                 return;
@@ -344,9 +362,6 @@ public class PickUp : MonoBehaviour
             FinalizeBookPlacement();
         }
     }
-
-
-
 
     private ShelfSpot GetTargetShelfSpot()
     {
@@ -634,8 +649,6 @@ public class PickUp : MonoBehaviour
         return count;
     }
 
-
-
     private void FinalizeBookPlacement()
     {
         Rigidbody rb = heldObject.GetComponent<Rigidbody>();
@@ -651,5 +664,38 @@ public class PickUp : MonoBehaviour
         ClearHeldBook();
         ghostBookManager.HideGhost();
     }
+
+    private IEnumerator DelayedRemoveFromStack(BookStackRoot root, GameObject book)
+    {
+        yield return new WaitForEndOfFrame(); // Safer than just `null`
+
+        if (root != null)
+        {
+            root.RemoveBook(book);
+
+            if (root.GetCount() == 0)
+            {
+                // Double-check book is not still in hand
+                bool isStillHeld = heldObject == book;
+                if (!isStillHeld)
+                {
+                    Destroy(root.gameObject);
+                }
+                else
+                {
+                    // Defer destruction one more frame if needed
+                    StartCoroutine(DestroyRootLater(root));
+                }
+            }
+        }
+    }
+
+    private IEnumerator DestroyRootLater(BookStackRoot root)
+    {
+        yield return new WaitForEndOfFrame();
+        if (root != null) Destroy(root.gameObject);
+    }
+
+
 
 }
