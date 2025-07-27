@@ -5,6 +5,7 @@ public class BookStackRoot : MonoBehaviour
 {
     public List<GameObject> books = new List<GameObject>();
     public string stackTitle;
+    public bool wasJustNudged = false;
 
     public void AddBook(GameObject book)
     {

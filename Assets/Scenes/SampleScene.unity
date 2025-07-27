@@ -2678,6 +2678,10 @@ MonoBehaviour:
     m_Bits: 32768
   ghostBookManager: {fileID: 1731265739}
   playerCamera: {fileID: 108303777}
+  tableSurfaceMask:
+    serializedVersion: 2
+    m_Bits: 65536
+  wasJustNudged: 0
 --- !u!1 &535788808
 GameObject:
   m_ObjectHideFlags: 0
@@ -3904,6 +3908,7 @@ MonoBehaviour:
   validMaterial: {fileID: 2100000, guid: 4e7048a1471490040af1929af0f85e35, type: 2}
   invalidMaterial: {fileID: 2100000, guid: 72dc4ae95d8b5fc448789c4fdb82abad, type: 2}
   progressRingUI: {fileID: 132065162}
+  holdTime: 1.5
 --- !u!114 &739533919
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9720,6 +9725,77 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1630313382}
   m_CullTransparentMesh: 1
+--- !u!1001 &1684077919
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 940939929322109603, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_Name
+      value: Book
+      objectReference: {fileID: 0}
+    - target: {fileID: 3653800677043627266, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_Layer
+      value: 15
+      objectReference: {fileID: 0}
+    - target: {fileID: 3653800677043627266, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_TagString
+      value: Book
+      objectReference: {fileID: 0}
+    - target: {fileID: 6883056631555361614, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 2.229855
+      objectReference: {fileID: 0}
+    - target: {fileID: 6883056631555361614, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.068
+      objectReference: {fileID: 0}
+    - target: {fileID: 6883056631555361614, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -2.7824526
+      objectReference: {fileID: 0}
+    - target: {fileID: 6883056631555361614, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6883056631555361614, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6883056631555361614, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6883056631555361614, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6883056631555361614, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6883056631555361614, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6883056631555361614, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1403580079620976138, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
+    - targetCorrespondingSourceObject: {fileID: 8564280700302181550, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 0}
+  m_SourcePrefab: {fileID: 100100000, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
 --- !u!1 &1686116531
 GameObject:
   m_ObjectHideFlags: 0
@@ -10537,6 +10613,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ghostBookPrefab: {fileID: 2402301105610687113, guid: 2dbce75e20038eb4e8a627408acc1a3f, type: 3}
   surfaceOffset: 0.08
+  rotationSmoothSpeed: 10
+  validMaterial: {fileID: 2100000, guid: 4e7048a1471490040af1929af0f85e35, type: 2}
+  invalidMaterial: {fileID: 2100000, guid: 72dc4ae95d8b5fc448789c4fdb82abad, type: 2}
+  defaultMaterial: {fileID: 2100000, guid: 1a0afd856a35421469b28b916116fd9c, type: 2}
 --- !u!1 &1790967058
 GameObject:
   m_ObjectHideFlags: 0
@@ -12282,3 +12362,4 @@ SceneRoots:
   - {fileID: 1522744132}
   - {fileID: 154441831}
   - {fileID: 1907961217}
+  - {fileID: 1684077919}

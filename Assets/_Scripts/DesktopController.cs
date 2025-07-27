@@ -12,7 +12,7 @@ public class DesktopMenuController : MonoBehaviour
 
     public void OpenBuy()
     {
-        Debug.Log("Buy button pressed!");
+        //Debug.Log("Buy button pressed!");
         ShowOnly(booksPanel);
     }
 

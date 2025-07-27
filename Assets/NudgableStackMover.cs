@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -7,15 +8,26 @@ public class NudgableStackMover : MonoBehaviour
     [SerializeField] private LayerMask bookLayer;
     [SerializeField] private GhostBookManager ghostBookManager;
     [SerializeField] private Camera playerCamera;
+    [SerializeField] private LayerMask tableSurfaceMask;
+
+    public bool wasJustNudged = false;
+    public static bool IsNudging = false;
 
     private float holdTimer = 0f;
     private bool isNudging = false;
     private BookStackRoot selectedStackRoot;
     private GameObject heldGhost;
     private float currentYRotation = 0f;
+   
+    private float rotationAmount = 0f;
+
+    private Renderer[] originalRenderers;
+
+    private Coroutine ghostRotationCoroutine;
 
     void Update()
     {
+
         if (Keyboard.current.nKey.isPressed && !isNudging)
         {
             Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
@@ -48,7 +60,9 @@ public class NudgableStackMover : MonoBehaviour
 
         if (isNudging)
         {
+           // Debug.Log("Nudging is true — calling UpdateGhostFollow()");
             UpdateGhostFollow();
+            //Debug.Log("UpdateGhostFollow() called");
             HandleRotation();
             if (Mouse.current.leftButton.wasPressedThisFrame)
                 ConfirmPlacement();
@@ -63,8 +77,12 @@ public class NudgableStackMover : MonoBehaviour
             return;
         }
 
+        if (selectedStackRoot == null) return;
+
+        IsNudging = true;
         isNudging = true;
-        ghostBookManager.Init();
+        // Temporarily move the stack high above the table to avoid blocking placement
+        selectedStackRoot.transform.position += Vector3.up * 5f;
 
         if (selectedStackRoot.books == null || selectedStackRoot.books.Count == 0)
         {
@@ -73,30 +91,65 @@ public class NudgableStackMover : MonoBehaviour
         }
 
         heldGhost = selectedStackRoot.books[0]; // used for ghost visuals only
-        Debug.Log("Started nudging stack: " + selectedStackRoot.name);
-    }
+       // Debug.Log("Started nudging stack: " + selectedStackRoot.name);
 
+        // Disable renderers on the actual stack
+        originalRenderers = selectedStackRoot.GetComponentsInChildren<Renderer>();
+        foreach (Renderer rend in originalRenderers)
+        {
+            rend.enabled = false;
+        }
+    }
 
     void UpdateGhostFollow()
     {
-        Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
-        if (Physics.Raycast(ray, out RaycastHit hit, 3f))
+        if (ghostBookManager == null || heldGhost == null) return;
+
+        ghostBookManager.UpdateGhost(heldGhost, null, playerCamera, tableSurfaceMask, ref currentYRotation);
+
+        // Real-time placement validation for stacks
+        Transform ghost = ghostBookManager.GhostBookInstance.transform;
+        Vector3 boxSize = new Vector3(0.45f, 0.45f, 0.45f);
+        Vector3 boxCenter = ghost.position + Vector3.up * (boxSize.y * 0.5f);
+
+        Collider[] overlaps = Physics.OverlapBox(
+            boxCenter,
+            boxSize / 2f,
+            Quaternion.identity,
+            bookLayer,
+            QueryTriggerInteraction.Ignore
+        );
+
+        bool collision = false;
+        foreach (var col in overlaps)
         {
-            Vector3 pos = hit.point + Vector3.up * 0.12f;
-            Quaternion rot = Quaternion.Euler(0f, currentYRotation, 0f) * Quaternion.Euler(0f, 90f, 90f);
-            ghostBookManager.UpdateGhost(heldGhost, null, playerCamera, ~0, ref currentYRotation);
-            ghostBookManager.GhostBookInstance.transform.SetPositionAndRotation(pos, rot);
+            BookInfo info = col.GetComponent<BookInfo>();
+            if (info != null && selectedStackRoot != null && !selectedStackRoot.books.Contains(info.gameObject))
+            {
+                collision = true;
+                break;
+            }
         }
+
+        ghostBookManager.SetGhostMaterial(!collision);
     }
+
 
     void HandleRotation()
     {
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (Mathf.Abs(scroll) > 0.01f)
-        {
-            currentYRotation += scroll > 0 ? 15f : -15f;
-            currentYRotation = Mathf.Repeat(currentYRotation, 360f);
-        }
+        float scroll = Mouse.current.scroll.ReadValue().y;
+
+        if (Mathf.Abs(scroll) < 0.01f) return;
+
+        float angleStep = IsShiftHeld() ? 90f : 15f;
+
+        if (scroll > 0)
+            rotationAmount += angleStep;
+        else if (scroll < 0)
+            rotationAmount -= angleStep;
+
+        rotationAmount %= 360f;
+
     }
 
     public void ConfirmPlacement()
@@ -115,8 +168,42 @@ public class NudgableStackMover : MonoBehaviour
 
         Transform ghost = ghostBookManager.GhostBookInstance.transform;
 
-        // Move the whole stack root
-        selectedStackRoot.transform.SetPositionAndRotation(ghost.position, ghost.rotation);
+        // Extract Y rotation from ghost and apply proper stack alignment
+        float yRotation = ghost.rotation.eulerAngles.y;
+        Quaternion correctRotation = Quaternion.Euler(0f, yRotation, 0f);
+
+        // Place the entire stack
+        // Raycast downward from the ghost to detect the surface
+        Ray downRay = new Ray(ghost.position, Vector3.down);
+        if (Physics.Raycast(downRay, out RaycastHit surfaceHit, 2f, tableSurfaceMask)) // <- use correct mask here
+        {
+            Vector3 contactPoint = surfaceHit.point;
+
+            // Offset downward by height of one book so the bottom sits flush
+            float bookHeight = 0.12f; // Adjust if your book prefab height differs
+            Vector3 adjustedPos = contactPoint + Vector3.up * (bookHeight * 0.5f);
+
+            selectedStackRoot.transform.SetPositionAndRotation(adjustedPos, correctRotation);
+            selectedStackRoot.wasJustNudged = true;
+            StartCoroutine(ClearNudgeFlag(selectedStackRoot));
+        }
+        else
+        {
+            // Fallback if surface not detected
+            Debug.LogWarning("No surface detected below ghost. Placing at ghost position.");
+            selectedStackRoot.transform.SetPositionAndRotation(ghost.position, correctRotation);
+        }
+
+
+        // Re-enable visuals
+        if (originalRenderers != null)
+        {
+            foreach (Renderer rend in originalRenderers)
+            {
+                if (rend != null)
+                    rend.enabled = true;
+            }
+        }
 
         Debug.Log("Placed stack: " + selectedStackRoot.name);
 
@@ -124,5 +211,25 @@ public class NudgableStackMover : MonoBehaviour
         heldGhost = null;
         ghostBookManager.HideGhost();
         isNudging = false;
+        IsNudging = false;
     }
+
+    public void GhostSetValidity(bool isValid)
+    {
+        ghostBookManager.SetGhostMaterial(isValid);
+    }
+
+
+    private IEnumerator ClearNudgeFlag(BookStackRoot root)
+    {
+        yield return new WaitForSeconds(0.5f); // enough time to avoid overlap issues
+        if (root != null)
+            root.wasJustNudged = false;
+    }
+
+    private bool IsShiftHeld()
+    {
+        return GameInput.Instance.IsPrecisionModifierHeld();
+    }
+
 }

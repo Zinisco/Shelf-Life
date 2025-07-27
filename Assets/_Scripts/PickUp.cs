@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class PickUp : MonoBehaviour
@@ -92,6 +93,8 @@ public class PickUp : MonoBehaviour
     {
         if (heldObject == null)
         {
+            if (NudgableStackMover.IsNudging) return;
+
             TryPickup();
             //Debug.Log("Pick Up Object");
         }
@@ -164,10 +167,16 @@ public class PickUp : MonoBehaviour
                     heldObjectRb.interpolation = RigidbodyInterpolation.Interpolate;
                     heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
                     heldObject.transform.position = holdPosition.position;
-                    // Align book so cover faces player, spine left, top up
-                    Vector3 forward = -Camera.main.transform.forward; // cover toward camera
-                    Vector3 up = Vector3.up; // top up
-                    heldObject.transform.rotation = Quaternion.LookRotation(forward, up);
+                    Vector3 toCamera = Camera.main.transform.forward;
+
+                    // Since your cover faces +Y, and top is +Z, we need:
+                    // - +Y  toCamera (cover faces camera)
+                    // - +Z  up (top of book points up)
+
+                    Quaternion rotation = Quaternion.LookRotation(Vector3.up, -toCamera); // +Y to camera, +Z up
+                    heldObject.transform.rotation = rotation;
+                    heldObject.transform.Rotate(Vector3.right, 60f, Space.Self);
+
                 }
 
                 // Attach FixedJoint
@@ -329,10 +338,10 @@ public class PickUp : MonoBehaviour
             }
 
             // Not stacking - place directly on surface
-            Vector3 surfacePos = hit.point + Vector3.up * 0.07f;
-            Quaternion baseRot = Quaternion.Euler(-90f, 90f, 90f);
-            Quaternion faceRot = Quaternion.Euler(0f, currentYRotation, 0f);
-            Quaternion finalRot = faceRot * baseRot;
+            Transform ghost = ghostBookManager.GhostBookInstance.transform;
+            Vector3 surfacePos = ghost.position;
+            Quaternion finalRot = ghost.rotation;
+
 
             BoxCollider bookCollider = heldObject.GetComponent<BoxCollider>();
             if (bookCollider != null)
@@ -426,7 +435,7 @@ public class PickUp : MonoBehaviour
         Vector3 targetPosition = anchorTransform.position;
 
         // Define the final desired local rotation when shelved
-        Quaternion finalLocalRotation = Quaternion.Euler(0, 90, 0); // cover right, spine out
+        Quaternion finalLocalRotation = Quaternion.Euler(-90, -90, 0); // cover right, spine out
 
         // Get target world rotation by applying local rotation to anchor
         Quaternion targetRotation = anchorTransform.rotation * finalLocalRotation;
@@ -530,7 +539,6 @@ public class PickUp : MonoBehaviour
         }
     }
 
-
     private void ShelveBookToSpot(GameObject book, BookInfo info, ShelfSpot spot)
     {
         spot.Occupy(info);
@@ -608,47 +616,6 @@ public class PickUp : MonoBehaviour
         return current;
     }
 
-
-    private int CountBooksInStack(GameObject baseBook)
-    {
-        int count = 1;
-        float yOffset = 0.12f;
-        float checkRadius = 0.08f;
-
-        string baseTitle = baseBook.GetComponent<BookInfo>()?.title;
-        if (string.IsNullOrEmpty(baseTitle)) return count;
-
-        GameObject current = baseBook;
-
-        for (int i = 0; i < 3; i++) // check 3 books above
-        {
-            Vector3 checkPos = current.transform.position + Vector3.up * yOffset;
-            Collider[] hits = Physics.OverlapSphere(checkPos, checkRadius, LayerMask.GetMask("Book"));
-
-            // Sort hits by Y height to prefer higher books
-            System.Array.Sort(hits, (a, b) => a.transform.position.y.CompareTo(b.transform.position.y));
-
-            bool found = false;
-            foreach (var hit in hits)
-            {
-                if (hit.gameObject == current) continue;
-
-                string title = hit.GetComponent<BookInfo>()?.title;
-                if (title == baseTitle)
-                {
-                    current = hit.gameObject;
-                    count++;
-                    found = true;
-                    break;
-                }
-            }
-
-            if (!found) break;
-        }
-
-        return count;
-    }
-
     private void FinalizeBookPlacement()
     {
         Rigidbody rb = heldObject.GetComponent<Rigidbody>();
@@ -690,12 +657,11 @@ public class PickUp : MonoBehaviour
         }
     }
 
+
     private IEnumerator DestroyRootLater(BookStackRoot root)
     {
         yield return new WaitForEndOfFrame();
         if (root != null) Destroy(root.gameObject);
     }
-
-
 
 }
