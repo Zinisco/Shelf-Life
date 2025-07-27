@@ -172,15 +172,41 @@ public class NudgableStackMover : MonoBehaviour
         float yRotation = ghost.rotation.eulerAngles.y;
         Quaternion correctRotation = Quaternion.Euler(0f, yRotation, 0f);
 
-        // Place the entire stack
-        // Raycast downward from the ghost to detect the surface
+        // VALIDITY CHECK (REQUIRED BEFORE PLACEMENT)
+        Vector3 boxSize = new Vector3(0.45f, 0.45f, 0.45f);
+        Vector3 boxCenter = ghost.position + Vector3.up * (boxSize.y * 0.5f);
+
+        Collider[] overlaps = Physics.OverlapBox(
+            boxCenter,
+            boxSize / 2f,
+            Quaternion.identity,
+            bookLayer,
+            QueryTriggerInteraction.Ignore
+        );
+
+        bool collision = false;
+        foreach (var col in overlaps)
+        {
+            BookInfo info = col.GetComponent<BookInfo>();
+            if (info != null && selectedStackRoot != null && !selectedStackRoot.books.Contains(info.gameObject))
+            {
+                collision = true;
+                break;
+            }
+        }
+
+        if (collision)
+        {
+            Debug.LogWarning("Placement blocked — ghost was red.");
+            return; // Do not place
+        }
+
+        // If valid, continue with placement
         Ray downRay = new Ray(ghost.position, Vector3.down);
-        if (Physics.Raycast(downRay, out RaycastHit surfaceHit, 2f, tableSurfaceMask)) // <- use correct mask here
+        if (Physics.Raycast(downRay, out RaycastHit surfaceHit, 2f, tableSurfaceMask))
         {
             Vector3 contactPoint = surfaceHit.point;
-
-            // Offset downward by height of one book so the bottom sits flush
-            float bookHeight = 0.12f; // Adjust if your book prefab height differs
+            float bookHeight = 0.12f;
             Vector3 adjustedPos = contactPoint + Vector3.up * (bookHeight * 0.5f);
 
             selectedStackRoot.transform.SetPositionAndRotation(adjustedPos, correctRotation);
@@ -189,11 +215,9 @@ public class NudgableStackMover : MonoBehaviour
         }
         else
         {
-            // Fallback if surface not detected
             Debug.LogWarning("No surface detected below ghost. Placing at ghost position.");
             selectedStackRoot.transform.SetPositionAndRotation(ghost.position, correctRotation);
         }
-
 
         // Re-enable visuals
         if (originalRenderers != null)
@@ -213,6 +237,7 @@ public class NudgableStackMover : MonoBehaviour
         isNudging = false;
         IsNudging = false;
     }
+
 
     public void GhostSetValidity(bool isValid)
     {
