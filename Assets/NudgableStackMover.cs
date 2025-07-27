@@ -25,6 +25,13 @@ public class NudgableStackMover : MonoBehaviour
 
     private Coroutine ghostRotationCoroutine;
 
+    private Vector3 debugBoxCenter;
+    private Vector3 debugBoxSize;
+    private bool showDebugBox = false;
+    private Quaternion debugBoxRotation = Quaternion.identity;
+
+    private bool isPlacementValid = false;
+
     void Update()
     {
 
@@ -109,16 +116,33 @@ public class NudgableStackMover : MonoBehaviour
 
         // Real-time placement validation for stacks
         Transform ghost = ghostBookManager.GhostBookInstance.transform;
-        Vector3 boxSize = new Vector3(0.45f, 0.45f, 0.45f);
+        BoxCollider referenceCollider = heldGhost.GetComponent<BoxCollider>();
+        if (referenceCollider == null)
+        {
+            Debug.LogWarning("No BoxCollider found on heldGhost for placement check.");
+            return;
+        }
+
+        Vector3 worldSize = Vector3.Scale(referenceCollider.size, heldGhost.transform.lossyScale);
+        Vector3 boxSize = worldSize;
+
         Vector3 boxCenter = ghost.position + Vector3.up * (boxSize.y * 0.5f);
 
+        Quaternion ghostRotation = ghost.rotation;
+        debugBoxCenter = boxCenter;
+        debugBoxSize = boxSize;
+        debugBoxRotation = ghostRotation;
+        showDebugBox = true;
+
+
         Collider[] overlaps = Physics.OverlapBox(
-            boxCenter,
-            boxSize / 2f,
-            Quaternion.identity,
-            bookLayer,
-            QueryTriggerInteraction.Ignore
-        );
+    boxCenter,
+    boxSize / 2f,
+    ghostRotation, //Use the ghost's actual rotation
+    bookLayer,
+    QueryTriggerInteraction.Ignore
+);
+
 
         bool collision = false;
         foreach (var col in overlaps)
@@ -131,7 +155,9 @@ public class NudgableStackMover : MonoBehaviour
             }
         }
 
-        ghostBookManager.SetGhostMaterial(!collision);
+        isPlacementValid = !collision;
+        ghostBookManager.SetGhostMaterial(isPlacementValid);
+
     }
 
 
@@ -154,6 +180,7 @@ public class NudgableStackMover : MonoBehaviour
 
     public void ConfirmPlacement()
     {
+
         if (selectedStackRoot == null)
         {
             Debug.LogWarning("No stack selected to place.");
@@ -166,40 +193,17 @@ public class NudgableStackMover : MonoBehaviour
             return;
         }
 
+        if (!isPlacementValid)
+        {
+            Debug.LogWarning("Placement blocked — ghost was red.");
+            return;
+        }
+
         Transform ghost = ghostBookManager.GhostBookInstance.transform;
 
         // Extract Y rotation from ghost and apply proper stack alignment
         float yRotation = ghost.rotation.eulerAngles.y;
         Quaternion correctRotation = Quaternion.Euler(0f, yRotation, 0f);
-
-        // VALIDITY CHECK (REQUIRED BEFORE PLACEMENT)
-        Vector3 boxSize = new Vector3(0.45f, 0.45f, 0.45f);
-        Vector3 boxCenter = ghost.position + Vector3.up * (boxSize.y * 0.5f);
-
-        Collider[] overlaps = Physics.OverlapBox(
-            boxCenter,
-            boxSize / 2f,
-            Quaternion.identity,
-            bookLayer,
-            QueryTriggerInteraction.Ignore
-        );
-
-        bool collision = false;
-        foreach (var col in overlaps)
-        {
-            BookInfo info = col.GetComponent<BookInfo>();
-            if (info != null && selectedStackRoot != null && !selectedStackRoot.books.Contains(info.gameObject))
-            {
-                collision = true;
-                break;
-            }
-        }
-
-        if (collision)
-        {
-            Debug.LogWarning("Placement blocked — ghost was red.");
-            return; // Do not place
-        }
 
         // If valid, continue with placement
         Ray downRay = new Ray(ghost.position, Vector3.down);
@@ -231,6 +235,7 @@ public class NudgableStackMover : MonoBehaviour
 
         Debug.Log("Placed stack: " + selectedStackRoot.name);
 
+        showDebugBox = false;
         selectedStackRoot = null;
         heldGhost = null;
         ghostBookManager.HideGhost();
@@ -255,6 +260,19 @@ public class NudgableStackMover : MonoBehaviour
     private bool IsShiftHeld()
     {
         return GameInput.Instance.IsPrecisionModifierHeld();
+    }
+
+    private void OnDrawGizmos()
+    {
+        if (!showDebugBox) return;
+
+        Gizmos.color = Color.red;
+
+        // Save original matrix and apply rotation + position
+        Matrix4x4 rotationMatrix = Matrix4x4.TRS(debugBoxCenter, debugBoxRotation, Vector3.one);
+        Gizmos.matrix = rotationMatrix;
+
+        Gizmos.DrawWireCube(Vector3.zero, debugBoxSize);
     }
 
 }
