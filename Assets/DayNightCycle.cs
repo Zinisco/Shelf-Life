@@ -1,14 +1,15 @@
 using TMPro;
 using UnityEngine;
-using TMPro;
 
 public class DayNightCycle : MonoBehaviour
 {
     [Header("Time Settings")]
     [Range(0f, 24f)]
-    public float currentTime = 9f; // Start at 9 AM
-    public float dayDurationInMinutes = 1f; // How long a full day lasts (in real-time minutes)
-   
+    public float currentTime = 9f;
+    public float dayDurationInMinutes = 1f;
+    private float timeSpeed;
+    private bool timeRunning = false;
+
     [Header("UI")]
     [SerializeField] private TMP_Text timeDisplay;
     [SerializeField] private TMP_Text computerTimeDisplay;
@@ -19,10 +20,11 @@ public class DayNightCycle : MonoBehaviour
     public AnimationCurve sunIntensityCurve;
 
     [Header("Rotation Settings")]
-    public Transform sunPivot; // Rotate the directional light around this
+    public Transform sunPivot;
     public Vector3 rotationAxis = Vector3.right;
 
-    private float timeSpeed;
+    public bool IsTimeRunning => timeRunning; // External read access
+    public float CurrentHour => Mathf.Floor(currentTime);
 
     void Start()
     {
@@ -31,32 +33,31 @@ public class DayNightCycle : MonoBehaviour
 
     void Update()
     {
+        if (!timeRunning) return;
+
         currentTime += Time.deltaTime * timeSpeed;
         if (currentTime >= 24f) currentTime -= 24f;
 
         string currentFormattedTime = GetFormattedTime();
-
-        if (timeDisplay != null)
-            timeDisplay.text = currentFormattedTime;
-
-        if (computerTimeDisplay != null)
-            computerTimeDisplay.text = currentFormattedTime;
-
-
+        if (timeDisplay != null) timeDisplay.text = currentFormattedTime;
+        if (computerTimeDisplay != null) computerTimeDisplay.text = currentFormattedTime;
 
         UpdateSun();
+
+        // Automatically stop time at 9PM
+        if (currentTime >= 21f)
+        {
+            StopTime();
+            Debug.Log("Store hours ended. Please close up.");
+        }
     }
 
     void UpdateSun()
     {
         float t = currentTime / 24f;
-
-        // Rotate sun based on time
         float sunAngle = t * 360f - 150f;
         sunPivot.localRotation = Quaternion.Euler(new Vector3(sunAngle, 0f, 0f));
 
-
-        // Update light color & intensity
         if (sunLight != null)
         {
             sunLight.color = lightColorOverTime.Evaluate(t);
@@ -64,17 +65,30 @@ public class DayNightCycle : MonoBehaviour
         }
     }
 
+    public void ResetDay()
+    {
+        currentTime = 9f;
+        StopTime();
+        UpdateSun();
+
+        //Force UI time update immediately
+        string currentFormattedTime = GetFormattedTime();
+        if (timeDisplay != null) timeDisplay.text = currentFormattedTime;
+        if (computerTimeDisplay != null) computerTimeDisplay.text = currentFormattedTime;
+    }
+
+
+
     private string GetFormattedTime()
     {
         int hours = Mathf.FloorToInt(currentTime);
         int minutes = Mathf.FloorToInt((currentTime - hours) * 60f);
         string suffix = hours >= 12 ? "PM" : "AM";
-
         int displayHour = hours % 12;
         if (displayHour == 0) displayHour = 12;
-
         return $"{displayHour:00}:{minutes:00} {suffix}";
     }
 
-
+    public void StartTime() => timeRunning = true;
+    public void StopTime() => timeRunning = false;
 }
