@@ -24,4 +24,10 @@ public class BookStackRoot : MonoBehaviour
     {
         return books.Count;
     }
+
+    public int GetBookIndex(GameObject book)
+    {
+        return books.IndexOf(book);
+    }
+
 }

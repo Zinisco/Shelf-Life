@@ -3,19 +3,25 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
+[System.Serializable]
+public class SurfaceAnchorSaveData
+{
+    public string surfaceID;
+    public Vector3 position;
+    public Quaternion rotation;
+}
+
 public class BookSaveManager : MonoBehaviour
 {
-
     [System.Serializable]
     public class SaveDataWrapper
     {
-        public int saveVersion = 1;
+        public int saveVersion = 2;
         public List<BookSaveData> allBooks = new();
         public List<BookshelfSaveData> allShelves = new();
         public List<CrateSaveData> allCrates = new();
-
+        public List<SurfaceAnchorSaveData> allSurfaces = new();
         public ComputerSaveData terminalData;
-
     }
 
     [SerializeField] private BookDatabase bookDatabase;
@@ -33,13 +39,39 @@ public class BookSaveManager : MonoBehaviour
     public void SaveAll()
     {
         var w = new SaveDataWrapper();
-        w.saveVersion = 1; // current format version
+        var stackIDs = new Dictionary<BookStackRoot, string>();
+        int stackCounter = 0;
 
-        // --- books ---
+        foreach (var anchor in FindObjectsOfType<SurfaceAnchor>())
+        {
+            if (anchor == null || anchor.GetID() == null)
+            {
+                Debug.LogWarning("Null SurfaceAnchor or missing ID detected during save.");
+                continue;
+            }
+
+            w.allSurfaces.Add(new SurfaceAnchorSaveData
+            {
+                surfaceID = anchor.GetID(),
+                position = anchor.transform.position,
+                rotation = anchor.transform.rotation
+            });
+        }
+
+
         foreach (var info in FindObjectsOfType<BookInfo>())
         {
-            // only shelved books should set shelfID and spotIndex
-            w.allBooks.Add(new BookSaveData
+            float[] safeColor = new float[] { 1f, 1f, 1f };
+            if (info.definition != null)
+            {
+                safeColor = new float[] {
+        info.definition.color.r,
+        info.definition.color.g,
+        info.definition.color.b
+    };
+            }
+
+            var data = new BookSaveData
             {
                 bookID = info.bookID,
                 title = info.definition?.title ?? "",
@@ -47,27 +79,44 @@ public class BookSaveManager : MonoBehaviour
                 summary = info.definition?.summary ?? "",
                 price = info.definition?.price ?? 0,
                 cost = info.definition?.cost ?? 0,
-                color = new float[] {
-        info.definition.color.r,
-        info.definition.color.g,
-        info.definition.color.b
-    },
+                color = safeColor,
                 tags = new List<string>(info.tags),
                 shelfID = info.ObjectID,
                 spotIndex = info.SpotIndex,
                 position = info.transform.position,
-                rotation = info.transform.rotation,
-            });
+                rotation = info.transform.rotation
+            };
+
+            if (info.currentStackRoot != null)
+            {
+                if (!stackIDs.ContainsKey(info.currentStackRoot))
+                    stackIDs[info.currentStackRoot] = "stack_" + stackCounter++;
+
+                data.stackGroupID = stackIDs[info.currentStackRoot];
+                data.stackIndex = info.currentStackRoot.GetBookIndex(info.gameObject);
+
+                var stackRootTransform = info.currentStackRoot.transform;
+                if (stackRootTransform != null && stackRootTransform.parent != null)
+                {
+                    var parentAnchor = stackRootTransform.parent.GetComponent<SurfaceAnchor>();
+                    if (parentAnchor != null)
+                        data.tableID = parentAnchor.GetID();
+                }
+            }
+
+
+            w.allBooks.Add(data);
         }
 
-        // --- shelves & tables ---
         foreach (var shelf in FindObjectsOfType<Bookshelf>())
+        {
             w.allShelves.Add(new BookshelfSaveData
             {
                 ShelfID = shelf.GetID(),
                 Position = shelf.transform.position,
                 Rotation = shelf.transform.rotation
             });
+        }
 
         foreach (var crate in FindObjectsOfType<BookCrate>())
         {
@@ -90,12 +139,6 @@ public class BookSaveManager : MonoBehaviour
             };
         }
 
-
-        foreach (var book in w.allBooks)
-        {
-            Debug.Log($"[SAVE] Book '{book.bookID}' — shelfID: {book.shelfID}, spotIndex: {book.spotIndex}");
-        }
-
         File.WriteAllText(Path.Combine(Application.persistentDataPath, "booksave.json"),
                           JsonUtility.ToJson(w, true));
         Debug.Log("Saved!");
@@ -103,34 +146,19 @@ public class BookSaveManager : MonoBehaviour
 
     public void LoadAll()
     {
-        var path = Path.Combine(Application.persistentDataPath, "booksave.json");
+        string path = Path.Combine(Application.persistentDataPath, "booksave.json");
         if (!File.Exists(path)) { Debug.LogWarning("No save."); return; }
 
         var w = JsonUtility.FromJson<SaveDataWrapper>(File.ReadAllText(path));
 
-        // handle versioning
-        if (w.saveVersion < 1)
-        {
-            Debug.LogWarning($"[Load] Unsupported save version: {w.saveVersion}");
-            return;
-        }
-        else if (w.saveVersion < 2)
-        {
-            // Upgrade logic here: Add missing fields, change defaults, etc.
-            MigrateV1ToV2(w);
-        }
-
-        // Destroy old books, shelves, tables
         foreach (var b in FindObjectsOfType<BookInfo>()) Destroy(b.gameObject);
         foreach (var s in FindObjectsOfType<Bookshelf>()) Destroy(s.gameObject);
         foreach (var c in FindObjectsOfType<BookCrate>()) Destroy(c.gameObject);
+        foreach (var t in FindObjectsOfType<SurfaceAnchor>()) Destroy(t.gameObject);
 
-        var existingTerminal = FindObjectOfType<ComputerTerminal>();
-        if (existingTerminal != null)
-            Destroy(existingTerminal.gameObject);
+        var terminal = FindObjectOfType<ComputerTerminal>();
+        if (terminal != null) Destroy(terminal.gameObject);
 
-
-        // Recreate shelves
         foreach (var sd in w.allShelves)
         {
             var go = Instantiate(Resources.Load<GameObject>("Bookshelf"));
@@ -139,54 +167,24 @@ public class BookSaveManager : MonoBehaviour
             go.GetComponent<Bookshelf>().SetID(sd.ShelfID);
         }
 
-        //Recreate ComputerTerminal
+        foreach (var surfaceData in w.allSurfaces)
+        {
+            var prefab = Resources.Load<GameObject>("SurfaceTable");
+            var go = Instantiate(prefab, surfaceData.position, surfaceData.rotation);
+            var anchor = go.GetComponent<SurfaceAnchor>();
+            typeof(SurfaceAnchor).GetField("surfaceID", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                                 .SetValue(anchor, surfaceData.surfaceID);
+        }
+
         if (w.terminalData != null)
         {
             var go = Instantiate(Resources.Load<GameObject>("ComputerTerminal"));
             go.transform.position = w.terminalData.Position;
             go.transform.rotation = w.terminalData.Rotation;
         }
-        else
-        {
-            Debug.LogWarning("No terminal data found in save.");
-        }
 
-        //recreate crates (if any)
-        openedCrateIDs.Clear();
-        foreach (var crateData in w.allCrates)
-        {
-            if (crateData.opened && !string.IsNullOrEmpty(crateData.crateID))
-                openedCrateIDs.Add(crateData.crateID);
-        }
+        var stacksByID = new Dictionary<string, List<(BookSaveData, GameObject)>>();
 
-        foreach (var crateData in w.allCrates)
-        {
-            if (openedCrateIDs.Contains(crateData.crateID)) continue;
-
-            var prefab = Resources.Load<GameObject>("BookCrate");
-            var go = Instantiate(prefab, crateData.position, crateData.rotation);
-
-            var crate = go.GetComponent<BookCrate>();
-            crate.MarkUnopened();
-            crate.SetCrateID(crateData.crateID); // We'll create this next
-        }
-
-        // STEP 1: Collect all stacked books from table data
-        var stackedBookHashes = new HashSet<string>();
-
-        // STEP 2: Filter out any books from allBooks that match stacked books
-        int beforeCount = w.allBooks.Count;
-        w.allBooks.RemoveAll(book =>
-        {
-            string hash = GenerateBookHash(book);
-            return stackedBookHashes.Contains(hash);
-        });
-        int afterCount = w.allBooks.Count;
-        Debug.Log($"[Cleaner] Removed {beforeCount - afterCount} duplicate stacked books from allBooks.");
-
-
-
-        // Recreate books (stacked & shelved)
         foreach (var bd in w.allBooks)
         {
             var prefab = bookDatabase.GetBookPrefabByID(bd.bookID);
@@ -200,8 +198,7 @@ public class BookSaveManager : MonoBehaviour
                 info.ObjectID = bd.shelfID;
                 info.SpotIndex = bd.spotIndex;
 
-                // Rebuild definition
-                BookDefinition def = ScriptableObject.CreateInstance<BookDefinition>();
+                var def = ScriptableObject.CreateInstance<BookDefinition>();
                 def.bookID = bd.bookID;
                 def.title = bd.title;
                 def.genre = bd.genre;
@@ -216,65 +213,76 @@ public class BookSaveManager : MonoBehaviour
                 info.tags = new List<string>(bd.tags ?? new List<string>());
                 info.UpdateVisuals();
 
-                Debug.Log($"[LoadAll] Spawned shelved book: {def.title}, shelfID={bd.shelfID}, spot={bd.spotIndex}");
+                if (!string.IsNullOrEmpty(bd.stackGroupID))
+                {
+                    if (!stacksByID.ContainsKey(bd.stackGroupID))
+                        stacksByID[bd.stackGroupID] = new();
+
+                    stacksByID[bd.stackGroupID].Add((bd, go));
+                }
+            }
+        }
+
+        foreach (var pair in stacksByID)
+        {
+            var stackList = pair.Value;
+            stackList.Sort((a, b) => a.Item1.stackIndex.CompareTo(b.Item1.stackIndex));
+
+            var rootGO = new GameObject("StackRoot");
+            var root = rootGO.AddComponent<BookStackRoot>();
+            root.stackTitle = stackList[0].Item1.title;
+            rootGO.transform.position = stackList[0].Item1.position;
+            rootGO.transform.rotation = stackList[0].Item1.rotation;
+
+            if (!string.IsNullOrEmpty(stackList[0].Item1.tableID))
+            {
+                foreach (var anchor in FindObjectsOfType<SurfaceAnchor>())
+                {
+                    if (anchor.GetID() == stackList[0].Item1.tableID)
+                    {
+                        rootGO.transform.SetParent(anchor.transform);
+                        break;
+                    }
+                }
+            }
+
+            foreach (var (bookData, bookGO) in stackList)
+            {
+                bookGO.transform.SetParent(rootGO.transform);
+                root.AddBook(bookGO);
+
+                var bookInfo = bookGO.GetComponent<BookInfo>();
+                bookInfo.currentStackRoot = root;
             }
         }
 
         StartCoroutine(ReconnectShelves());
     }
 
-    private static string GenerateBookHash(BookSaveData book)
-    {
-        Vector3 pos = book.position;
-        int spot = book.spotIndex;
-
-        return $"{book.bookID}_{Mathf.RoundToInt(pos.x * 100f)}_{Mathf.RoundToInt(pos.y * 100f)}_{Mathf.RoundToInt(pos.z * 100f)}_{spot}";
-    }
-
     private IEnumerator ReconnectShelves()
-    {     
+    {
         yield return new WaitForSeconds(0.2f);
 
         var byID = new Dictionary<string, Bookshelf>();
         foreach (var s in FindObjectsOfType<Bookshelf>())
             byID[s.GetID()] = s;
 
-
         foreach (var info in FindObjectsOfType<BookInfo>())
         {
-
             if (string.IsNullOrEmpty(info.ObjectID) || info.SpotIndex < 0)
-            {
-                Debug.LogWarning($"[Reconnect] Skipping book {info.name} — shelfID: {info.ObjectID}, spotIndex: {info.SpotIndex}");
                 continue;
-            }
-
-            if (string.IsNullOrEmpty(info.ObjectID) || info.SpotIndex < 0)
-            {
-                Debug.LogWarning($"Book '{info.name}' missing shelfID or spot index.");
-                continue;
-            }
 
             if (!byID.TryGetValue(info.ObjectID, out var shelf))
-            {
-                Debug.LogError($"Shelf '{info.ObjectID}' not found for book '{info.name}'.");
                 continue;
-            }
 
             var spots = shelf.GetShelfSpots();
             if (info.SpotIndex >= spots.Count)
-            {
-                Debug.LogError($"Invalid spot index '{info.SpotIndex}' for shelf '{shelf.GetID()}'.");
                 continue;
-            }
 
             var target = spots[info.SpotIndex];
             var anchor = target.GetBookAnchor();
             if (anchor == null)
-            {
-                Debug.LogError($"Missing anchor for spot '{target.name}'.");
                 continue;
-            }
 
             info.transform.SetParent(anchor, false);
             info.transform.localPosition = Vector3.zero;
@@ -287,30 +295,13 @@ public class BookSaveManager : MonoBehaviour
                 rb.interpolation = RigidbodyInterpolation.None;
                 rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
             }
-            
+
             info.SetShelfSpot(target, info.ObjectID, info.SpotIndex);
             target.SetOccupied(true, info.gameObject);
             info.UpdateVisuals();
         }
-
     }
 
-    private void MigrateV1ToV2(SaveDataWrapper w)
-    {
-        foreach (var book in w.allBooks)
-        {
-            if (book.tags == null)
-                book.tags = new List<string>(); // new field
-        }
-
-        w.saveVersion = 2;
-        Debug.Log("[Migration] Upgraded save file to version 2.");
-    }
-
-
-    // static shortcuts
     public static void TriggerSave() => _I?.SaveAll();
     public static void TriggerLoad() => _I?.LoadAll();
-
-    private static HashSet<string> openedCrateIDs = new();
 }
