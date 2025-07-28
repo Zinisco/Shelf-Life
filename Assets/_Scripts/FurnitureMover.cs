@@ -15,6 +15,7 @@ public class FurnitureMover : MonoBehaviour
     [SerializeField] private float moveDistance = 3f;
     [SerializeField] private float rotationSmoothSpeed = 10f;
     [SerializeField] private LayerMask placementObstacles;
+    [SerializeField] private LayerMask groundMask;
     [SerializeField] private GameInput gameInput;
     [SerializeField] private Material validMaterial;
     [SerializeField] private Material invalidMaterial;
@@ -34,6 +35,9 @@ public class FurnitureMover : MonoBehaviour
     private float currentRotation = 0f;
     private float postPlaceCooldown = 0.2f; // short buffer after placement
     private float postPlaceTimer = 0f;
+
+    private int movingFurnitureLayer;
+    private int originalFurnitureLayer;
 
 
     [SerializeField] private float holdTime = 1.5f;
@@ -72,10 +76,15 @@ public class FurnitureMover : MonoBehaviour
     private void Start()
     {
         pickUp = FindObjectOfType<PickUp>();
-
-        // Grab the player’s collider
         playerCol = PlayerCollider;
+
+        // Get correct layer index from Unity
+        movingFurnitureLayer = LayerMask.NameToLayer("MovingFurniture");
+
+        if (movingFurnitureLayer == -1)
+            Debug.LogWarning("Layer 'MovingFurniture' not found. Please create it in Unity.");
     }
+
 
     private void Update()
     {
@@ -191,6 +200,14 @@ public class FurnitureMover : MonoBehaviour
         originalPosition = selectedFurniture.transform.position;
         originalRotation = selectedFurniture.transform.rotation;
 
+        originalFurnitureLayer = selectedFurniture.layer;
+        selectedFurniture.layer = movingFurnitureLayer;
+
+        // Also change all children
+        foreach (Transform child in selectedFurniture.GetComponentsInChildren<Transform>())
+        {
+            child.gameObject.layer = movingFurnitureLayer;
+        }
 
         // Cache all the furniture’s colliders
         Collider[] furnitureCols = selectedFurniture.GetComponentsInChildren<Collider>();
@@ -253,7 +270,19 @@ public class FurnitureMover : MonoBehaviour
         float bottomOffset = bounds.center.y - bounds.extents.y;
 
         Vector3 ghostPos = ghostVisual.transform.position;
-        Vector3 correctPosition = new Vector3(ghostPos.x, -bottomOffset, ghostPos.z);
+
+        // Raycast to get ground height
+        RaycastHit hitInfo;
+        float y = ghostPos.y; // fallback
+
+        if (Physics.Raycast(ghostPos + Vector3.up, Vector3.down, out hitInfo, 5f, groundMask))
+        {
+            y = hitInfo.point.y;
+        }
+
+        Vector3 correctPosition = new Vector3(ghostPos.x, y, ghostPos.z);
+        selectedFurniture.transform.position = correctPosition;
+
 
         selectedFurniture.transform.position = correctPosition;
 
@@ -278,6 +307,14 @@ public class FurnitureMover : MonoBehaviour
             }
         }
 
+        selectedFurniture.layer = originalFurnitureLayer;
+
+        foreach (Transform child in selectedFurniture.GetComponentsInChildren<Transform>())
+        {
+            child.gameObject.layer = originalFurnitureLayer;
+        }
+
+
         ghostVisual.SetActive(false);
 
         selectedFurniture = null;
@@ -297,11 +334,13 @@ public class FurnitureMover : MonoBehaviour
             return false;
 
         // fallback to any tagged Furniture root
-        if (hit.collider.CompareTag("Furniture"))
+        MovableFurniture movable = hit.collider.GetComponentInParent<MovableFurniture>();
+        if (movable != null && movable.CanMove())
         {
-            furniture = hit.collider.transform.root.gameObject;
+            furniture = movable.gameObject;
             return true;
         }
+
 
         return false;
     }
@@ -310,9 +349,21 @@ public class FurnitureMover : MonoBehaviour
     {
         if (ghostVisual == null || selectedFurniture == null) return;
 
-        Vector3 targetPos = playerCamera.position + playerCamera.forward * moveDistance;
-        targetPos.y = 0f;
-        selectedFurniture.transform.position = targetPos;
+        Vector3 forwardPos = playerCamera.position + playerCamera.forward * moveDistance;
+        Vector3 rayOrigin = forwardPos + Vector3.up * 2f; // cast from above to ensure it hits
+        Ray ray = new Ray(rayOrigin, Vector3.down);
+
+        if (Physics.Raycast(ray, out RaycastHit hit, 5f, groundMask))
+        {
+            forwardPos.y = hit.point.y;
+        }
+        else
+        {
+            forwardPos.y = 0f; // fallback
+        }
+
+        selectedFurniture.transform.position = forwardPos;
+
 
         // Smoothly interpolate rotation
         currentRotation = Mathf.LerpAngle(currentRotation, rotationAmount, Time.deltaTime * rotationSmoothSpeed);
@@ -354,14 +405,15 @@ public class FurnitureMover : MonoBehaviour
         if (ghostVisual == null || selectedFurniture == null)
             return false;
 
-        // Get combined bounds of all renderers (excluding ghost itself)
         Bounds bounds = new Bounds(selectedFurniture.transform.position, Vector3.zero);
         Renderer[] renderers = selectedFurniture.GetComponentsInChildren<Renderer>();
 
         bool hasValidRenderer = false;
         foreach (Renderer rend in renderers)
         {
-            if (rend.gameObject == ghostVisual) continue;
+            if (ghostVisual != null && rend.transform.IsChildOf(ghostVisual.transform))
+                continue;
+
             bounds.Encapsulate(rend.bounds);
             hasValidRenderer = true;
         }
@@ -372,6 +424,10 @@ public class FurnitureMover : MonoBehaviour
         Vector3 center = bounds.center;
         Vector3 halfExtents = bounds.extents;
 
+        // Store all colliders of the furniture being moved
+        Collider[] selfColliders = selectedFurniture.GetComponentsInChildren<Collider>();
+
+        // Check for overlaps with placement obstacles (now including Furniture layer)
         Collider[] hits = Physics.OverlapBox(
             center,
             halfExtents,
@@ -382,14 +438,17 @@ public class FurnitureMover : MonoBehaviour
 
         foreach (var hit in hits)
         {
-            if (hit.transform.root != selectedFurniture.transform)
-            {
-                return false; // Colliding with something that’s not this furniture
-            }
+            // Ignore self-collisions
+            if (selfColliders.Contains(hit))
+                continue;
+
+            return false; // Found an obstacle that's not part of this furniture
         }
 
         return true;
     }
+
+
 
     private void OnRotateLeft(object sender, EventArgs e)
     {
@@ -432,6 +491,13 @@ public class FurnitureMover : MonoBehaviour
             ghostVisual.SetActive(false);
 
         // Reset state
+        selectedFurniture.layer = originalFurnitureLayer;
+
+        foreach (Transform child in selectedFurniture.GetComponentsInChildren<Transform>())
+        {
+            child.gameObject.layer = originalFurnitureLayer;
+        }
+
         selectedFurniture = null;
         ghostVisual = null;
         ghostRenderer = null;
