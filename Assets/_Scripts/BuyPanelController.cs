@@ -18,6 +18,13 @@ public class BuyPanelController : MonoBehaviour
     public Button reviewButton;
     public Button backButton;
     public Button confirmButton;
+    public Button randomButton;
+
+    [Header("Random Button Panel")]
+    public GameObject randomQuantityPanel;
+    public TMP_InputField quantityInputField;
+    public Button confirmRandomButton;
+    public Button cancelRandomButton;
 
     [Header("Settings")]
     public int maxBooksPerOrder = 20;
@@ -45,6 +52,9 @@ public class BuyPanelController : MonoBehaviour
         reviewButton.onClick.AddListener(OpenReviewPanel);
         backButton.onClick.AddListener(CloseReviewPanel);
         confirmButton.onClick.AddListener(ConfirmOrder);
+        randomButton.onClick.AddListener(() => randomQuantityPanel.SetActive(true));
+        confirmRandomButton.onClick.AddListener(OnConfirmRandomSelection);
+        cancelRandomButton.onClick.AddListener(() => randomQuantityPanel.SetActive(false));
     }
 
     private void PopulateAvailableBooks()
@@ -181,10 +191,46 @@ public class BuyPanelController : MonoBehaviour
         reviewPanel.SetActive(false);
     }
 
+    private void CloseRandomPanel()
+    {
+        randomQuantityPanel.SetActive(false);
+    }
+
     private void UpdateWalletUI()
     {
         if (walletText != null && CurrencyManager.Instance != null)
             walletText.text = $"$ {CurrencyManager.Instance.GetBalance()}";
+    }
+
+    private void OnConfirmRandomSelection()
+    {
+        int quantity = Mathf.Clamp(int.Parse(quantityInputField.text), 1, maxBooksPerOrder);
+        AddRandomBooksToOrder(quantity);
+        randomQuantityPanel.SetActive(false);
+    }
+
+    private void AddRandomBooksToOrder(int quantity)
+    {
+        int added = 0;
+
+        while (added < quantity)
+        {
+            // Pick a completely random book
+            BookDefinition randomBook = availableBooks[Random.Range(0, availableBooks.Count)];
+
+            if (!currentOrder.ContainsKey(randomBook))
+                currentOrder[randomBook] = 0;
+
+            if (currentOrder[randomBook] >= maxPerBookType)
+                continue; // skip, try again
+
+            currentOrder[randomBook]++;
+            added++;
+        }
+
+        RefreshUIQuantities();
+        UpdateBookCountText();
+        UpdateConfirmButtonState();
     }
 
 
@@ -225,6 +271,22 @@ public class BuyPanelController : MonoBehaviour
         reviewPanel.gameObject.SetActive(false);
     }
 
+    private void RefreshUIQuantities()
+    {
+        foreach (Transform child in contentParent)
+        {
+            TMP_Text titleText = child.Find("TitleText").GetComponent<TMP_Text>();
+            TMP_Text qtyText = child.Find("QuantityText").GetComponent<TMP_Text>();
+
+            var book = availableBooks.Find(b => b.title == titleText.text);
+            if (book != null && currentOrder.ContainsKey(book))
+                qtyText.text = currentOrder[book].ToString();
+            else
+                qtyText.text = "0";
+        }
+    }
+
+
     private int GetTotalCost()
     {
         int total = 0;
@@ -258,4 +320,5 @@ public class BuyPanelController : MonoBehaviour
         }
         return finalList;
     }
+
 }
