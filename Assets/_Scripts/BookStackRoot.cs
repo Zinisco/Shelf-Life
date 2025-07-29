@@ -16,9 +16,15 @@ public class BookStackRoot : MonoBehaviour
     public void RemoveBook(GameObject book)
     {
         books.Remove(book);
+        Debug.Log($"Removed {book.name} from stack. Remaining: {books.Count}");
+
         if (books.Count == 0)
-            Destroy(gameObject); // Remove stack root if empty
+        {
+            Debug.LogWarning("StackRoot destroyed because it was empty.");
+            Destroy(gameObject);
+        }
     }
+
 
     public int GetCount()
     {

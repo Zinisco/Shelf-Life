@@ -54,8 +54,11 @@ public class GhostBookManager : MonoBehaviour
                 ghostBookInstance.SetActive(true);
 
             Transform anchor = shelfSpot.GetBookAnchor();
-            Quaternion anchorRotation = Quaternion.Euler(90, 0, 90);
-            ghostBookInstance.transform.SetPositionAndRotation(anchor.position, anchorRotation);
+            ghostBookInstance.transform.SetPositionAndRotation(
+    anchor.position,
+    anchor.rotation * Quaternion.Euler(90f, 0f, 90f)
+);
+
             ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
 
             ApplyGhostMaterial(defaultMaterial); // keep ghost white when shelving

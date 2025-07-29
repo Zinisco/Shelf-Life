@@ -1,7 +1,8 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using System.Linq;
 using UnityEngine.UI;
 
 public class FurnitureMover : MonoBehaviour
@@ -48,6 +49,9 @@ public class FurnitureMover : MonoBehaviour
 
     private bool isMoving = false;
     private float rotationAmount = 0f;
+
+    private Dictionary<GameObject, int> originalLayers = new Dictionary<GameObject, int>();
+
 
     private void OnEnable()
     {
@@ -204,8 +208,11 @@ public class FurnitureMover : MonoBehaviour
         selectedFurniture.layer = movingFurnitureLayer;
 
         // Also change all children
-        foreach (Transform child in selectedFurniture.GetComponentsInChildren<Transform>())
+        originalLayers.Clear(); // Reset
+
+        foreach (Transform child in selectedFurniture.GetComponentsInChildren<Transform>(true))
         {
+            originalLayers[child.gameObject] = child.gameObject.layer;
             child.gameObject.layer = movingFurnitureLayer;
         }
 
@@ -309,11 +316,15 @@ public class FurnitureMover : MonoBehaviour
 
         selectedFurniture.layer = originalFurnitureLayer;
 
-        foreach (Transform child in selectedFurniture.GetComponentsInChildren<Transform>())
+        if (originalLayers != null)
         {
-            child.gameObject.layer = originalFurnitureLayer;
+            foreach (var kvp in originalLayers)
+            {
+                if (kvp.Key != null)
+                    kvp.Key.layer = kvp.Value;
+            }
         }
-
+        originalLayers.Clear(); // Clean up
 
         ghostVisual.SetActive(false);
 
@@ -404,6 +415,16 @@ public class FurnitureMover : MonoBehaviour
     {
         if (ghostVisual == null || selectedFurniture == null)
             return false;
+
+        if (originalLayers != null)
+        {
+            foreach (var kvp in originalLayers)
+            {
+                if (kvp.Key != null)
+                    kvp.Key.layer = kvp.Value;
+            }
+        }
+        originalLayers.Clear(); // Clean up
 
         Bounds bounds = new Bounds(selectedFurniture.transform.position, Vector3.zero);
         Renderer[] renderers = selectedFurniture.GetComponentsInChildren<Renderer>();

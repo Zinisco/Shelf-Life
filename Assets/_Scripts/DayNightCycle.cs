@@ -3,6 +3,12 @@ using UnityEngine;
 
 public class DayNightCycle : MonoBehaviour
 {
+
+    [Header("Day Counter UI")]
+    [SerializeField] private TMP_Text dayDisplay;
+    private int dayCounter = 1;
+
+
     [Header("Time Settings")]
     [Range(0f, 24f)]
     public float currentTime = 9f;
@@ -29,7 +35,12 @@ public class DayNightCycle : MonoBehaviour
     void Start()
     {
         timeSpeed = 24f / (dayDurationInMinutes * 60f);
+
+        // Safety: refresh day UI in case it wasn't set yet
+        if (dayDisplay != null)
+            dayDisplay.text = $"Day {dayCounter:00}";
     }
+
 
     void Update()
     {
@@ -71,13 +82,35 @@ public class DayNightCycle : MonoBehaviour
         StopTime();
         UpdateSun();
 
-        //Force UI time update immediately
+        // Increment day
+        dayCounter++;
+
+        // Update time display immediately
         string currentFormattedTime = GetFormattedTime();
         if (timeDisplay != null) timeDisplay.text = currentFormattedTime;
         if (computerTimeDisplay != null) computerTimeDisplay.text = currentFormattedTime;
+
+        // Update day display
+        if (dayDisplay != null) dayDisplay.text = $"Day {dayCounter:00}";
     }
 
+    public int GetCurrentDay() => dayCounter;
 
+    public void SetDay(int day)
+    {
+        dayCounter = Mathf.Max(1, day);
+        Debug.Log($"SetDay called with value: {dayCounter}");
+
+        if (dayDisplay != null)
+        {
+            Debug.Log("Updating dayDisplay text");
+            dayDisplay.text = $"Day {dayCounter:00}";
+        }
+        else
+        {
+            Debug.LogWarning("dayDisplay is null when setting day!");
+        }
+    }
 
     private string GetFormattedTime()
     {

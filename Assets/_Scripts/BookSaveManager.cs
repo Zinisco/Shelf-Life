@@ -17,6 +17,7 @@ public class BookSaveManager : MonoBehaviour
     public class SaveDataWrapper
     {
         public int saveVersion = 2;
+        public int currentDay = 1;
         public List<BookSaveData> allBooks = new();
         public List<BookshelfSaveData> allShelves = new();
         public List<CrateSaveData> allCrates = new();
@@ -24,6 +25,7 @@ public class BookSaveManager : MonoBehaviour
         public ComputerSaveData terminalData;
     }
 
+    [SerializeField] private DayNightCycle dayNightCycle;
     [SerializeField] private BookDatabase bookDatabase;
     private static BookSaveManager _I;
 
@@ -39,6 +41,7 @@ public class BookSaveManager : MonoBehaviour
     public void SaveAll()
     {
         var w = new SaveDataWrapper();
+        w.currentDay = dayNightCycle != null ? dayNightCycle.GetCurrentDay() : 1;
         var stackIDs = new Dictionary<BookStackRoot, string>();
         int stackCounter = 0;
 
@@ -151,6 +154,9 @@ public class BookSaveManager : MonoBehaviour
 
         var w = JsonUtility.FromJson<SaveDataWrapper>(File.ReadAllText(path));
 
+        if (dayNightCycle != null)
+            dayNightCycle.SetDay(w.currentDay);
+
         foreach (var b in FindObjectsOfType<BookInfo>()) Destroy(b.gameObject);
         foreach (var s in FindObjectsOfType<Bookshelf>()) Destroy(s.gameObject);
         foreach (var c in FindObjectsOfType<BookCrate>()) Destroy(c.gameObject);
@@ -253,7 +259,17 @@ public class BookSaveManager : MonoBehaviour
 
                 var bookInfo = bookGO.GetComponent<BookInfo>();
                 bookInfo.currentStackRoot = root;
+
+                // Disable physics
+                var rb = bookGO.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.isKinematic = true;
+                    rb.interpolation = RigidbodyInterpolation.None;
+                    rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+                }
             }
+
         }
 
         StartCoroutine(ReconnectShelves());
@@ -286,7 +302,7 @@ public class BookSaveManager : MonoBehaviour
 
             info.transform.SetParent(anchor, false);
             info.transform.localPosition = Vector3.zero;
-            info.transform.localRotation = Quaternion.Euler(0, 90, 0);
+            info.transform.localRotation = Quaternion.Euler(-90, 0, -90);
 
             var rb = info.GetComponent<Rigidbody>();
             if (rb != null)
