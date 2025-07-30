@@ -29,6 +29,9 @@ public class NudgableStackMover : MonoBehaviour
     private Vector3 debugBoxSize;
     private bool showDebugBox = false;
     private Quaternion debugBoxRotation = Quaternion.identity;
+    private Vector3 originalPosition;
+    private Quaternion originalRotation;
+
 
     private bool isPlacementValid = false;
 
@@ -58,19 +61,20 @@ public class NudgableStackMover : MonoBehaviour
                 }
             }
         }
-        else if (!Keyboard.current.nKey.isPressed && !isNudging)
+        else if (!Keyboard.current.fKey.isPressed && !isNudging)
         {
             holdTimer = 0f;
             selectedStackRoot = null;
         }
 
-
         if (isNudging)
         {
-           // Debug.Log("Nudging is true — calling UpdateGhostFollow()");
             UpdateGhostFollow();
-            //Debug.Log("UpdateGhostFollow() called");
             HandleRotation();
+
+            if (Keyboard.current.escapeKey.wasPressedThisFrame)
+                CancelNudging();
+
             if (Mouse.current.leftButton.wasPressedThisFrame)
                 ConfirmPlacement();
         }
@@ -84,7 +88,9 @@ public class NudgableStackMover : MonoBehaviour
             return;
         }
 
-        if (selectedStackRoot == null) return;
+        originalPosition = selectedStackRoot.transform.position;
+        originalRotation = selectedStackRoot.transform.rotation;
+
 
         IsNudging = true;
         isNudging = true;
@@ -243,6 +249,34 @@ public class NudgableStackMover : MonoBehaviour
         IsNudging = false;
     }
 
+    private void CancelNudging()
+    {
+        if (selectedStackRoot != null)
+        {
+            // Reset to original position and rotation
+            selectedStackRoot.transform.SetPositionAndRotation(originalPosition, originalRotation);
+
+            // Re-enable visuals
+            if (originalRenderers != null)
+            {
+                foreach (Renderer rend in originalRenderers)
+                {
+                    if (rend != null)
+                        rend.enabled = true;
+                }
+            }
+        }
+
+        holdTimer = 0f;
+        showDebugBox = false;
+        selectedStackRoot = null;
+        heldGhost = null;
+        ghostBookManager.HideGhost();
+        isNudging = false;
+        IsNudging = false;
+
+        Debug.Log("Nudging canceled.");
+    }
 
     public void GhostSetValidity(bool isValid)
     {
