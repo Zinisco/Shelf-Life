@@ -23,11 +23,13 @@ public class BookSaveManager : MonoBehaviour
         public List<CrateSaveData> allCrates = new();
         public List<SurfaceAnchorSaveData> allSurfaces = new();
         public ComputerSaveData terminalData;
+        public Vector3 playerPos;
     }
 
     [SerializeField] private DayNightCycle dayNightCycle;
     [SerializeField] private BookDatabase bookDatabase;
     private static BookSaveManager _I;
+    public Vector3 playerPosition;
 
     private void Awake()
     {
@@ -38,12 +40,28 @@ public class BookSaveManager : MonoBehaviour
             bookDatabase = Resources.Load<BookDatabase>("BookDatabase");
     }
 
+    private void Start()
+    {
+        if (PlayerPrefs.GetInt("ContinueFlag", 0) == 1)
+        {
+            PlayerPrefs.SetInt("ContinueFlag", 0); // Reset
+            LoadAll(); // or TriggerLoad() if it's static
+        }
+    }
+
+
     public void SaveAll()
     {
         var w = new SaveDataWrapper();
         w.currentDay = dayNightCycle != null ? dayNightCycle.GetCurrentDay() : 1;
         var stackIDs = new Dictionary<BookStackRoot, string>();
         int stackCounter = 0;
+
+        var player = GameObject.FindWithTag("Player");
+        if (player != null)
+            playerPosition = player.transform.position;
+
+        w.playerPos = playerPosition;
 
         foreach (var anchor in FindObjectsOfType<SurfaceAnchor>())
         {
@@ -161,6 +179,11 @@ public class BookSaveManager : MonoBehaviour
         foreach (var s in FindObjectsOfType<Bookshelf>()) Destroy(s.gameObject);
         foreach (var c in FindObjectsOfType<BookCrate>()) Destroy(c.gameObject);
         foreach (var t in FindObjectsOfType<SurfaceAnchor>()) Destroy(t.gameObject);
+
+        if (w != null && GameObject.FindWithTag("Player") != null)
+        {
+            GameObject.FindWithTag("Player").transform.position = w.playerPos;
+        }
 
         var terminal = FindObjectOfType<ComputerTerminal>();
         if (terminal != null) Destroy(terminal.gameObject);
