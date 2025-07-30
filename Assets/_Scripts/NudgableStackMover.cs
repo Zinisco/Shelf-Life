@@ -10,6 +10,10 @@ public class NudgableStackMover : MonoBehaviour
     [SerializeField] private Camera playerCamera;
     [SerializeField] private LayerMask tableSurfaceMask;
 
+    [SerializeField] private GameObject holdVisualPrefab;
+    private GameObject holdVisualInstance;
+
+
     public bool wasJustNudged = false;
     public static bool IsNudging = false;
 
@@ -38,7 +42,7 @@ public class NudgableStackMover : MonoBehaviour
     void Update()
     {
 
-        if (Keyboard.current.nKey.isPressed && !isNudging)
+        if (Keyboard.current.fKey.isPressed && !isNudging)
         {
             Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
             if (Physics.Raycast(ray, out RaycastHit hit, 3f, bookLayer))
@@ -49,14 +53,39 @@ public class NudgableStackMover : MonoBehaviour
                     if (selectedStackRoot == null || selectedStackRoot != hitInfo.currentStackRoot)
                     {
                         selectedStackRoot = hitInfo.currentStackRoot;
-                        holdTimer = 0f; // reset if new target
+                        holdTimer = 0f;
+
+                        // Spawn visual at target position
+                        if (holdVisualPrefab != null)
+                        {
+                            if (holdVisualInstance != null) Destroy(holdVisualInstance);
+
+                            holdVisualInstance = Instantiate(holdVisualPrefab, hitInfo.transform.position + Vector3.up * 0.2f, Quaternion.identity);
+                        }
                     }
 
                     holdTimer += Time.deltaTime;
 
+                    // Update fill amount if it's a ring UI
+                    if (holdVisualInstance != null)
+                    {
+                        var ring = holdVisualInstance.GetComponentInChildren<UnityEngine.UI.Image>();
+                        if (ring != null)
+                            ring.fillAmount = holdTimer / holdTime;
+
+                        // Optional: match target position in case player moves aim
+                        holdVisualInstance.transform.position = hitInfo.transform.position + Vector3.up * 0.2f;
+                    }
+
                     if (holdTimer >= holdTime)
                     {
                         BeginNudging();
+
+                        if (holdVisualInstance != null)
+                        {
+                            Destroy(holdVisualInstance);
+                            holdVisualInstance = null;
+                        }
                     }
                 }
             }
@@ -65,7 +94,14 @@ public class NudgableStackMover : MonoBehaviour
         {
             holdTimer = 0f;
             selectedStackRoot = null;
+
+            if (holdVisualInstance != null)
+            {
+                Destroy(holdVisualInstance);
+                holdVisualInstance = null;
+            }
         }
+
 
         if (isNudging)
         {
@@ -265,6 +301,12 @@ public class NudgableStackMover : MonoBehaviour
                         rend.enabled = true;
                 }
             }
+        }
+
+        if (holdVisualInstance != null)
+        {
+            Destroy(holdVisualInstance);
+            holdVisualInstance = null;
         }
 
         holdTimer = 0f;
