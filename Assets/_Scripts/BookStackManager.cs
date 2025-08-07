@@ -13,7 +13,9 @@ public class BookStackManager : MonoBehaviour
         if (baseInfo == null || incomingInfo == null) return false;
 
         // Match by title or book ID
-        return baseInfo.title == incomingInfo.title;
+        return string.Equals(baseInfo.title?.Trim(),
+                     incomingInfo.title?.Trim(),
+                     System.StringComparison.OrdinalIgnoreCase);
     }
 
 }

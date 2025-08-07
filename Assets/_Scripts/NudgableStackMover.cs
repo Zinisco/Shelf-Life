@@ -9,6 +9,7 @@ public class NudgableStackMover : MonoBehaviour
     [SerializeField] private GhostBookManager ghostBookManager;
     [SerializeField] private Camera playerCamera;
     [SerializeField] private LayerMask tableSurfaceMask;
+    [SerializeField] private LayerMask shelfSurfaceMask;
 
     [SerializeField] private GameObject holdVisualPrefab;
     private GameObject holdVisualInstance;
@@ -35,7 +36,8 @@ public class NudgableStackMover : MonoBehaviour
     private Quaternion debugBoxRotation = Quaternion.identity;
     private Vector3 originalPosition;
     private Quaternion originalRotation;
-
+    private StackContext originalContext;
+    private float originalYRotation;
 
     private bool isPlacementValid = false;
 
@@ -66,7 +68,7 @@ public class NudgableStackMover : MonoBehaviour
 
                     holdTimer += Time.deltaTime;
 
-                    // Update fill amount if it's a ring UI
+                    // Update ring UI
                     if (holdVisualInstance != null)
                     {
                         var ring = holdVisualInstance.GetComponentInChildren<UnityEngine.UI.Image>();
@@ -108,6 +110,18 @@ public class NudgableStackMover : MonoBehaviour
             UpdateGhostFollow();
             HandleRotation();
 
+            // lock rotation on shelf nudges
+               if (originalContext == StackContext.Shelf)
+               {
+                currentYRotation = originalYRotation;
+               }
+                 
+            UpdateGhostFollow();
+            
+             // only allow scroll-to-rotate on tables
+            if (originalContext == StackContext.Table)
+                HandleRotation();
+
             if (Keyboard.current.escapeKey.wasPressedThisFrame)
                 CancelNudging();
 
@@ -125,7 +139,9 @@ public class NudgableStackMover : MonoBehaviour
         }
 
         originalPosition = selectedStackRoot.transform.position;
+        originalContext = selectedStackRoot.context;
         originalRotation = selectedStackRoot.transform.rotation;
+        originalYRotation = originalRotation.eulerAngles.y;
 
 
         IsNudging = true;
@@ -148,13 +164,21 @@ public class NudgableStackMover : MonoBehaviour
         {
             rend.enabled = false;
         }
+
+        ghostBookManager.ShowGhost(heldGhost);
     }
 
     void UpdateGhostFollow()
     {
         if (ghostBookManager == null || heldGhost == null) return;
 
-        ghostBookManager.UpdateGhost(heldGhost, null, playerCamera, tableSurfaceMask, ref currentYRotation);
+        ghostBookManager.UpdateGhost(
+     heldGhost,
+     playerCamera,
+     shelfSurfaceMask,
+     tableSurfaceMask,
+     ref currentYRotation
+ );
 
         // Real-time placement validation for stacks
         Transform ghost = ghostBookManager.GhostBookInstance.transform;
@@ -243,9 +267,9 @@ public class NudgableStackMover : MonoBehaviour
 
         Transform ghost = ghostBookManager.GhostBookInstance.transform;
 
-        // Extract Y rotation from ghost and apply proper stack alignment
-        float yRotation = ghost.rotation.eulerAngles.y;
-        Quaternion correctRotation = Quaternion.Euler(0f, yRotation, 0f);
+        // Copy the ghost’s exact orientation (so X=270,Z=90 from shelf logic is preserved)
+        Quaternion correctRotation = ghost.rotation;
+
 
         // If valid, continue with placement
         Ray downRay = new Ray(ghost.position, Vector3.down);
@@ -264,6 +288,32 @@ public class NudgableStackMover : MonoBehaviour
             Debug.LogWarning("No surface detected below ghost. Placing at ghost position.");
             selectedStackRoot.transform.SetPositionAndRotation(ghost.position, correctRotation);
         }
+
+        Vector3 finalPos = originalPosition;
+
+       if (originalContext == StackContext.Table)
+        {
+            // standard table: drop anywhere on the tableSurfaceMask
+            if (Physics.Raycast(ghost.position, Vector3.down, out var hit, 2f, tableSurfaceMask))
+                finalPos = hit.point + Vector3.up * (0.5f * selectedStackRoot.bookThickness);
+            else
+                finalPos = ghost.position;
+        }
+        else // ShelfContext: slide only along the shelf’s local X axis
+        {
+            // compute how far the ghost moved along shelf right
+            Vector3 shelfRight = selectedStackRoot.transform.right;
+            Vector3 delta      = ghost.position - originalPosition;
+            float distAlongX   = Vector3.Dot(delta, shelfRight);
+            finalPos = originalPosition + shelfRight * distAlongX;
+            // lock Y & Z to original shelf rail
+            finalPos.y = originalPosition.y;
+            finalPos.z = originalPosition.z;
+        }
+
+        selectedStackRoot.transform.SetPositionAndRotation(finalPos, correctRotation);
+        selectedStackRoot.wasJustNudged = true;
+        StartCoroutine(ClearNudgeFlag(selectedStackRoot));
 
         // Re-enable visuals
         if (originalRenderers != null)

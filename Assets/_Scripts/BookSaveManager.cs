@@ -103,7 +103,6 @@ public class BookSaveManager : MonoBehaviour
                 color = safeColor,
                 tags = new List<string>(info.tags),
                 shelfID = info.ObjectID,
-                spotIndex = info.SpotIndex,
                 position = info.transform.position,
                 rotation = info.transform.rotation
             };
@@ -127,16 +126,6 @@ public class BookSaveManager : MonoBehaviour
 
 
             w.allBooks.Add(data);
-        }
-
-        foreach (var shelf in FindObjectsOfType<Bookshelf>())
-        {
-            w.allShelves.Add(new BookshelfSaveData
-            {
-                ShelfID = shelf.GetID(),
-                Position = shelf.transform.position,
-                Rotation = shelf.transform.rotation
-            });
         }
 
         foreach (var crate in FindObjectsOfType<BookCrate>())
@@ -176,7 +165,6 @@ public class BookSaveManager : MonoBehaviour
             dayNightCycle.SetDay(w.currentDay);
 
         foreach (var b in FindObjectsOfType<BookInfo>()) Destroy(b.gameObject);
-        foreach (var s in FindObjectsOfType<Bookshelf>()) Destroy(s.gameObject);
         foreach (var c in FindObjectsOfType<BookCrate>()) Destroy(c.gameObject);
         foreach (var t in FindObjectsOfType<SurfaceAnchor>()) Destroy(t.gameObject);
 
@@ -193,7 +181,6 @@ public class BookSaveManager : MonoBehaviour
             var go = Instantiate(Resources.Load<GameObject>("Bookshelf"));
             go.transform.position = sd.Position;
             go.transform.rotation = sd.Rotation;
-            go.GetComponent<Bookshelf>().SetID(sd.ShelfID);
         }
 
         foreach (var surfaceData in w.allSurfaces)
@@ -225,7 +212,6 @@ public class BookSaveManager : MonoBehaviour
             {
                 info.bookID = bd.bookID;
                 info.ObjectID = bd.shelfID;
-                info.SpotIndex = bd.spotIndex;
 
                 var def = ScriptableObject.CreateInstance<BookDefinition>();
                 def.bookID = bd.bookID;
@@ -293,51 +279,6 @@ public class BookSaveManager : MonoBehaviour
                 }
             }
 
-        }
-
-        StartCoroutine(ReconnectShelves());
-    }
-
-    private IEnumerator ReconnectShelves()
-    {
-        yield return new WaitForSeconds(0.2f);
-
-        var byID = new Dictionary<string, Bookshelf>();
-        foreach (var s in FindObjectsOfType<Bookshelf>())
-            byID[s.GetID()] = s;
-
-        foreach (var info in FindObjectsOfType<BookInfo>())
-        {
-            if (string.IsNullOrEmpty(info.ObjectID) || info.SpotIndex < 0)
-                continue;
-
-            if (!byID.TryGetValue(info.ObjectID, out var shelf))
-                continue;
-
-            var spots = shelf.GetShelfSpots();
-            if (info.SpotIndex >= spots.Count)
-                continue;
-
-            var target = spots[info.SpotIndex];
-            var anchor = target.GetBookAnchor();
-            if (anchor == null)
-                continue;
-
-            info.transform.SetParent(anchor, false);
-            info.transform.localPosition = Vector3.zero;
-            info.transform.localRotation = Quaternion.Euler(-90, 0, -90);
-
-            var rb = info.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                rb.isKinematic = true;
-                rb.interpolation = RigidbodyInterpolation.None;
-                rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
-            }
-
-            info.SetShelfSpot(target, info.ObjectID, info.SpotIndex);
-            target.SetOccupied(true, info.gameObject);
-            info.UpdateVisuals();
         }
     }
 

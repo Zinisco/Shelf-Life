@@ -16,16 +16,10 @@ public class BookInfo : MonoBehaviour
     [Header("Book Metadata")]
     public List<string> tags = new(); // Default empty
 
-
-    [Header("Shelf/Stack Tracking")]
-    [Tooltip("Current shelf spot this book occupies (if any)")]
-    public ShelfSpot currentSpot;
-
     [HideInInspector] public Vector3 Position;
     [HideInInspector] public Quaternion Rotation;
     [HideInInspector] public string ObjectID;
     [HideInInspector] public string title;
-    [HideInInspector] public int SpotIndex = -1;
 
     public BookStackRoot currentStackRoot;
 
@@ -65,26 +59,5 @@ public class BookInfo : MonoBehaviour
         }
 
         // You can also update genre, summary, etc. here
-    }
-
-
-    /// <summary>
-    /// Call when you place on a shelf/stack to track its spot.
-    /// </summary>
-    public void SetShelfSpot(ShelfSpot spot, string objectID, int index)
-    {
-        currentSpot = spot;
-        ObjectID = objectID;
-        SpotIndex = index;
-    }
-
-    /// <summary>
-    /// Clears any shelf/stack tracking so this book is considered free.
-    /// </summary>
-    public void ClearShelfSpot()
-    {
-        currentSpot = null;
-        ObjectID = string.Empty;
-        SpotIndex = -1;
     }
 }
