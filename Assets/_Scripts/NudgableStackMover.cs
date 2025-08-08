@@ -11,8 +11,8 @@ public class NudgableStackMover : MonoBehaviour
     [SerializeField] private LayerMask tableSurfaceMask;
     [SerializeField] private LayerMask shelfSurfaceMask;
 
-    [SerializeField] private GameObject holdVisualPrefab;
-    private GameObject holdVisualInstance;
+    [SerializeField] private GameObject holdVisualObject; // Assign this in the inspector
+    [SerializeField] private UnityEngine.UI.Image holdVisualRing; // Assign the ring fill UI here
 
 
     public bool wasJustNudged = false;
@@ -58,35 +58,30 @@ public class NudgableStackMover : MonoBehaviour
                         holdTimer = 0f;
 
                         // Spawn visual at target position
-                        if (holdVisualPrefab != null)
+                        if (holdVisualObject != null)
                         {
-                            if (holdVisualInstance != null) Destroy(holdVisualInstance);
-
-                            holdVisualInstance = Instantiate(holdVisualPrefab, hitInfo.transform.position + Vector3.up * 0.2f, Quaternion.identity);
+                            holdVisualObject.SetActive(true);
                         }
                     }
 
                     holdTimer += Time.deltaTime;
 
                     // Update ring UI
-                    if (holdVisualInstance != null)
+                    if (holdVisualObject != null)
                     {
-                        var ring = holdVisualInstance.GetComponentInChildren<UnityEngine.UI.Image>();
-                        if (ring != null)
-                            ring.fillAmount = holdTimer / holdTime;
 
-                        // Optional: match target position in case player moves aim
-                        holdVisualInstance.transform.position = hitInfo.transform.position + Vector3.up * 0.2f;
+                        if (holdVisualRing != null)
+                            holdVisualRing.fillAmount = Mathf.Clamp01(holdTimer / holdTime);
                     }
+
 
                     if (holdTimer >= holdTime)
                     {
                         BeginNudging();
 
-                        if (holdVisualInstance != null)
+                        if (holdVisualObject != null)
                         {
-                            Destroy(holdVisualInstance);
-                            holdVisualInstance = null;
+                            holdVisualObject.SetActive(false);
                         }
                     }
                 }
@@ -97,10 +92,9 @@ public class NudgableStackMover : MonoBehaviour
             holdTimer = 0f;
             selectedStackRoot = null;
 
-            if (holdVisualInstance != null)
+            if (holdVisualObject != null)
             {
-                Destroy(holdVisualInstance);
-                holdVisualInstance = null;
+                holdVisualObject.SetActive(false);
             }
         }
 
@@ -108,15 +102,12 @@ public class NudgableStackMover : MonoBehaviour
         if (isNudging)
         {
             UpdateGhostFollow();
-            HandleRotation();
 
             // lock rotation on shelf nudges
                if (originalContext == StackContext.Shelf)
                {
                 currentYRotation = originalYRotation;
                }
-                 
-            UpdateGhostFollow();
             
              // only allow scroll-to-rotate on tables
             if (originalContext == StackContext.Table)
@@ -165,7 +156,7 @@ public class NudgableStackMover : MonoBehaviour
             rend.enabled = false;
         }
 
-        ghostBookManager.ShowGhost(heldGhost);
+        ghostBookManager.ShowGhost(heldGhost, selectedStackRoot.books.Count);
     }
 
     void UpdateGhostFollow()
@@ -179,9 +170,13 @@ public class NudgableStackMover : MonoBehaviour
      tableSurfaceMask,
      ref currentYRotation
  );
+        Vector3 ghostBasePos = ghostBookManager.GhostBookInstance.transform.position;
+        Quaternion ghostRot = ghostBookManager.GhostBookInstance.transform.rotation;
+        ghostBookManager.UpdateGhostStackTransforms(ghostBasePos, ghostRot);
 
         // Real-time placement validation for stacks
-        Transform ghost = ghostBookManager.GhostBookInstance.transform;
+        Transform ghost = ghostBookManager.GhostBookTopTransform;
+        if (ghost == null) return; // Safety check
         BoxCollider referenceCollider = heldGhost.GetComponent<BoxCollider>();
         if (referenceCollider == null)
         {
@@ -189,10 +184,15 @@ public class NudgableStackMover : MonoBehaviour
             return;
         }
 
-        Vector3 worldSize = Vector3.Scale(referenceCollider.size, heldGhost.transform.lossyScale);
-        Vector3 boxSize = worldSize;
+        float bookHeight = selectedStackRoot.bookThickness;
+        int stackCount = selectedStackRoot.books.Count;
 
-        Vector3 boxCenter = ghost.position + Vector3.up * (boxSize.y * 0.5f);
+        Vector3 bookSize = Vector3.Scale(referenceCollider.size, heldGhost.transform.lossyScale);
+        Vector3 stackSize = new Vector3(bookSize.x, bookHeight * stackCount, bookSize.z);
+
+        Vector3 boxCenter = ghost.position + Vector3.up * (stackSize.y * 0.5f);
+        Vector3 boxSize = stackSize;
+
 
         Quaternion ghostRotation = ghost.rotation;
         debugBoxCenter = boxCenter;
@@ -265,7 +265,7 @@ public class NudgableStackMover : MonoBehaviour
             return;
         }
 
-        Transform ghost = ghostBookManager.GhostBookInstance.transform;
+        Transform ghost = ghostBookManager.GhostBookTopTransform;
 
         // Copy the ghost’s exact orientation (so X=270,Z=90 from shelf logic is preserved)
         Quaternion correctRotation = ghost.rotation;
@@ -353,10 +353,9 @@ public class NudgableStackMover : MonoBehaviour
             }
         }
 
-        if (holdVisualInstance != null)
+        if (holdVisualObject != null)
         {
-            Destroy(holdVisualInstance);
-            holdVisualInstance = null;
+            holdVisualObject.SetActive(false);
         }
 
         holdTimer = 0f;

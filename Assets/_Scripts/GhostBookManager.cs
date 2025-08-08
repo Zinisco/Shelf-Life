@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
@@ -12,6 +13,8 @@ public class GhostBookManager : MonoBehaviour
     [SerializeField] private Material validMaterial;   // Green material for valid placement
     [SerializeField] private Material invalidMaterial; // Red material for invalid placement
     [SerializeField] private Material defaultMaterial; // Default fallback material
+
+    private List<GameObject> ghostStackBooks = new List<GameObject>();
 
     private Renderer ghostRenderer;           // Renderer used to update ghost material
     private GameObject ghostBookInstance;     // The actual ghost book instance
@@ -70,6 +73,13 @@ public class GhostBookManager : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableMask) &&
             Vector3.Dot(hit.normal, Vector3.up) > 0.9f)
         {
+
+            UnityEngine.Debug.Log("Table hit: " + hit.collider.name + " | Layer: " + LayerMask.LayerToName(hit.collider.gameObject.layer));
+
+            ShowSingleGhost(heldObject);
+            UnityEngine.Debug.Log("GhostBookInstance Active: " + ghostBookInstance.activeSelf);
+
+
             if (!ghostBookInstance.activeSelf)
                 ghostBookInstance.SetActive(true);
 
@@ -132,6 +142,16 @@ public class GhostBookManager : MonoBehaviour
                 }
             }
 
+            if (heldObject != null && ghostBookInstance != null)
+            {
+                UnityEngine.Debug.Log("Trying to show ghost book on table.");
+            }
+            else
+            {
+                UnityEngine.Debug.LogWarning("Ghost not showing — missing heldObject or ghostBookInstance.");
+            }
+
+
             // Handle rotation input via mouse scroll
             float scroll = Input.GetAxis("Mouse ScrollWheel");
             if (Mathf.Abs(scroll) > 0.01f)
@@ -148,10 +168,9 @@ public class GhostBookManager : MonoBehaviour
 
             rotationAmount %= 360f;
 
-            ghostBookInstance.transform.position = point;
             currentRotation = Mathf.LerpAngle(currentRotation, rotationAmount, Time.deltaTime * rotationSmoothSpeed);
             Quaternion targetRot = Quaternion.Euler(0f, currentRotation, 0f);
-            ghostBookInstance.transform.rotation = targetRot;
+            ghostBookInstance.transform.SetPositionAndRotation(point, targetRot);
 
             // Collision check to determine validity
             BoxCollider bookCollider = heldObject.GetComponent<BoxCollider>();
@@ -180,6 +199,10 @@ public class GhostBookManager : MonoBehaviour
             latestGhostPosition = point;
             latestGhostRotation = targetRot;
             return;
+        }
+        else
+        {
+            UnityEngine.Debug.Log("No table hit.");
         }
 
         // Hide ghost if not targeting anything
@@ -418,56 +441,136 @@ public class GhostBookManager : MonoBehaviour
         return stackTargetBook;
     }
 
+    private void ShowSingleGhost(GameObject heldObject)
+    {
+        if (ghostBookInstance == null) return;
+
+        ghostBookInstance.transform.localScale = heldObject.transform.localScale;
+
+        Renderer rend = ghostBookInstance.GetComponentInChildren<Renderer>();
+        if (rend != null)
+        {
+            Material[] mats = rend.materials;
+            for (int i = 0; i < mats.Length; i++)
+                mats[i] = defaultMaterial;
+            rend.materials = mats;
+        }
+    }
+
+
     private bool TitlesMatch(string a, string b)
     {
         return string.Equals(a?.Trim(), b?.Trim(), System.StringComparison.OrdinalIgnoreCase);
     }
 
 
-    public void ShowGhost(GameObject heldObject)
+    public void ShowGhost(GameObject heldObject, int stackCount = 1)
     {
-        if (ghostBookInstance == null)
-            ghostBookInstance = Instantiate(ghostBookPrefab);
+        ClearGhostStack();
 
-        ghostBookInstance.SetActive(true);
-        ghostBookInstance.transform.localScale = heldObject.transform.localScale;
+        for (int i = 0; i < stackCount; i++)
+        {
+            GameObject ghost = Instantiate(ghostBookPrefab);
+            ghost.transform.localScale = heldObject.transform.localScale;
+            ghost.SetActive(true);
+
+            Renderer rend = ghost.GetComponentInChildren<Renderer>();
+            if (rend != null)
+            {
+                Material[] mats = rend.materials;
+                for (int j = 0; j < mats.Length; j++)
+                    mats[j] = defaultMaterial;
+                rend.materials = mats;
+            }
+
+            ghostStackBooks.Add(ghost);
+        }
     }
+
 
     public void HideGhost()
     {
+        ClearGhostStack();
+        rotationLocked = false;
+
         if (ghostBookInstance != null)
             ghostBookInstance.SetActive(false);
+    }
 
-        rotationLocked = false;
+    private void ClearGhostStack()
+    {
+        foreach (GameObject ghost in ghostStackBooks)
+        {
+            if (ghost != null)
+                Destroy(ghost);
+        }
+        ghostStackBooks.Clear();
     }
 
     private void ApplyGhostMaterial(Material targetMaterial)
     {
-        if (ghostRenderer == null) return;
-
-        Material[] mats = ghostRenderer.materials;
-        for (int i = 0; i < mats.Length; i++)
+        // Update main ghost book
+        if (ghostRenderer != null)
         {
-            mats[i] = targetMaterial;
+            Material[] mats = ghostRenderer.materials;
+            for (int i = 0; i < mats.Length; i++)
+            {
+                mats[i] = targetMaterial;
+            }
+            ghostRenderer.materials = mats;
         }
-        ghostRenderer.materials = mats;
+
+        // Update stack ghost books
+        foreach (GameObject ghost in ghostStackBooks)
+        {
+            if (ghost == null) continue;
+
+            Renderer rend = ghost.GetComponentInChildren<Renderer>();
+            if (rend != null)
+            {
+                Material[] mats = rend.materials;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    mats[i] = targetMaterial;
+                }
+                rend.materials = mats;
+            }
+        }
     }
+
+
+    public void UpdateGhostStackTransforms(Vector3 basePos, Quaternion baseRot)
+    {
+        if (ghostStackBooks.Count > 0)
+        {
+            Transform topGhost = ghostStackBooks[0].transform;
+            topGhost.SetPositionAndRotation(basePos, baseRot);
+
+            for (int i = 1; i < ghostStackBooks.Count; i++)
+            {
+                Vector3 offset = Vector3.up * 0.12f * i; // Or use BookStackRoot.bookThickness if available
+                ghostStackBooks[i].transform.position = topGhost.position + offset;
+                ghostStackBooks[i].transform.rotation = topGhost.rotation;
+            }
+        }
+    }
+
 
     public void SetGhostMaterial(bool isValid)
     {
         ApplyGhostMaterial(isValid ? validMaterial : invalidMaterial);
     }
 
-    // Debug visuals in editor
-    private void OnDrawGizmos()
+    public Transform GhostBookTopTransform
     {
-        if (ghostBookInstance != null && ghostBookInstance.activeSelf)
+        get
         {
-            Gizmos.color = Color.cyan;
-            Gizmos.DrawWireCube(ghostBookInstance.transform.position, new Vector3(0.25f, 0.02f, 0.15f));
-            Gizmos.DrawLine(ghostBookInstance.transform.position + Vector3.up * 0.5f, ghostBookInstance.transform.position);
+            if (ghostStackBooks != null && ghostStackBooks.Count > 0)
+                return ghostStackBooks[0].transform;
+            return null;
         }
     }
+
 
     public GameObject GhostBookInstance => ghostBookInstance;
 }

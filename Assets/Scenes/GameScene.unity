@@ -3547,7 +3547,8 @@ MonoBehaviour:
   shelfSurfaceMask:
     serializedVersion: 2
     m_Bits: 262144
-  holdVisualPrefab: {fileID: 408058807}
+  holdVisualObject: {fileID: 408058807}
+  holdVisualRing: {fileID: 408058809}
   wasJustNudged: 0
 --- !u!1 &535788808
 GameObject:
