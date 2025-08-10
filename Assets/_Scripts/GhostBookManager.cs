@@ -72,7 +72,16 @@ public class GhostBookManager : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableMask) &&
             Vector3.Dot(hit.normal, Vector3.up) > 0.9f)
         {
+<<<<<<< HEAD
             ShowSingleGhost(heldObject);
+=======
+
+            UnityEngine.Debug.Log("Table hit: " + hit.collider.name + " | Layer: " + LayerMask.LayerToName(hit.collider.gameObject.layer));
+
+            ShowSingleGhost(heldObject);
+            UnityEngine.Debug.Log("GhostBookInstance Active: " + ghostBookInstance.activeSelf);
+
+>>>>>>> origin/main
 
             if (!ghostBookInstance.activeSelf)
                 ghostBookInstance.SetActive(true);
@@ -136,6 +145,16 @@ public class GhostBookManager : MonoBehaviour
                 }
             }
 
+            if (heldObject != null && ghostBookInstance != null)
+            {
+                UnityEngine.Debug.Log("Trying to show ghost book on table.");
+            }
+            else
+            {
+                UnityEngine.Debug.LogWarning("Ghost not showing — missing heldObject or ghostBookInstance.");
+            }
+
+
             // Handle rotation input via mouse scroll
             float scroll = Input.GetAxis("Mouse ScrollWheel");
             if (Mathf.Abs(scroll) > 0.01f)
@@ -186,7 +205,11 @@ public class GhostBookManager : MonoBehaviour
         }
         else
         {
+<<<<<<< HEAD
             // UnityEngine.Debug.Log("No table hit.");
+=======
+            UnityEngine.Debug.Log("No table hit.");
+>>>>>>> origin/main
         }
 
         // Hide ghost if not targeting anything
@@ -506,11 +529,19 @@ public class GhostBookManager : MonoBehaviour
         }
     }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
     private bool TitlesMatch(string a, string b)
     {
         return string.Equals(a?.Trim(), b?.Trim(), System.StringComparison.OrdinalIgnoreCase);
     }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
     public void ShowGhost(GameObject heldObject, int stackCount = 1)
     {
         ClearGhostStack();
@@ -533,6 +564,7 @@ public class GhostBookManager : MonoBehaviour
             ghostStackBooks.Add(ghost);
         }
     }
+
 
     public void HideGhost()
     {
@@ -564,6 +596,7 @@ public class GhostBookManager : MonoBehaviour
                 mats[i] = targetMaterial;
             }
             ghostRenderer.materials = mats;
+<<<<<<< HEAD
         }
 
         // Update stack ghost books
@@ -611,7 +644,45 @@ public class GhostBookManager : MonoBehaviour
         // Correct inward-facing orientation
         rotationAmount = isNearShelf ? 0f : 270f; // Changed from 90f to 0f
         currentRotation = rotationAmount;
+=======
+        }
+
+        // Update stack ghost books
+        foreach (GameObject ghost in ghostStackBooks)
+        {
+            if (ghost == null) continue;
+
+            Renderer rend = ghost.GetComponentInChildren<Renderer>();
+            if (rend != null)
+            {
+                Material[] mats = rend.materials;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    mats[i] = targetMaterial;
+                }
+                rend.materials = mats;
+            }
+        }
+>>>>>>> origin/main
     }
+
+
+    public void UpdateGhostStackTransforms(Vector3 basePos, Quaternion baseRot)
+    {
+        if (ghostStackBooks.Count > 0)
+        {
+            Transform topGhost = ghostStackBooks[0].transform;
+            topGhost.SetPositionAndRotation(basePos, baseRot);
+
+            for (int i = 1; i < ghostStackBooks.Count; i++)
+            {
+                Vector3 offset = Vector3.up * 0.12f * i; // Or use BookStackRoot.bookThickness if available
+                ghostStackBooks[i].transform.position = topGhost.position + offset;
+                ghostStackBooks[i].transform.rotation = topGhost.rotation;
+            }
+        }
+    }
+
 
     public void SetGhostMaterial(bool isValid)
     {
@@ -627,6 +698,7 @@ public class GhostBookManager : MonoBehaviour
             return null;
         }
     }
+
 
     public GameObject GhostBookInstance => ghostBookInstance;
 }
