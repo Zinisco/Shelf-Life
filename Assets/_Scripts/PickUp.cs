@@ -26,6 +26,7 @@ public class PickUp : MonoBehaviour
     private Rigidbody holdRb; // Rigidbody for the hold position
     private float currentYRotation = 0f; // Rotation applied to ghost and object
 
+
     private void Awake()
     {
         // Ensure proper mask is set
@@ -91,6 +92,29 @@ public class PickUp : MonoBehaviour
 
             GameObject baseBook = hit.collider.gameObject;
             heldObject = GetTopmostBook(baseBook); // Get topmost book in a stack
+            
+            // Detect if we're near a shelf when picking up
+            Ray camRay = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+            bool nearShelf = Physics.Raycast(camRay, 3f, shelfMask);
+
+            bool nearShelfAndCoverFacingCamera = false;
+
+            if (nearShelf)
+            {
+                Transform bookTransform = heldObject.transform;
+                Vector3 bookCoverDirection = bookTransform.forward;  // +Z = cover
+                Vector3 camToBook = (bookTransform.position - playerCamera.transform.position).normalized;
+
+                float dot = Vector3.Dot(bookCoverDirection, camToBook);
+                nearShelfAndCoverFacingCamera = dot > 0.5f;
+            }
+
+            // FORCE inward-facing default when grabbing from table near shelf
+            currentYRotation = 0f;
+            ghostBookManager.ResetRotation(true);
+
+
+
             heldObjectRb = heldObject.GetComponent<Rigidbody>();
 
             // Special handling for crates

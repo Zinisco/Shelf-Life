@@ -29,7 +29,6 @@ public class GhostBookManager : MonoBehaviour
     private bool latestGhostValid = false;    // Whether the last placement is valid
     private Transform latestShelfTransform; // Shelf we hit last when placing
 
-
     // Called once to instantiate and initialize the ghost book
     public void Init()
     {
@@ -73,12 +72,7 @@ public class GhostBookManager : MonoBehaviour
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableMask) &&
             Vector3.Dot(hit.normal, Vector3.up) > 0.9f)
         {
-
-            UnityEngine.Debug.Log("Table hit: " + hit.collider.name + " | Layer: " + LayerMask.LayerToName(hit.collider.gameObject.layer));
-
             ShowSingleGhost(heldObject);
-            UnityEngine.Debug.Log("GhostBookInstance Active: " + ghostBookInstance.activeSelf);
-
 
             if (!ghostBookInstance.activeSelf)
                 ghostBookInstance.SetActive(true);
@@ -142,16 +136,6 @@ public class GhostBookManager : MonoBehaviour
                 }
             }
 
-            if (heldObject != null && ghostBookInstance != null)
-            {
-                UnityEngine.Debug.Log("Trying to show ghost book on table.");
-            }
-            else
-            {
-                UnityEngine.Debug.LogWarning("Ghost not showing — missing heldObject or ghostBookInstance.");
-            }
-
-
             // Handle rotation input via mouse scroll
             float scroll = Input.GetAxis("Mouse ScrollWheel");
             if (Mathf.Abs(scroll) > 0.01f)
@@ -202,7 +186,7 @@ public class GhostBookManager : MonoBehaviour
         }
         else
         {
-            UnityEngine.Debug.Log("No table hit.");
+            // UnityEngine.Debug.Log("No table hit.");
         }
 
         // Hide ghost if not targeting anything
@@ -216,10 +200,61 @@ public class GhostBookManager : MonoBehaviour
         latestGhostValid = false;
     }
 
+    // Helper method to check if a book's transform has the correct outward-facing orientation
+    private bool IsBookOrientationValid(GameObject book, Vector3 shelfInward)
+    {
+        // Find the book parent renderer
+        Transform bookTransform = book.GetComponent<Transform>();
+        if (bookTransform == null)
+        {
+            UnityEngine.Debug.LogWarning($"Book {book.name} has no transform.");
+            return false;
+        }
+
+        Vector3 eulerAngles = bookTransform.rotation.eulerAngles;
+
+        // Normalize angles to [0, 360] for comparison
+        float xAngle = Mathf.Repeat(eulerAngles.x, 360f);
+        float yAngle = Mathf.Repeat(eulerAngles.y, 360f);
+        float zAngle = Mathf.Repeat(eulerAngles.z, 360f);
+
+        // Check if angles are CORRECT
+        const float angleTolerance = 5f;
+        bool isRotationValid = Mathf.Abs(xAngle - -90f) < angleTolerance &&
+                              Mathf.Abs(yAngle - 0f) < angleTolerance &&
+                              Mathf.Abs(zAngle - 0f) < angleTolerance;
+
+        if (!isRotationValid)
+        {
+            UnityEngine.Debug.Log($"Book {book.name} orientation invalid: X={xAngle}, Y={yAngle}, Z={zAngle}");
+            return false;
+        }
+
+        // Verify that the book's cover (local Y-axis) faces outward (opposite to shelfInward)
+        Vector3 bookCoverDirection = bookTransform.TransformDirection(Vector3.up); // Local Y-axis (cover)
+        Vector3 outwardDirection = -shelfInward.normalized;
+        float dot = Vector3.Dot(bookCoverDirection.normalized, outwardDirection);
+        const float directionTolerance = 0.95f; // Cosine of ~18 degrees
+        bool isCoverFacingOutward = dot > directionTolerance;
+
+        if (!isCoverFacingOutward)
+        {
+            UnityEngine.Debug.Log($"Book {book.name} cover not facing outward. Dot product: {dot}");
+        }
+
+        return isRotationValid && isCoverFacingOutward;
+    }
+
     // Handles ghost placement on a shelf
     private void HandleShelfGhostPlacement(RaycastHit hit, GameObject heldObject, Camera camera, ref float currentRotationY)
     {
         stackTargetBook = null;
+
+        // Always reset stackTargetBook when nudging
+        if (NudgableStackMover.IsNudging)
+        {
+            stackTargetBook = null;
+        }
 
         if (!ghostBookInstance.activeSelf)
             ghostBookInstance.SetActive(true);
@@ -240,26 +275,6 @@ public class GhostBookManager : MonoBehaviour
         Vector3 point = hit.point;
         latestShelfTransform = hit.collider.transform;
 
-        // reset previous target
-        stackTargetBook = null;
-
-        // figure out “inward” direction of the shelf
-        Vector3 shelfInward = hit.normal;
-
-        // cast a short ray from just in front of the ghost back into the shelf
-        Ray stackRay = new Ray(point + shelfInward * 0.01f, -shelfInward);
-        float rayLength = heldBookDepth + 0.02f;  // just a hair longer than one book
-        if (Physics.Raycast(stackRay, out RaycastHit bookHit, rayLength, LayerMask.GetMask("Book")))
-        {
-            var info = bookHit.collider.GetComponent<BookInfo>();
-            if (info != null && info.title.Equals(heldObject.GetComponent<BookInfo>().title, System.StringComparison.OrdinalIgnoreCase))
-            {
-                // we found the base book!
-                stackTargetBook = bookHit.collider.gameObject;
-                UnityEngine.Debug.Log($"[Ghost] stacking onto: {stackTargetBook.name}");
-            }
-        }
-
         // Handle scroll rotation input
         float scroll = Input.GetAxis("Mouse ScrollWheel");
         if (Mathf.Abs(scroll) > 0.01f)
@@ -275,11 +290,38 @@ public class GhostBookManager : MonoBehaviour
 
         rotationAmount %= 360f;
 
+        // Figure out “inward” direction of the shelf
+        Vector3 shelfInward = hit.normal;
+
+        if (!NudgableStackMover.IsNudging)
+        {
+            // Cast a short ray from just in front of the ghost back into the shelf
+            Ray stackRay = new Ray(point + shelfInward * 0.01f, -shelfInward);
+            float rayLength = heldBookDepth + 0.02f;  // Just a hair longer than one book
+            if (Physics.Raycast(stackRay, out RaycastHit bookHit, rayLength, LayerMask.GetMask("Book")))
+            {
+                var info = bookHit.collider.GetComponent<BookInfo>();
+                if (info != null && info.title.Equals(heldObject.GetComponent<BookInfo>().title, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    // Check if the book's orientation is valid (cover facing outward)
+                    if (IsBookOrientationValid(bookHit.collider.gameObject, shelfInward))
+                    {
+                        stackTargetBook = bookHit.collider.gameObject;
+                        UnityEngine.Debug.Log($"[Ghost] stacking onto: {stackTargetBook.name}");
+                    }
+                    else
+                    {
+                        UnityEngine.Debug.Log($"[Ghost] cannot stack onto {bookHit.collider.gameObject.name}: invalid orientation");
+                    }
+                }
+            }
+        }
+
         // Clamp ghost position inside shelf bounds
         Vector3 localPoint = shelfCollider.transform.InverseTransformPoint(point);
         Vector3 halfSize = shelfCollider.size * 0.5f;
 
-        if (currentRotationY == 90 || currentRotationY == 270)
+        if (currentRotationY == 0 || currentRotationY == 180)
         {
             localPoint.x = Mathf.Clamp(localPoint.x, -halfSize.x + 0.2f, halfSize.x - 0.2f);
             localPoint.z = Mathf.Clamp(localPoint.z, -halfSize.z + 0.47f, halfSize.z - 0.47f);
@@ -295,42 +337,43 @@ public class GhostBookManager : MonoBehaviour
 
         // Apply rotation and position
         currentRotation = Mathf.LerpAngle(currentRotation, rotationAmount, Time.deltaTime * rotationSmoothSpeed);
-        Quaternion targetRot = Quaternion.Euler(270f, currentRotation + 180f, 90f); // assuming upright shelf book
+        // SHELF placement
+        var inward = hit.normal.normalized;                     // Into the shelf
+        var shelfRight = Vector3.Cross(Vector3.forward, inward).normalized; // +X of shelf region
+        // Map model axes: +Z(top) -> Up, +Y(cover) -> shelfRight, => -X(spine) -> outward
+        Quaternion orientShelf = Quaternion.LookRotation(Vector3.up, shelfRight);
+
+        // Spin smoothly around vertical
+        Quaternion spinY = Quaternion.AngleAxis(currentRotation, Vector3.up);
+
+        // Final rotation
+        Quaternion targetRot = spinY * orientShelf;
         ghostBookInstance.transform.SetPositionAndRotation(point, targetRot);
+
         ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
 
-        // COVER FACING CHECK — only allow stacking if cover is facing forward (roughly 180° Y)
-        // only stack when the ghost itself is rotated toward the player: 90° or 270°
-        float ghostYaw = Mathf.Repeat(currentRotation, 360f);
-        bool isFacingPlayer = Mathf.Abs(ghostYaw - 90f) < 10f || Mathf.Abs(ghostYaw - 270f) < 10f;
-        if (!isFacingPlayer)
+        // Skip stacking logic entirely if nudging
+        if (NudgableStackMover.IsNudging)
         {
-            // not turned correctly, abort any stack?snap
-            stackTargetBook = null;
-                    // fall through to free?placement
-                   goto FREE_PLACEMENT;
+            goto FREE_PLACEMENT;
         }
-        
-        // COVER FACING CHECK — only allow stacking if cover is facing forward (roughly 180° Y)
-        float yRot = Mathf.Repeat(currentRotation + 180f, 360f);
-        bool isCoverFacingForward = Mathf.Abs(yRot - 180f) < 10f;
 
         // TITLE MATCH CHECK
         BookInfo heldInfo = heldObject.GetComponent<BookInfo>();
-        if (isCoverFacingForward && heldInfo != null)
+        if (heldInfo != null)
         {
-            // how far to sample? half the book depth
+            // How far to sample? Half the book depth
             float sampleDist = heldBookDepth * 0.5f;
 
-            // start just slightly inside the ghost
+            // Start just slightly inside the ghost
             Vector3 samplePos = point + shelfInward * sampleDist;
 
-            // look for any book colliders right against that face
+            // Look for any book colliders right against that face
             Collider[] hits = Physics.OverlapSphere(
-              samplePos,
-              0.05f,                      // small radius
-              LayerMask.GetMask("Book"),
-              QueryTriggerInteraction.Ignore
+                samplePos,
+                0.05f,                      // Small radius
+                LayerMask.GetMask("Book"),
+                QueryTriggerInteraction.Ignore
             );
 
             foreach (var c in hits)
@@ -338,10 +381,17 @@ public class GhostBookManager : MonoBehaviour
                 var info = c.GetComponent<BookInfo>();
                 if (info != null && TitlesMatch(info.title, heldInfo.title))
                 {
-                    // we found the base book!
-                    stackTargetBook = c.gameObject;
-                    UnityEngine.Debug.Log($"[Ghost] stacking onto: {stackTargetBook.name}");
-                    break;
+                    // Check if the book's orientation is valid (cover facing outward)
+                    if (IsBookOrientationValid(c.gameObject, shelfInward))
+                    {
+                        stackTargetBook = c.gameObject;
+                        UnityEngine.Debug.Log($"[Ghost] stacking onto: {stackTargetBook.name}");
+                        break;
+                    }
+                    else
+                    {
+                        UnityEngine.Debug.Log($"[Ghost] cannot stack onto {c.gameObject.name}: invalid orientation");
+                    }
                 }
             }
 
@@ -350,7 +400,7 @@ public class GhostBookManager : MonoBehaviour
                 var root = stackTargetBook.GetComponent<BookInfo>().currentStackRoot;
                 if (root != null && root.CanStack(heldObject.GetComponent<BookInfo>().title))
                 {
-                    // 1) snap to the next slot along the root’s local up
+                    // Snap to the next slot along the root’s local up
                     Vector3 nextSlot = root.TopPosition;
                     Quaternion rot = stackTargetBook.transform.rotation;
 
@@ -360,7 +410,7 @@ public class GhostBookManager : MonoBehaviour
                     SetGhostMaterial(true);
                     latestGhostValid = true;
 
-                    // so TryShelveBook knows exactly which book to attach to
+                    // So TryShelveBook knows exactly which book to attach to
                     stackTargetBook = root.books.Last();
                     return;
                 }
@@ -397,7 +447,7 @@ public class GhostBookManager : MonoBehaviour
             var root = stackTargetBook.GetComponent<BookInfo>().currentStackRoot;
             if (root != null && root.CanStack(heldObject.GetComponent<BookInfo>().title))
             {
-                // real?stack case
+                // Real stack case
                 ghostBookInstance.transform.SetPositionAndRotation(
                     root.TopPosition,
                     stackTargetBook.transform.rotation
@@ -406,7 +456,7 @@ public class GhostBookManager : MonoBehaviour
                 SetGhostMaterial(true);
                 latestGhostValid = true;
 
-                // tell TryShelveBook to attach to the last book in that root
+                // Tell TryShelveBook to attach to the last book in that root
                 stackTargetBook = root.books.Last();
                 return;
             }
@@ -435,7 +485,6 @@ public class GhostBookManager : MonoBehaviour
         latestGhostValid = validPlacement;
     }
 
-
     public GameObject GetStackTargetBook()
     {
         return stackTargetBook;
@@ -457,12 +506,10 @@ public class GhostBookManager : MonoBehaviour
         }
     }
 
-
     private bool TitlesMatch(string a, string b)
     {
         return string.Equals(a?.Trim(), b?.Trim(), System.StringComparison.OrdinalIgnoreCase);
     }
-
 
     public void ShowGhost(GameObject heldObject, int stackCount = 1)
     {
@@ -486,7 +533,6 @@ public class GhostBookManager : MonoBehaviour
             ghostStackBooks.Add(ghost);
         }
     }
-
 
     public void HideGhost()
     {
@@ -538,23 +584,34 @@ public class GhostBookManager : MonoBehaviour
         }
     }
 
-
     public void UpdateGhostStackTransforms(Vector3 basePos, Quaternion baseRot)
     {
-        if (ghostStackBooks.Count > 0)
-        {
-            Transform topGhost = ghostStackBooks[0].transform;
-            topGhost.SetPositionAndRotation(basePos, baseRot);
+        if (ghostStackBooks.Count == 0)
+            return;
 
-            for (int i = 1; i < ghostStackBooks.Count; i++)
-            {
-                Vector3 offset = Vector3.up * 0.12f * i; // Or use BookStackRoot.bookThickness if available
-                ghostStackBooks[i].transform.position = topGhost.position + offset;
-                ghostStackBooks[i].transform.rotation = topGhost.rotation;
-            }
+        Transform topGhost = ghostStackBooks[0].transform;
+        topGhost.SetPositionAndRotation(basePos, baseRot);
+
+        // Determine stack direction
+        // Always stack along the ghost book’s local up axis
+        Vector3 stackDirection = topGhost.up;
+
+        for (int i = 1; i < ghostStackBooks.Count; i++)
+        {
+            Vector3 offset = stackDirection.normalized * 0.12f * i;
+            ghostStackBooks[i].transform.position = topGhost.position + offset;
+            ghostStackBooks[i].transform.rotation = topGhost.rotation;
         }
     }
 
+    public void ResetRotation(bool isNearShelf = false)
+    {
+        rotationLocked = false;
+
+        // Correct inward-facing orientation
+        rotationAmount = isNearShelf ? 0f : 270f; // Changed from 90f to 0f
+        currentRotation = rotationAmount;
+    }
 
     public void SetGhostMaterial(bool isValid)
     {
@@ -570,7 +627,6 @@ public class GhostBookManager : MonoBehaviour
             return null;
         }
     }
-
 
     public GameObject GhostBookInstance => ghostBookInstance;
 }
