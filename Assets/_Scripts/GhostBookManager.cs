@@ -200,49 +200,54 @@ public class GhostBookManager : MonoBehaviour
         latestGhostValid = false;
     }
 
-    // Helper method to check if a book's transform has the correct outward-facing orientation
+    // Helper method to check if a book's parent transform has the correct orientation (X-axis facing ShelfRegion's -Z)
     private bool IsBookOrientationValid(GameObject book, Vector3 shelfInward)
     {
-        // Find the book parent renderer
-        Transform bookTransform = book.GetComponent<Transform>();
+        // Get the book's parent transform
+        Transform bookTransform = book.transform;
         if (bookTransform == null)
         {
             UnityEngine.Debug.LogWarning($"Book {book.name} has no transform.");
             return false;
         }
 
-        Vector3 eulerAngles = bookTransform.rotation.eulerAngles;
-
-        // Normalize angles to [0, 360] for comparison
-        float xAngle = Mathf.Repeat(eulerAngles.x, 360f);
-        float yAngle = Mathf.Repeat(eulerAngles.y, 360f);
-        float zAngle = Mathf.Repeat(eulerAngles.z, 360f);
-
-        // Check if angles are CORRECT
-        const float angleTolerance = 5f;
-        bool isRotationValid = Mathf.Abs(xAngle - -90f) < angleTolerance &&
-                              Mathf.Abs(yAngle - 0f) < angleTolerance &&
-                              Mathf.Abs(zAngle - 0f) < angleTolerance;
-
-        if (!isRotationValid)
+        // Find the visual child (assumed to have a Renderer component)
+        Renderer visualChildRenderer = book.GetComponentInChildren<Renderer>();
+        if (visualChildRenderer == null)
         {
-            UnityEngine.Debug.Log($"Book {book.name} orientation invalid: X={xAngle}, Y={yAngle}, Z={zAngle}");
+            UnityEngine.Debug.LogWarning($"Book {book.name} has no visual child with Renderer.");
             return false;
         }
 
-        // Verify that the book's cover (local Y-axis) faces outward (opposite to shelfInward)
-        Vector3 bookCoverDirection = bookTransform.TransformDirection(Vector3.up); // Local Y-axis (cover)
-        Vector3 outwardDirection = -shelfInward.normalized;
-        float dot = Vector3.Dot(bookCoverDirection.normalized, outwardDirection);
-        const float directionTolerance = 0.95f; // Cosine of ~18 degrees
-        bool isCoverFacingOutward = dot > directionTolerance;
+        // Check if the book is parented to a ShelfRegion
+        Transform shelfRegion = bookTransform.parent;
+        bool isParentedToShelf = shelfRegion != null && shelfRegion.name.Contains("ShelfRegion");
+        bool rotationValid = true; // Default to true if not parented to ShelfRegion
 
-        if (!isCoverFacingOutward)
+        // If parented to ShelfRegion, check if the parent's rotation is approximately (0, 0, 0)
+        if (isParentedToShelf)
         {
-            UnityEngine.Debug.Log($"Book {book.name} cover not facing outward. Dot product: {dot}");
+            Vector3 eulerAngles = bookTransform.localRotation.eulerAngles;
+
+            // Normalize angles to [0, 360] for comparison
+            float xAngle = Mathf.Repeat(eulerAngles.x, 360f);
+            float yAngle = Mathf.Repeat(eulerAngles.y, 360f);
+            float zAngle = Mathf.Repeat(eulerAngles.z, 360f);
+
+            // Check if angles are approximately (0, 0, 0)
+            const float angleTolerance = 5f;
+            rotationValid = Mathf.Abs(xAngle - 0f) < angleTolerance &&
+                            Mathf.Abs(yAngle - 0f) < angleTolerance &&
+                            Mathf.Abs(zAngle - 0f) < angleTolerance;
+
+            if (!rotationValid)
+            {
+                UnityEngine.Debug.Log($"Book {book.name} orientation invalid: X={xAngle}, Y={yAngle}, Z={zAngle}");
+                return false;
+            }
         }
 
-        return isRotationValid && isCoverFacingOutward;
+        return rotationValid;
     }
 
     // Handles ghost placement on a shelf
@@ -303,7 +308,7 @@ public class GhostBookManager : MonoBehaviour
                 var info = bookHit.collider.GetComponent<BookInfo>();
                 if (info != null && info.title.Equals(heldObject.GetComponent<BookInfo>().title, System.StringComparison.OrdinalIgnoreCase))
                 {
-                    // Check if the book's orientation is valid (cover facing outward)
+                    // Check if the book's orientation is valid (X-axis facing ShelfRegion's -Z)
                     if (IsBookOrientationValid(bookHit.collider.gameObject, shelfInward))
                     {
                         stackTargetBook = bookHit.collider.gameObject;
@@ -381,7 +386,7 @@ public class GhostBookManager : MonoBehaviour
                 var info = c.GetComponent<BookInfo>();
                 if (info != null && TitlesMatch(info.title, heldInfo.title))
                 {
-                    // Check if the book's orientation is valid (cover facing outward)
+                    // Check if the book's orientation is valid (X-axis facing ShelfRegion's -Z)
                     if (IsBookOrientationValid(c.gameObject, shelfInward))
                     {
                         stackTargetBook = c.gameObject;
