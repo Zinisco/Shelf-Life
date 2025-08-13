@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -44,6 +45,37 @@ public class GhostBookManager : MonoBehaviour
 
         UnityEngine.Debug.Log("GhostBookInstance created: " + ghostBookInstance.name);
     }
+
+    private void OnEnable()
+    {
+        if (GameInput.Instance != null)
+        {
+            GameInput.Instance.OnRotateLeftAction += HandleRotateLeft;
+            GameInput.Instance.OnRotateRightAction += HandleRotateRight;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (GameInput.Instance != null)
+        {
+            GameInput.Instance.OnRotateLeftAction -= HandleRotateLeft;
+            GameInput.Instance.OnRotateRightAction -= HandleRotateRight;
+        }
+    }
+
+    private void HandleRotateLeft(object sender, EventArgs e)
+    {
+        float step = GameInput.Instance.IsPrecisionModifierHeld() ? 15f : 90f;
+        RotateGhostStep(-step);
+    }
+
+    private void HandleRotateRight(object sender, EventArgs e)
+    {
+        float step = GameInput.Instance.IsPrecisionModifierHeld() ? 15f : 90f;
+        RotateGhostStep(step);
+    }
+
 
     // Continuously updates the ghost book position and rotation based on raycast from camera
     public void UpdateGhost(GameObject heldObject, Camera camera, LayerMask shelfMask, LayerMask tableMask, ref float currentRotationY)
@@ -94,6 +126,8 @@ public class GhostBookManager : MonoBehaviour
                 float angle = Mathf.Atan2(-cameraForward.x, -cameraForward.z) * Mathf.Rad2Deg;
                 yRotation = Mathf.Round(angle / 90f) * 90f;
                 currentRotationY = yRotation;
+
+                rotationAmount = currentRotationY;
             }
 
             stackTargetBook = null;
@@ -153,6 +187,8 @@ public class GhostBookManager : MonoBehaviour
             rotationAmount %= 360f;
 
             currentRotation = Mathf.LerpAngle(currentRotation, rotationAmount, Time.deltaTime * rotationSmoothSpeed);
+            currentRotationY = Mathf.Repeat(Mathf.Round(rotationAmount / 90f) * 90f, 360f);
+            rotationAmount = currentRotationY;
             Quaternion targetRot = Quaternion.Euler(0f, currentRotation, 0f);
             ghostBookInstance.transform.SetPositionAndRotation(point, targetRot);
 
@@ -343,6 +379,8 @@ public class GhostBookManager : MonoBehaviour
         // Apply rotation and position
         currentRotation = Mathf.LerpAngle(currentRotation, rotationAmount, Time.deltaTime * rotationSmoothSpeed);
         // SHELF placement
+        currentRotationY = Mathf.Repeat(Mathf.Round(rotationAmount / 90f) * 90f, 360f);
+        rotationAmount = currentRotationY;
         var inward = hit.normal.normalized;                     // Into the shelf
         var shelfRight = Vector3.Cross(Vector3.forward, inward).normalized; // +X of shelf region
         // Map model axes: +Z(top) -> Up, +Y(cover) -> shelfRight, => -X(spine) -> outward
@@ -608,6 +646,14 @@ public class GhostBookManager : MonoBehaviour
             ghostStackBooks[i].transform.rotation = topGhost.rotation;
         }
     }
+
+    public void RotateGhostStep(float deltaDegrees)
+    {
+        if (ghostBookInstance == null || !ghostBookInstance.activeSelf) return;
+        rotationLocked = true;
+        rotationAmount = Mathf.Repeat(rotationAmount + deltaDegrees, 360f);
+    }
+
 
     public void ResetRotation(bool isNearShelf = false)
     {

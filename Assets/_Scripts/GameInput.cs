@@ -20,6 +20,11 @@ public class GameInput : MonoBehaviour
     public event EventHandler OnInteractAction;
     public event EventHandler OnRunAction;
 
+    public event Action OnMoveFurniturePressed;
+    public event Action OnMoveFurnitureReleased;
+    public event Action OnCancelMove;
+
+
     [SerializeField] private PlayerInput playerInput;
     public bool IsGamepadActive => playerInput != null && playerInput.currentControlScheme == "Gamepad";
     public bool IsKeyboardMouseActive => playerInput != null && playerInput.currentControlScheme == "KeyboardMouse";
@@ -56,13 +61,16 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.PickUpObject.performed += PickUpObject_performed;
         playerInputActions.Player.ShelveObject.performed += ShelveObject_performed;
         playerInputActions.Player.ScrollRotate.performed += ScrollRotate_performed;
-        //playerInputActions.Player.MoveFurniture.started += MoveFurniture_started;
-       // playerInputActions.Player.MoveFurniture.performed += MoveFurniture_performed;
         playerInputActions.Player.RotateLeft.performed += RotateLeft_performed;
         playerInputActions.Player.RotateRight.performed += RotateRight_performed;
         playerInputActions.Player.Interact.performed += Interact_performed;
         playerInputActions.Player.Run.performed += Run_performed;
 
+        playerInputActions.Player.MoveFurniture.started += ctx => OnMoveFurniturePressed?.Invoke();
+        playerInputActions.Player.MoveFurniture.canceled += ctx => OnMoveFurnitureReleased?.Invoke();
+        playerInputActions.Player.Cancel.performed += ctx => OnCancelMove?.Invoke();
+
+        playerInputActions.Player.MoveFurniture.performed += MoveFurniture_performed;
 
     }
 
@@ -71,32 +79,21 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.PickUpObject.performed -= PickUpObject_performed;
         playerInputActions.Player.ShelveObject.performed -= ShelveObject_performed;
         playerInputActions.Player.ScrollRotate.performed -= ScrollRotate_performed;
-       // playerInputActions.Player.MoveFurniture.started -= MoveFurniture_started;
-       // playerInputActions.Player.MoveFurniture.performed -= MoveFurniture_performed;
+        playerInputActions.Player.MoveFurniture.performed -= MoveFurniture_performed;
         playerInputActions.Player.RotateLeft.performed -= RotateLeft_performed;
         playerInputActions.Player.RotateRight.performed -= RotateRight_performed;
         playerInputActions.Player.Interact.performed -= Interact_performed;
         playerInputActions.Player.Run.performed -= Run_performed;
 
-
+        playerInputActions.Player.Cancel.performed -= ctx => OnCancelMove?.Invoke();
 
         playerInputActions.Dispose();
     }
 
-    private void MoveFurniture_started(InputAction.CallbackContext context)
-    {
-        if (context.interaction is UnityEngine.InputSystem.Interactions.HoldInteraction)
-        {
-            OnStartMoveFurnitureAction?.Invoke(this, EventArgs.Empty); // Hold starts moving
-        }
-    }
 
     private void MoveFurniture_performed(InputAction.CallbackContext context)
     {
-        if (context.interaction is UnityEngine.InputSystem.Interactions.TapInteraction)
-        {
-            OnPlaceFurnitureAction?.Invoke(this, EventArgs.Empty); // Tap confirms placement
-        }
+        OnPlaceFurnitureAction?.Invoke(this, EventArgs.Empty);
     }
 
     private void PickUpObject_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)

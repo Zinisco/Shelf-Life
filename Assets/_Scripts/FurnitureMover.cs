@@ -61,20 +61,25 @@ public class FurnitureMover : MonoBehaviour
             return;
         }
 
-        //gameInput.OnStartMoveFurnitureAction += HandleStartMove;
-       // gameInput.OnPlaceFurnitureAction += HandlePlaceFurniture;
-
         gameInput.OnRotateLeftAction += OnRotateLeft;
         gameInput.OnRotateRightAction += OnRotateRight;
+
+        gameInput.OnMoveFurniturePressed += HandleMovePressed;   // start/continue holding
+        gameInput.OnMoveFurnitureReleased += HandleMoveReleased;  // abort hold
+        gameInput.OnPlaceFurnitureAction += HandlePlaceFurniture; // confirm placement (click/tap)
+        gameInput.OnCancelMove += HandleCancelInput;
     }
 
     private void OnDisable()
     {
-       // gameInput.OnStartMoveFurnitureAction -= HandleStartMove;
-        //gameInput.OnPlaceFurnitureAction -= HandlePlaceFurniture;
 
-        gameInput.OnRotateLeftAction += OnRotateLeft;
-        gameInput.OnRotateRightAction += OnRotateRight;
+        gameInput.OnRotateLeftAction -= OnRotateLeft;
+        gameInput.OnRotateRightAction -= OnRotateRight;
+
+        gameInput.OnMoveFurniturePressed -= HandleMovePressed;
+        gameInput.OnMoveFurnitureReleased -= HandleMoveReleased;
+        gameInput.OnPlaceFurnitureAction -= HandlePlaceFurniture;
+        gameInput.OnCancelMove -= HandleCancelInput;
     }
 
     private void Start()
@@ -98,27 +103,23 @@ public class FurnitureMover : MonoBehaviour
         if (postPlaceTimer > 0f)
         {
             postPlaceTimer -= Time.deltaTime;
-            return; // Don't allow starting move or showing ring yet
+            return;
         }
 
         if (!isMoving)
         {
-            if (Mouse.current.rightButton.isPressed)
+            // We’re in pre-move state, waiting for the hold to finish.
+            if (isHoldingToMove)
             {
-                if (!isHoldingToMove)
-                {
-                    isHoldingToMove = true;
-                    holdTimer = holdTime;
-                }
-
-                // Only continue hold logic if we're aiming at furniture
+                // Only proceed if we’re actually aiming at furniture
                 if (TryFindFurniture(out GameObject previewFurniture))
                 {
                     holdTimer -= Time.deltaTime;
 
                     if (progressRingUI != null)
                     {
-                        progressRingUI.fillAmount = 1f - (holdTimer / holdTime);
+                        float pct = 1f - (holdTimer / holdTime);
+                        progressRingUI.fillAmount = Mathf.Clamp01(pct);
                         progressRingUI.gameObject.SetActive(true);
                     }
 
@@ -136,10 +137,9 @@ public class FurnitureMover : MonoBehaviour
                 }
                 else
                 {
-                    // Not close to furniture – reset timer and hide ring
+                    // Not aiming at furniture -> cancel the hold UI
                     isHoldingToMove = false;
                     holdTimer = holdTime;
-
                     if (progressRingUI != null)
                     {
                         progressRingUI.fillAmount = 0f;
@@ -147,40 +147,14 @@ public class FurnitureMover : MonoBehaviour
                     }
                 }
             }
-            else
-            {
-                isHoldingToMove = false;
-                holdTimer = holdTime;
-
-                if (progressRingUI != null)
-                {
-                    progressRingUI.fillAmount = 0f;
-                    progressRingUI.gameObject.SetActive(false);
-                }
-            }
         }
-
         else
         {
+            // actively moving
             UpdateGhostPosition();
             HandleRotationInput();
-
-            if (Keyboard.current.escapeKey.wasPressedThisFrame && isMoving)
-            {
-                CancelMove();
-                return; // Exit early so we don’t allow placement right after cancel
-            }
-
-            // Confirm placement with LEFT mouse button
-            if (Mouse.current.rightButton.wasPressedThisFrame)
-            {
-                Debug.Log("Left mouse click detected while moving.");
-                HandlePlaceFurniture(this, EventArgs.Empty);
-            }
         }
     }
-
-
 
 
     private void HandleStartMove(object sender, EventArgs e)
@@ -393,6 +367,40 @@ public class FurnitureMover : MonoBehaviour
         }
     }
 
+    private void HandleMovePressed()
+    {
+        if (isMoving) return; // already moving
+        if (ComputerUI.IsUIOpen) return;
+        if (pickUp != null && pickUp.IsHoldingObject()) return;
+
+        if (!isHoldingToMove)
+        {
+            isHoldingToMove = true;
+            holdTimer = holdTime;
+            if (progressRingUI != null)
+            {
+                progressRingUI.fillAmount = 0f;
+                progressRingUI.gameObject.SetActive(true);
+            }
+        }
+    }
+
+    private void HandleMoveReleased()
+    {
+        // Button released before finishing the hold
+        if (!isMoving)
+        {
+            isHoldingToMove = false;
+            holdTimer = holdTime;
+            if (progressRingUI != null)
+            {
+                progressRingUI.fillAmount = 0f;
+                progressRingUI.gameObject.SetActive(false);
+            }
+        }
+    }
+
+
     private void HandleRotationInput()
     {
         float scroll = Mouse.current.scroll.ReadValue().y;
@@ -469,6 +477,27 @@ public class FurnitureMover : MonoBehaviour
         return true;
     }
 
+    private void HandleCancelInput()
+    {
+        // If we're in the hold-to-start phase, cancel the hold UI
+        if (!isMoving)
+        {
+            if (isHoldingToMove)
+            {
+                isHoldingToMove = false;
+                holdTimer = holdTime;
+                if (progressRingUI != null)
+                {
+                    progressRingUI.fillAmount = 0f;
+                    progressRingUI.gameObject.SetActive(false);
+                }
+            }
+            return;
+        }
+
+        // If we are actively moving, cancel the move and restore everything
+        CancelMove();
+    }
 
 
     private void OnRotateLeft(object sender, EventArgs e)
@@ -507,24 +536,39 @@ public class FurnitureMover : MonoBehaviour
         foreach (var rend in originalRenderers)
             if (rend != null) rend.enabled = true;
 
+        // Stop ignoring collisions with player
+        var furnitureCols = selectedFurniture.GetComponentsInChildren<Collider>();
+        foreach (var c in furnitureCols)
+            Physics.IgnoreCollision(c, playerCol, false);
+
         // Turn off ghost
         if (ghostVisual != null)
             ghostVisual.SetActive(false);
 
-        // Reset state
+        // Reset layers (root + all children)
         selectedFurniture.layer = originalFurnitureLayer;
-
-        foreach (Transform child in selectedFurniture.GetComponentsInChildren<Transform>())
+        if (originalLayers != null)
         {
-            child.gameObject.layer = originalFurnitureLayer;
+            foreach (var kvp in originalLayers)
+                if (kvp.Key != null) kvp.Key.layer = kvp.Value;
+            originalLayers.Clear();
         }
 
+        // Reset state
         selectedFurniture = null;
         ghostVisual = null;
         ghostRenderer = null;
         rotationAmount = 0f;
         isMoving = false;
-    }
 
+        // Also ensure hold UI is off
+        isHoldingToMove = false;
+        holdTimer = holdTime;
+        if (progressRingUI != null)
+        {
+            progressRingUI.fillAmount = 0f;
+            progressRingUI.gameObject.SetActive(false);
+        }
+    }
 
 }
