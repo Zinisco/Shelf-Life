@@ -83,85 +83,99 @@ public class PickUp : MonoBehaviour
 
     private void TryPickup()
     {
-        // Cast a ray from the mouse to find a pickable object
-        Ray ray = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
-        if (Physics.Raycast(ray, out RaycastHit hit, pickupRange, pickableLayerMask))
+        // --- Pick a ray based on control scheme ---
+        // KB&M: cursor ray. Gamepad: center-screen camera ray (with tiny aim assist).
+        Ray ray;
+        bool usingGamepad = gameInput != null && gameInput.IsGamepadActive;
+
+        if (!usingGamepad && Mouse.current != null)
+            ray = playerCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        else
+            ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+
+        // First try a precise raycast on pickable layers
+        RaycastHit hit;
+        bool gotHit = Physics.Raycast(ray, out hit, pickupRange, pickableLayerMask);
+
+        // If on gamepad and we missed, give a small sphere-assist along the same ray
+        if (!gotHit && usingGamepad)
+            gotHit = Physics.SphereCast(ray, 0.12f, out hit, pickupRange, pickableLayerMask);
+
+        if (!gotHit) return;
+
+        // --- Your original logic from here down stays the same ---
+        if (!hit.collider.CompareTag("Pickable") &&
+            !hit.collider.CompareTag("BookCrate") &&
+            !hit.collider.CompareTag("Book")) return;
+
+        GameObject baseBook = hit.collider.gameObject;
+        heldObject = GetTopmostBook(baseBook);
+
+        // Detect if we're near a shelf when picking up
+        Ray camRay = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+        bool nearShelf = Physics.Raycast(camRay, 3f, shelfMask);
+
+        bool nearShelfAndCoverFacingCamera = false;
+        if (nearShelf)
         {
-            // Validate tags
-            if (!hit.collider.CompareTag("Pickable") && !hit.collider.CompareTag("BookCrate") && !hit.collider.CompareTag("Book")) return;
-
-            GameObject baseBook = hit.collider.gameObject;
-            heldObject = GetTopmostBook(baseBook); // Get topmost book in a stack
-            
-            // Detect if we're near a shelf when picking up
-            Ray camRay = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
-            bool nearShelf = Physics.Raycast(camRay, 3f, shelfMask);
-
-            bool nearShelfAndCoverFacingCamera = false;
-
-            if (nearShelf)
-            {
-                Transform bookTransform = heldObject.transform;
-                Vector3 bookCoverDirection = bookTransform.forward;  // +Z = cover
-                Vector3 camToBook = (bookTransform.position - playerCamera.transform.position).normalized;
-
-                float dot = Vector3.Dot(bookCoverDirection, camToBook);
-                nearShelfAndCoverFacingCamera = dot > 0.5f;
-            }
-
-            // FORCE inward-facing default when grabbing from table near shelf
-            currentYRotation = 0f;
-            ghostBookManager.ResetRotation(true);
-
-
-
-            heldObjectRb = heldObject.GetComponent<Rigidbody>();
-
-            // Special handling for crates
-            BookCrate crate = heldObject.GetComponent<BookCrate>();
-            if (crate != null)
-            {
-                crate.SetHeld(true);
-                Rigidbody crateRb = heldObject.GetComponent<Rigidbody>();
-                if (crateRb != null)
-                    crateRb.constraints = RigidbodyConstraints.None;
-            }
-
-            // Change layer to avoid interaction with other colliders
-            heldObjectOriginalLayer = heldObject.layer;
-            heldObject.layer = LayerMask.NameToLayer("HeldObject");
-
-            // Detach from stack if necessary
-            BookInfo info = heldObject.GetComponent<BookInfo>();
-            if (info != null && info.currentStackRoot != null)
-            {
-                BookStackRoot root = info.currentStackRoot;
-                info.currentStackRoot = null;
-                heldObject.transform.SetParent(null);
-                StartCoroutine(DelayedRemoveFromStack(root, heldObject));
-            }
-
-            // Prepare Rigidbody settings for held object
-            if (heldObjectRb != null)
-            {
-                heldObjectRb.isKinematic = false;
-                heldObjectRb.interpolation = RigidbodyInterpolation.Interpolate;
-                heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-                heldObject.transform.position = holdPosition.position;
-
-                // Face object away from the camera
-                Quaternion rotation = Quaternion.LookRotation(Vector3.up, -Camera.main.transform.forward);
-                heldObject.transform.rotation = rotation;
-                heldObject.transform.Rotate(Vector3.right, 60f, Space.Self);
-            }
-
-            // Attach using a fixed joint
-            holdJoint = holdPosition.gameObject.AddComponent<FixedJoint>();
-            holdJoint.connectedBody = heldObjectRb;
-            holdJoint.breakForce = Mathf.Infinity;
-            holdJoint.breakTorque = Mathf.Infinity;
+            Transform bookTransform = heldObject.transform;
+            Vector3 bookCoverDirection = bookTransform.forward;  // +Z = cover
+            Vector3 camToBook = (bookTransform.position - playerCamera.transform.position).normalized;
+            float dot = Vector3.Dot(bookCoverDirection, camToBook);
+            nearShelfAndCoverFacingCamera = dot > 0.5f;
         }
+
+        // FORCE inward-facing default when grabbing from table near shelf
+        currentYRotation = 0f;
+        ghostBookManager.ResetRotation(true);
+
+        heldObjectRb = heldObject.GetComponent<Rigidbody>();
+
+        // Special handling for crates
+        BookCrate crate = heldObject.GetComponent<BookCrate>();
+        if (crate != null)
+        {
+            crate.SetHeld(true);
+            Rigidbody crateRb = heldObject.GetComponent<Rigidbody>();
+            if (crateRb != null)
+                crateRb.constraints = RigidbodyConstraints.None;
+        }
+
+        // Change layer to avoid interaction with other colliders
+        heldObjectOriginalLayer = heldObject.layer;
+        heldObject.layer = LayerMask.NameToLayer("HeldObject");
+
+        // Detach from stack if necessary
+        BookInfo info = heldObject.GetComponent<BookInfo>();
+        if (info != null && info.currentStackRoot != null)
+        {
+            BookStackRoot root = info.currentStackRoot;
+            info.currentStackRoot = null;
+            heldObject.transform.SetParent(null);
+            StartCoroutine(DelayedRemoveFromStack(root, heldObject));
+        }
+
+        // Prepare Rigidbody settings for held object
+        if (heldObjectRb != null)
+        {
+            heldObjectRb.isKinematic = false;
+            heldObjectRb.interpolation = RigidbodyInterpolation.Interpolate;
+            heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+            heldObject.transform.position = holdPosition.position;
+
+            // Face object away from the camera
+            Quaternion rotation = Quaternion.LookRotation(Vector3.up, -playerCamera.transform.forward);
+            heldObject.transform.rotation = rotation;
+            heldObject.transform.Rotate(Vector3.right, 60f, Space.Self);
+        }
+
+        // Attach using a fixed joint
+        holdJoint = holdPosition.gameObject.AddComponent<FixedJoint>();
+        holdJoint.connectedBody = heldObjectRb;
+        holdJoint.breakForce = Mathf.Infinity;
+        holdJoint.breakTorque = Mathf.Infinity;
     }
+
 
     private void DropObject()
     {

@@ -123,7 +123,7 @@ public class GhostBookManager : MonoBehaviour
                 cameraForward.y = 0f;
                 cameraForward.Normalize();
 
-                float angle = Mathf.Atan2(-cameraForward.x, -cameraForward.z) * Mathf.Rad2Deg;
+                float angle = Mathf.Atan2(cameraForward.x, cameraForward.z) * Mathf.Rad2Deg;
                 yRotation = Mathf.Round(angle / 90f) * 90f;
                 currentRotationY = yRotation;
 
