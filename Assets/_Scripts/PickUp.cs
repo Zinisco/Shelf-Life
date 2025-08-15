@@ -270,8 +270,6 @@ public class PickUp : MonoBehaviour
                 Vector3 finalPos = targetStackBook.transform.position + stackDirection * 0.12f;
                 Quaternion finalRotation = targetStackBook.transform.rotation;
 
-                Vector3 preParentScale = heldObject.transform.localScale;
-
                 heldObject.transform.SetPositionAndRotation(finalPos, finalRotation);
                 heldObject.transform.SetParent(root.transform, worldPositionStays: true);
 
@@ -306,9 +304,6 @@ public class PickUp : MonoBehaviour
                     return;
                 }
             }
-
-            // before you parent:
-            Vector3 originalLocalScale = heldObject.transform.localScale;
 
             // set its world position & rotation first
             heldObject.transform.SetPositionAndRotation(surfacePos, finalRot);
