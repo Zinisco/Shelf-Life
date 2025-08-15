@@ -12435,7 +12435,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ghostBookPrefab: {fileID: 2402301105610687113, guid: 2dbce75e20038eb4e8a627408acc1a3f, type: 3}
-  surfaceOffset: 0.04
+  surfaceOffset: 0.07
   shelfOffset: 0.3
   rotationSmoothSpeed: 10
   validMaterial: {fileID: 2100000, guid: 4e7048a1471490040af1929af0f85e35, type: 2}
@@ -14977,6 +14977,18 @@ PrefabInstance:
     - target: {fileID: 4728375341833832759, guid: 6ab1fef2d9ac29b44a0b86f7393d759f, type: 3}
       propertyPath: m_LocalPosition.y
       value: 1.51
+      objectReference: {fileID: 0}
+    - target: {fileID: 6337394487723056741, guid: 6ab1fef2d9ac29b44a0b86f7393d759f, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 65
+      objectReference: {fileID: 0}
+    - target: {fileID: 6337394487723056741, guid: 6ab1fef2d9ac29b44a0b86f7393d759f, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.36
+      objectReference: {fileID: 0}
+    - target: {fileID: 6337394487723056741, guid: 6ab1fef2d9ac29b44a0b86f7393d759f, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7045566846923000982, guid: 6ab1fef2d9ac29b44a0b86f7393d759f, type: 3}
       propertyPath: m_LocalPosition.x

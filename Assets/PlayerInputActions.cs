@@ -487,6 +487,17 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
+                    ""id"": ""4c0f0768-ba2d-4875-a9ae-cf6a0b17a923"",
+                    ""path"": ""<Gamepad>/rightTrigger"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""FreeMove"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""2d890172-448b-4e44-84b4-63e857fad720"",
                     ""path"": ""<Keyboard>/escape"",
                     ""interactions"": """",

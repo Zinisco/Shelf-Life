@@ -1,13 +1,12 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
 
 public class GhostBookManager : MonoBehaviour
 {
     [SerializeField] private GameObject ghostBookPrefab; // Prefab for the translucent ghost book
-    [SerializeField] private float surfaceOffset = 0.02f; // Offset above surface (table) for visual clarity
+    [SerializeField] private float surfaceOffset = 0.03f; // Offset above surface (table) for visual clarity
     [SerializeField] private float shelfOffset = 0.4f;    // Offset above shelf surface
     [SerializeField] private float rotationSmoothSpeed = 10f; // Speed of ghost book rotation interpolation
 
@@ -33,18 +32,18 @@ public class GhostBookManager : MonoBehaviour
     // Called once to instantiate and initialize the ghost book
     public void Init()
     {
-        if (ghostBookInstance != null)
-            Destroy(ghostBookInstance);
+        if (ghostBookInstance != null) Destroy(ghostBookInstance);
 
         ghostBookInstance = Instantiate(ghostBookPrefab);
+        ghostBookInstance.transform.SetParent(transform, worldPositionStays: false);
+        ghostBookInstance.transform.localPosition = Vector3.zero;
+        ghostBookInstance.transform.localRotation = Quaternion.identity;
+        ghostBookInstance.transform.localScale = Vector3.one; // important
         ghostBookInstance.SetActive(false);
 
         ghostRenderer = ghostBookInstance.GetComponentInChildren<Renderer>();
-        if (ghostRenderer == null)
-            UnityEngine.Debug.LogWarning("GhostBookInstance has no Renderer!");
-
-        UnityEngine.Debug.Log("GhostBookInstance created: " + ghostBookInstance.name);
     }
+
 
     private void OnEnable()
     {
@@ -157,7 +156,11 @@ public class GhostBookManager : MonoBehaviour
                             Quaternion finalRotation = topBook.transform.rotation;
 
                             ghostBookInstance.transform.SetPositionAndRotation(topStackPos, finalRotation);
-                            ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
+                            ghostBookInstance.transform.localScale = WorldScaleToLocal(
+                            heldObject.transform,
+                            ghostBookInstance.transform.parent
+                            );
+
 
                             stackTargetBook = topBook;
                             rotationLocked = false;
@@ -393,7 +396,11 @@ public class GhostBookManager : MonoBehaviour
         Quaternion targetRot = spinY * orientShelf;
         ghostBookInstance.transform.SetPositionAndRotation(point, targetRot);
 
-        ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
+        ghostBookInstance.transform.localScale = WorldScaleToLocal(
+        heldObject.transform,
+        ghostBookInstance.transform.parent
+        );
+
 
         // Skip stacking logic entirely if nudging
         if (NudgableStackMover.IsNudging)
@@ -448,7 +455,11 @@ public class GhostBookManager : MonoBehaviour
                     Quaternion rot = stackTargetBook.transform.rotation;
 
                     ghostBookInstance.transform.SetPositionAndRotation(nextSlot, rot);
-                    ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
+                    ghostBookInstance.transform.localScale = WorldScaleToLocal(
+                    heldObject.transform,
+                    ghostBookInstance.transform.parent
+                    );
+
 
                     SetGhostMaterial(true);
                     latestGhostValid = true;
@@ -495,7 +506,11 @@ public class GhostBookManager : MonoBehaviour
                     root.TopPosition,
                     stackTargetBook.transform.rotation
                 );
-                ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
+                ghostBookInstance.transform.localScale = WorldScaleToLocal(
+                heldObject.transform,
+                ghostBookInstance.transform.parent
+                );
+
                 SetGhostMaterial(true);
                 latestGhostValid = true;
 
@@ -513,7 +528,10 @@ public class GhostBookManager : MonoBehaviour
             Quaternion slotRot = stackTargetBook.transform.rotation;
 
             ghostBookInstance.transform.SetPositionAndRotation(nextSlot, slotRot);
-            ghostBookInstance.transform.localScale = heldObject.transform.lossyScale;
+            ghostBookInstance.transform.localScale = WorldScaleToLocal(
+                heldObject.transform,
+                ghostBookInstance.transform.parent
+            );
             SetGhostMaterial(true);
             latestGhostValid = true;
             return;
@@ -535,9 +553,11 @@ public class GhostBookManager : MonoBehaviour
 
     private void ShowSingleGhost(GameObject heldObject)
     {
-        if (ghostBookInstance == null) return;
-
-        ghostBookInstance.transform.localScale = heldObject.transform.localScale;
+        if (!ghostBookInstance) return;
+        ghostBookInstance.transform.localScale = WorldScaleToLocal(
+            heldObject.transform,
+            ghostBookInstance.transform.parent
+        );
 
         Renderer rend = ghostBookInstance.GetComponentInChildren<Renderer>();
         if (rend != null)
@@ -560,8 +580,13 @@ public class GhostBookManager : MonoBehaviour
 
         for (int i = 0; i < stackCount; i++)
         {
-            GameObject ghost = Instantiate(ghostBookPrefab);
-            ghost.transform.localScale = heldObject.transform.localScale;
+            GameObject ghost = Instantiate(ghostBookPrefab, transform, false);
+            ghost.transform.localPosition = Vector3.zero;
+            ghost.transform.localRotation = Quaternion.identity;
+            ghost.transform.localScale = WorldScaleToLocal(
+                heldObject.transform,
+                transform
+            );
             ghost.SetActive(true);
 
             Renderer rend = ghost.GetComponentInChildren<Renderer>();
@@ -663,6 +688,20 @@ public class GhostBookManager : MonoBehaviour
         rotationAmount = isNearShelf ? 0f : 270f; // Changed from 90f to 0f
         currentRotation = rotationAmount;
     }
+
+    private static Vector3 WorldScaleToLocal(Transform source, Transform targetParent)
+    {
+        Vector3 srcWorld = source.lossyScale;
+        Vector3 parentWorld = targetParent ? targetParent.lossyScale : Vector3.one;
+
+        // Avoid divide-by-zero if something is scaled to 0
+        float sx = parentWorld.x != 0 ? srcWorld.x / parentWorld.x : srcWorld.x;
+        float sy = parentWorld.y != 0 ? srcWorld.y / parentWorld.y : srcWorld.y;
+        float sz = parentWorld.z != 0 ? srcWorld.z / parentWorld.z : srcWorld.z;
+
+        return new Vector3(sx, sy, sz);
+    }
+
 
     public void SetGhostMaterial(bool isValid)
     {

@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 public class NudgableStackMover : MonoBehaviour
 {
@@ -23,7 +25,8 @@ public class NudgableStackMover : MonoBehaviour
     private BookStackRoot selectedStackRoot;
     private GameObject heldGhost;
     private float currentYRotation = 0f;
-   
+    private bool freeMoveHeld = false;
+
     private float rotationAmount = 0f;
 
     private Renderer[] originalRenderers;
@@ -41,10 +44,39 @@ public class NudgableStackMover : MonoBehaviour
 
     private bool isPlacementValid = false;
 
+    private void OnEnable()
+    {
+        if (GameInput.Instance == null) return;
+        GameInput.Instance.OnFreeMoveStarted += HandleFreeMoveStarted;
+        GameInput.Instance.OnFreeMoveCanceled += HandleFreeMoveCanceled;
+        GameInput.Instance.OnFreeMovePerformed += HandleFreeMovePerformed;
+
+        // Optional: use existing actions for confirm/cancel + rotation on gamepad
+        GameInput.Instance.OnPlaceFurnitureAction += HandleConfirm; // e.g. A / South
+        GameInput.Instance.OnCancelMove += HandleCancel;  // e.g. B / East
+        GameInput.Instance.OnRotateLeftAction += HandleRotateLeftStep;
+        GameInput.Instance.OnRotateRightAction += HandleRotateRightStep;
+    }
+
+    private void OnDisable()
+    {
+        if (GameInput.Instance == null) return;
+        GameInput.Instance.OnFreeMoveStarted -= HandleFreeMoveStarted;
+        GameInput.Instance.OnFreeMoveCanceled -= HandleFreeMoveCanceled;
+        GameInput.Instance.OnFreeMovePerformed -= HandleFreeMovePerformed;
+
+        GameInput.Instance.OnPlaceFurnitureAction -= HandleConfirm;
+        GameInput.Instance.OnCancelMove -= HandleCancel;
+        GameInput.Instance.OnRotateLeftAction -= HandleRotateLeftStep;
+        GameInput.Instance.OnRotateRightAction -= HandleRotateRightStep;
+    }
+
+
     void Update()
     {
 
-        if (Keyboard.current.fKey.isPressed && !isNudging)
+        // Hold-to-start using FreeMove
+        if (freeMoveHeld && !isNudging)
         {
             Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
             if (Physics.Raycast(ray, out RaycastHit hit, 3f, bookLayer))
@@ -56,46 +88,25 @@ public class NudgableStackMover : MonoBehaviour
                     {
                         selectedStackRoot = hitInfo.currentStackRoot;
                         holdTimer = 0f;
-
-                        // Spawn visual at target position
-                        if (holdVisualObject != null)
-                        {
-                            holdVisualObject.SetActive(true);
-                        }
+                        if (holdVisualObject) holdVisualObject.SetActive(true);
                     }
 
                     holdTimer += Time.deltaTime;
-
-                    // Update ring UI
-                    if (holdVisualObject != null)
-                    {
-
-                        if (holdVisualRing != null)
-                            holdVisualRing.fillAmount = Mathf.Clamp01(holdTimer / holdTime);
-                    }
-
+                    if (holdVisualRing) holdVisualRing.fillAmount = Mathf.Clamp01(holdTimer / holdTime);
 
                     if (holdTimer >= holdTime)
                     {
                         BeginNudging();
-
-                        if (holdVisualObject != null)
-                        {
-                            holdVisualObject.SetActive(false);
-                        }
+                        if (holdVisualObject) holdVisualObject.SetActive(false);
                     }
                 }
             }
         }
-        else if (!Keyboard.current.fKey.isPressed && !isNudging)
+        else if (!freeMoveHeld && !isNudging)
         {
             holdTimer = 0f;
-            selectedStackRoot = null;
-
-            if (holdVisualObject != null)
-            {
-                holdVisualObject.SetActive(false);
-            }
+            selectedStackRoot = null; 
+            if (holdVisualObject) holdVisualObject.SetActive(false);
         }
 
 
@@ -103,21 +114,10 @@ public class NudgableStackMover : MonoBehaviour
         {
             UpdateGhostFollow();
 
-            // lock rotation on shelf nudges
-               if (originalContext == StackContext.Shelf)
-               {
+            if (originalContext == StackContext.Shelf)
                 currentYRotation = originalYRotation;
-               }
-            
-             // only allow scroll-to-rotate on tables
-            if (originalContext == StackContext.Table)
-                HandleRotation();
-
-            if (Keyboard.current.escapeKey.wasPressedThisFrame)
-                CancelNudging();
-
-            if (Mouse.current.leftButton.wasPressedThisFrame)
-                ConfirmPlacement();
+            else
+                HandleRotation(); // still supports mouse scroll; gamepad uses RotateLeft/Right events
         }
     }
 
@@ -129,39 +129,37 @@ public class NudgableStackMover : MonoBehaviour
             return;
         }
 
-        originalPosition = selectedStackRoot.transform.position;
-        originalContext = selectedStackRoot.context;
-        originalRotation = selectedStackRoot.transform.rotation;
-        originalYRotation = originalRotation.eulerAngles.y;
-
-
-        IsNudging = true;
-        isNudging = true;
-        // Temporarily move the stack high above the table to avoid blocking placement
-        selectedStackRoot.transform.position += Vector3.up * 5f;
-
+        // Validate there are books before entering nudging mode
         if (selectedStackRoot.books == null || selectedStackRoot.books.Count == 0)
         {
             Debug.LogWarning("Selected stack root has no books.");
             return;
         }
 
-        heldGhost = selectedStackRoot.books[0]; // used for ghost visuals only
-       // Debug.Log("Started nudging stack: " + selectedStackRoot.name);
+        originalPosition = selectedStackRoot.transform.position;
+        originalContext = selectedStackRoot.context;
+        originalRotation = selectedStackRoot.transform.rotation;
+        originalYRotation = originalRotation.eulerAngles.y;
 
-        // Disable renderers on the actual stack
+        // Only now enter nudging state
+        IsNudging = true;
+        isNudging = true;
+
+        selectedStackRoot.transform.position += Vector3.up * 5f;
+
+        heldGhost = selectedStackRoot.books[0];
+
         originalRenderers = selectedStackRoot.GetComponentsInChildren<Renderer>();
-        foreach (Renderer rend in originalRenderers)
-        {
-            rend.enabled = false;
-        }
+        foreach (Renderer rend in originalRenderers) rend.enabled = false;
 
         ghostBookManager.ShowGhost(heldGhost, selectedStackRoot.books.Count);
     }
 
+
     void UpdateGhostFollow()
     {
-        if (ghostBookManager == null || heldGhost == null) return;
+        if (ghostBookManager == null || heldGhost == null || selectedStackRoot == null)
+            return;
 
         ghostBookManager.UpdateGhost(
      heldGhost,
@@ -386,6 +384,52 @@ public class NudgableStackMover : MonoBehaviour
     {
         return GameInput.Instance.IsPrecisionModifierHeld();
     }
+
+    private void HandleFreeMoveStarted()
+    {
+        if (isNudging)
+        {
+            // Already nudging? A new press should confirm.
+            ConfirmPlacement();
+            return;
+        }
+
+        freeMoveHeld = true; // normal hold-to-start
+    }
+
+    private void HandleFreeMoveCanceled()
+    {
+        // This is the *release* of FreeMove (F key up / RT released)
+
+        if (isNudging)
+        {
+            // Use the same input to confirm placement
+            ConfirmPlacement();
+            return;
+        }
+
+        // Not nudging yet: cancel the hold progress / selection
+        freeMoveHeld = false;
+        holdTimer = 0f;
+        selectedStackRoot = null;
+        if (holdVisualObject) holdVisualObject.SetActive(false);
+    }
+
+
+    // If your FreeMove is a Vector2 (stick), you can read it here for optional nudging-offset usage later
+    private Vector2 freeMoveVec = Vector2.zero;
+    private void HandleFreeMovePerformed(InputAction.CallbackContext ctx)
+    {
+        if (ctx.control is StickControl || ctx.action.type == InputActionType.Value)
+            freeMoveVec = ctx.ReadValue<Vector2>();
+    }
+
+    private void HandleConfirm(object _, EventArgs __) { if (isNudging) ConfirmPlacement(); }
+    private void HandleCancel() { if (isNudging) CancelNudging(); }
+
+    private void HandleRotateLeftStep(object _, EventArgs __) { if (isNudging && originalContext == StackContext.Table) rotationAmount = (rotationAmount - (GameInput.Instance.IsPrecisionModifierHeld() ? 15f : 90f)) % 360f; }
+    private void HandleRotateRightStep(object _, EventArgs __) { if (isNudging && originalContext == StackContext.Table) rotationAmount = (rotationAmount + (GameInput.Instance.IsPrecisionModifierHeld() ? 15f : 90f)) % 360f; }
+
 
     private void OnDrawGizmos()
     {

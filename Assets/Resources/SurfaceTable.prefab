@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7045566846923000982}
-  - component: {fileID: 405440103685700072}
   - component: {fileID: 1981481281099932863}
   - component: {fileID: 5147861767735035300}
   m_Layer: 16
@@ -36,27 +35,6 @@ Transform:
   - {fileID: 4074687690762771318}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &405440103685700072
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8309916831982774950}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 4, y: 1.4, z: 2.2}
-  m_Center: {x: 0, y: 0.5, z: 0}
 --- !u!114 &1981481281099932863
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -124,6 +102,18 @@ PrefabInstance:
     m_TransformParent: {fileID: 7045566846923000982}
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 65
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 65
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 65
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0.91999996
       objectReference: {fileID: 0}
@@ -163,6 +153,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: -7511558181221131132, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
@@ -171,16 +165,50 @@ PrefabInstance:
       propertyPath: m_Name
       value: BookTable1
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
+      propertyPath: m_Layer
+      value: 16
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5009526628629123579}
   m_SourcePrefab: {fileID: 100100000, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
 --- !u!4 &6337394487723056741 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
   m_PrefabInstance: {fileID: 5798467846178421134}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &6681409013771404511 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
+  m_PrefabInstance: {fileID: 5798467846178421134}
+  m_PrefabAsset: {fileID: 0}
+--- !u!64 &5009526628629123579
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6681409013771404511}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 1
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 8552134717624371188, guid: d6b70005400461a47922ccde5948e0c3, type: 3}
 --- !u!1001 &7971274252642519027
 PrefabInstance:
   m_ObjectHideFlags: 0

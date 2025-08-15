@@ -274,7 +274,6 @@ public class PickUp : MonoBehaviour
 
                 heldObject.transform.SetPositionAndRotation(finalPos, finalRotation);
                 heldObject.transform.SetParent(root.transform, worldPositionStays: true);
-                heldObject.transform.localScale = preParentScale;
 
                 FinalizeBookPlacement();
 
@@ -316,9 +315,6 @@ public class PickUp : MonoBehaviour
 
             // now parent it under the shelf
             heldObject.transform.SetParent(shelfRegionTransform, worldPositionStays: true);
-
-            // restore its localScale so the world size stays exactly as before
-            heldObject.transform.localScale = originalLocalScale;
 
             // finally finalize
             FinalizeBookPlacement();
