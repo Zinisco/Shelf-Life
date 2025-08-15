@@ -78,6 +78,18 @@ public class PickUp : MonoBehaviour
 
     private void GameInput_OnShelveObjectAction(object sender, System.EventArgs e)
     {
+        if (NudgableStackMover.IsNudging)
+        {
+            // Let the nudging system handle its own “confirm” input; do nothing here.
+            return;
+        }
+
+        if (heldObject == null)
+        {
+            Debug.Log("[PickUp] Shelve pressed with no held object; ignoring.");
+            return;
+        }
+
         TryShelveBook();
     }
 
@@ -226,14 +238,39 @@ public class PickUp : MonoBehaviour
 
     public void TryShelveBook()
     {
+        // If you're currently nudging a stack, ignore Shelve (or forward it to confirm).
+        if (NudgableStackMover.IsNudging)
+        {
+            Debug.Log("[PickUp] Shelve pressed while nudging — ignoring (nudging handles its own confirm).");
+            return;
+        }
+
+        // Must be holding a book to shelve
+        if (heldObject == null)
+        {
+            Debug.LogWarning("[PickUp] TryShelveBook called but heldObject is null.");
+            return;
+        }
+
+        if (ghostBookManager == null)
+        {
+            Debug.LogError("[PickUp] GhostBookManager not assigned.");
+            return;
+        }
+
+        BookInfo heldInfo = heldObject.GetComponent<BookInfo>();
+        if (heldInfo == null)
+        {
+            Debug.LogWarning("[PickUp] Held object has no BookInfo; cannot shelve.");
+            return;
+        }
+
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, shelfMask))
         {
             Transform shelfRegionTransform = hit.transform;
             GameObject targetStackBook = ghostBookManager.GetStackTargetBook();
             Debug.Log($"[TryShelveBook] targetStackBook = {targetStackBook?.name ?? "null"}");
-            BookInfo heldInfo = heldObject.GetComponent<BookInfo>();
-            if (heldInfo == null) return;
 
             if (targetStackBook != null && bookStackManager.CanStack(targetStackBook, heldObject))
             {
@@ -279,9 +316,17 @@ public class PickUp : MonoBehaviour
             }
 
             // Otherwise, place freely on the shelf
-            Transform ghost = ghostBookManager.GhostBookInstance.transform;
+            var ghostInst = ghostBookManager.GhostBookInstance;
+            if (ghostInst == null)
+            {
+                Debug.LogWarning("[PickUp] Ghost instance is null; cannot free-place.");
+                return;
+            }
+
+            Transform ghost = ghostInst.transform;
             Vector3 surfacePos = ghost.position;
             Quaternion finalRot = ghost.rotation;
+
 
             // Check for collision with other books
             BoxCollider bookCollider = heldObject.GetComponent<BoxCollider>();
@@ -324,6 +369,17 @@ public class PickUp : MonoBehaviour
 
     private void TryPlaceOnSurface()
     {
+        if (heldObject == null)
+        {
+            Debug.LogWarning("[PickUp] TryPlaceOnSurface called but heldObject is null.");
+            return;
+        }
+        if (ghostBookManager == null)
+        {
+            Debug.LogError("[PickUp] GhostBookManager not assigned.");
+            return;
+        }
+
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableSurfaceMask))
         {
@@ -374,9 +430,17 @@ public class PickUp : MonoBehaviour
             }
 
             // Otherwise, place freely on the surface
-            Transform ghost = ghostBookManager.GhostBookInstance.transform;
+            var ghostInst = ghostBookManager.GhostBookInstance;
+            if (ghostInst == null)
+            {
+                Debug.LogWarning("[PickUp] Ghost instance is null; cannot free-place.");
+                return;
+            }
+
+            Transform ghost = ghostInst.transform;
             Vector3 surfacePos = ghost.position;
             Quaternion finalRot = ghost.rotation;
+
 
             // Check for collision with other books
             BoxCollider bookCollider = heldObject.GetComponent<BoxCollider>();
