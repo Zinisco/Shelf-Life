@@ -240,54 +240,27 @@ public class GhostBookManager : MonoBehaviour
     }
 
     // Helper method to check if a book's parent transform has the correct orientation (X-axis facing ShelfRegion's -Z)
-    private bool IsBookOrientationValid(GameObject book, Vector3 shelfInward)
+    private bool IsBookFacingOutward(GameObject book, Vector3 shelfOutward, float maxAngleDeg = 40f)
     {
-        // Get the book's parent transform
-        Transform bookTransform = book.transform;
-        if (bookTransform == null)
-        {
-            UnityEngine.Debug.LogWarning($"Book {book.name} has no transform.");
-            return false;
-        }
+        if (!book) return false;
 
-        // Find the visual child (assumed to have a Renderer component)
-        Renderer visualChildRenderer = book.GetComponentInChildren<Renderer>();
-        if (visualChildRenderer == null)
-        {
-            UnityEngine.Debug.LogWarning($"Book {book.name} has no visual child with Renderer.");
-            return false;
-        }
+        // Change this to transform.up if your cover is +Y
+        Vector3 coverDir = book.transform.up;
 
-        // Check if the book is parented to a ShelfRegion
-        Transform shelfRegion = bookTransform.parent;
-        bool isParentedToShelf = shelfRegion != null && shelfRegion.name.Contains("ShelfRegion");
-        bool rotationValid = true; // Default to true if not parented to ShelfRegion
+        float dot = Vector3.Dot(coverDir.normalized, shelfOutward.normalized);
+        float cosLimit = Mathf.Cos(maxAngleDeg * Mathf.Deg2Rad);
+        bool facingOutward = dot >= cosLimit;
 
-        // If parented to ShelfRegion, check if the parent's rotation is approximately (0, 0, 0)
-        if (isParentedToShelf)
-        {
-            Vector3 eulerAngles = bookTransform.localRotation.eulerAngles;
-
-            // Normalize angles to [0, 360] for comparison
-            float xAngle = Mathf.Repeat(eulerAngles.x, 360f);
-            float yAngle = Mathf.Repeat(eulerAngles.y, 360f);
-            float zAngle = Mathf.Repeat(eulerAngles.z, 360f);
-
-            // Check if angles are approximately (0, 0, 0)
-            const float angleTolerance = 5f;
-            rotationValid = Mathf.Abs(xAngle - 0f) < angleTolerance &&
-                            Mathf.Abs(yAngle - 0f) < angleTolerance &&
-                            Mathf.Abs(zAngle - 0f) < angleTolerance;
-
-            if (!rotationValid)
-            {
-                UnityEngine.Debug.Log($"Book {book.name} orientation invalid: X={xAngle}, Y={yAngle}, Z={zAngle}");
-                return false;
-            }
-        }
-
-        return rotationValid;
+#if UNITY_EDITOR
+        // Visualize in Scene view
+        Debug.DrawRay(book.transform.position, coverDir * 0.3f, facingOutward ? Color.green : Color.red, 0.05f);
+        Debug.DrawRay(book.transform.position, shelfOutward.normalized * 0.3f, Color.cyan, 0.05f);
+        Debug.Log($"[Ghost][FacingTest] book='{book.name}' dot={dot:F3} angle={Mathf.Acos(Mathf.Clamp(dot, -1f, 1f)) * Mathf.Rad2Deg:F1} degrees  pass={facingOutward}");
+#endif
+        return facingOutward;
     }
+
+
 
     // Handles ghost placement on a shelf
     private void HandleShelfGhostPlacement(RaycastHit hit, GameObject heldObject, Camera camera, ref float currentRotationY)
@@ -334,21 +307,25 @@ public class GhostBookManager : MonoBehaviour
 
         rotationAmount %= 360f;
 
-        // Figure out “inward” direction of the shelf
-        Vector3 shelfInward = hit.normal;
+        // At the top of HandleShelfGhostPlacement after you get 'hit'
+        Transform shelfRegion = hit.collider.transform;
+
+        // Outward toward the player is -Z of the ShelfRegion (as you described)
+        Vector3 shelfOutward = -shelfRegion.forward; // world-space outward
+        Vector3 shelfInward = shelfRegion.forward; // into the shelf
+
 
         if (!NudgableStackMover.IsNudging)
         {
-            // Cast a short ray from just in front of the ghost back into the shelf
-            Ray stackRay = new Ray(point + shelfInward * 0.01f, -shelfInward);
-            float rayLength = heldBookDepth + 0.02f;  // Just a hair longer than one book
+            Ray stackRay = new Ray(point + shelfOutward * 0.01f, shelfInward);
+            float rayLength = heldBookDepth + 0.02f;
             if (Physics.Raycast(stackRay, out RaycastHit bookHit, rayLength, LayerMask.GetMask("Book")))
             {
                 var info = bookHit.collider.GetComponent<BookInfo>();
                 if (info != null && info.title.Equals(heldObject.GetComponent<BookInfo>().title, System.StringComparison.OrdinalIgnoreCase))
                 {
                     // Check if the book's orientation is valid (X-axis facing ShelfRegion's -Z)
-                    if (IsBookOrientationValid(bookHit.collider.gameObject, shelfInward))
+                    if (IsBookFacingOutward(bookHit.collider.gameObject, shelfOutward))
                     {
                         stackTargetBook = bookHit.collider.gameObject;
                         UnityEngine.Debug.Log($"[Ghost] stacking onto: {stackTargetBook.name}");
@@ -384,7 +361,7 @@ public class GhostBookManager : MonoBehaviour
         // SHELF placement
         currentRotationY = Mathf.Repeat(Mathf.Round(rotationAmount / 90f) * 90f, 360f);
         rotationAmount = currentRotationY;
-        var inward = hit.normal.normalized;                     // Into the shelf
+        var inward = shelfInward;                   // Into the shelf
         var shelfRight = Vector3.Cross(Vector3.forward, inward).normalized; // +X of shelf region
         // Map model axes: +Z(top) -> Up, +Y(cover) -> shelfRight, => -X(spine) -> outward
         Quaternion orientShelf = Quaternion.LookRotation(Vector3.up, shelfRight);
@@ -432,7 +409,7 @@ public class GhostBookManager : MonoBehaviour
                 if (info != null && TitlesMatch(info.title, heldInfo.title))
                 {
                     // Check if the book's orientation is valid (X-axis facing ShelfRegion's -Z)
-                    if (IsBookOrientationValid(c.gameObject, shelfInward))
+                    if (IsBookFacingOutward(c.gameObject, shelfOutward))
                     {
                         stackTargetBook = c.gameObject;
                         UnityEngine.Debug.Log($"[Ghost] stacking onto: {stackTargetBook.name}");

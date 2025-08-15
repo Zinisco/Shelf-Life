@@ -15,6 +15,9 @@ public class NudgableStackMover : MonoBehaviour
 
     [SerializeField] private GameObject holdVisualObject; // Assign this in the inspector
     [SerializeField] private UnityEngine.UI.Image holdVisualRing; // Assign the ring fill UI here
+    [SerializeField] private float confirmCooldown = 0.25f; // seconds after entering nudging before confirm works
+    private float confirmTimer;
+    private bool canConfirm;
 
 
     public bool wasJustNudged = false;
@@ -119,6 +122,12 @@ public class NudgableStackMover : MonoBehaviour
             else
                 HandleRotation(); // still supports mouse scroll; gamepad uses RotateLeft/Right events
         }
+
+        if (isNudging && !canConfirm)
+        {
+            confirmTimer -= Time.deltaTime;
+            if (confirmTimer <= 0f) canConfirm = true;
+        }
     }
 
     void BeginNudging()
@@ -128,8 +137,6 @@ public class NudgableStackMover : MonoBehaviour
             Debug.LogWarning("BeginNudging called but selectedStackRoot is null!");
             return;
         }
-
-        // Validate there are books before entering nudging mode
         if (selectedStackRoot.books == null || selectedStackRoot.books.Count == 0)
         {
             Debug.LogWarning("Selected stack root has no books.");
@@ -141,10 +148,19 @@ public class NudgableStackMover : MonoBehaviour
         originalRotation = selectedStackRoot.transform.rotation;
         originalYRotation = originalRotation.eulerAngles.y;
 
-        // Only now enter nudging state
+        // Enter nudging
         IsNudging = true;
         isNudging = true;
 
+        // Stop hold logic and hide the ring immediately
+        freeMoveHeld = false;
+        holdTimer = 0f;
+        confirmTimer = confirmCooldown;
+        canConfirm = false; // disable confirming at the start
+
+        if (holdVisualObject) holdVisualObject.SetActive(false);
+
+        // Hide the real stack and show the ghost
         selectedStackRoot.transform.position += Vector3.up * 5f;
 
         heldGhost = selectedStackRoot.books[0];
@@ -152,9 +168,8 @@ public class NudgableStackMover : MonoBehaviour
         originalRenderers = selectedStackRoot.GetComponentsInChildren<Renderer>();
         foreach (Renderer rend in originalRenderers) rend.enabled = false;
 
-        ghostBookManager.ShowGhost(heldGhost, selectedStackRoot.books.Count);
+        ghostBookManager.ShowGhost(heldGhost, selectedStackRoot.books.Count);  
     }
-
 
     void UpdateGhostFollow()
     {
@@ -244,6 +259,11 @@ public class NudgableStackMover : MonoBehaviour
 
     public void ConfirmPlacement()
     {
+        if (!canConfirm)
+        {
+            // Cooldown still active; ignore accidental confirms
+            return;
+        }
 
         if (selectedStackRoot == null)
         {
@@ -389,22 +409,26 @@ public class NudgableStackMover : MonoBehaviour
     {
         if (isNudging)
         {
-            // Already nudging? A new press should confirm.
-            ConfirmPlacement();
+            // Second press confirms, but only after cooldown
+            if (canConfirm) ConfirmPlacement();
             return;
         }
 
-        freeMoveHeld = true; // normal hold-to-start
+        // Begin hold-to-start
+        freeMoveHeld = true;
+        holdTimer = 0f;
+        selectedStackRoot = null;
+        if (holdVisualObject) holdVisualObject.SetActive(false);
     }
 
     private void HandleFreeMoveCanceled()
     {
-        // This is the *release* of FreeMove (F key up / RT released)
+        // This is the release of the key/button
 
         if (isNudging)
         {
-            // Use the same input to confirm placement
-            ConfirmPlacement();
+            // While nudging, release should do nothing.
+            // You’ll press again to place.
             return;
         }
 

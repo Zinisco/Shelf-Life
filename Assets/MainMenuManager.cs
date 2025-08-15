@@ -76,7 +76,7 @@ public class MainMenuManager : MonoBehaviour
         result = SaveSystem.HasSave();
         if (overrideSaveDetection) // still serialized in builds, but this line runs:
             Debug.LogWarning("[MainMenuManager] overrideSaveDetection is ignored in Player builds.");
-        Debug.Log($"[MainMenuManager] Player build ? SaveSystem.HasSave() = {result}");
+        Debug.Log($"[MainMenuManager] Player build = SaveSystem.HasSave() = {result}");
 #endif
 
         return result;
@@ -93,7 +93,7 @@ public class MainMenuManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("[MainMenuManager] Start pressed ? HasSave() FALSE = Starting new game immediately");
+            Debug.Log("[MainMenuManager] Start pressed = HasSave() FALSE = Starting new game immediately");
             ConfirmStartNewGame();
         }
     }
