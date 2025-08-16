@@ -13,7 +13,6 @@ public class GameInput : MonoBehaviour
     public event EventHandler OnPickUpObjectAction;
     public event EventHandler OnShelveObjectAction;
     public event EventHandler<InputAction.CallbackContext> OnScrollRotate;
-    public event EventHandler OnStartMoveFurnitureAction;
     public event EventHandler OnPlaceFurnitureAction;
     public event EventHandler OnRotateLeftAction;
     public event EventHandler OnRotateRightAction;

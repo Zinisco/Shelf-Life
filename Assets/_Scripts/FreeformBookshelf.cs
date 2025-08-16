@@ -8,7 +8,7 @@ public class FreeformBookshelf : MonoBehaviour
     {
         public string name = "Shelf";
         public Vector3 localPosition = Vector3.zero;
-        public Vector3 size = new Vector3(2.1f, 3.6f, -0.13f);
+        public Vector3 size = new Vector3(2.3f, 0.7f, 0.6f);
         public float bookSpacing = 0.05f;
         [HideInInspector] public BoxCollider regionCollider;
     }
@@ -26,7 +26,33 @@ public class FreeformBookshelf : MonoBehaviour
 
     private void Awake()
     {
+        // Ensure we have a unique, non-empty ID at runtime.
+        if (string.IsNullOrWhiteSpace(ObjectID) || ObjectID == "NewGUID")
+            ObjectID = System.Guid.NewGuid().ToString("N");
+
         GenerateShelfRegions();
+    }
+
+    // Optional: in-editor safety so duplicates get fixed when duplicating prefabs in-scene.
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        if (string.IsNullOrWhiteSpace(ObjectID) || ObjectID == "NewGUID")
+            ObjectID = System.Guid.NewGuid().ToString("N");
+    }
+#endif
+
+    public string GetID() => ObjectID;
+
+    /// <summary>
+    /// Set a specific ID (used by loader). Pass a non-empty unique value.
+    /// </summary>
+    public void SetID(string id)
+    {
+        if (!string.IsNullOrWhiteSpace(id))
+            ObjectID = id;
+        else
+            Debug.LogWarning("[FreeformBookshelf] Attempted to SetID with null/empty value.");
     }
 
     private void GenerateShelfRegions()
@@ -41,13 +67,13 @@ public class FreeformBookshelf : MonoBehaviour
                 continue;
             }
 
-            GameObject regionObj = new GameObject(shelf.name); // Exact name for saving/loading
+            var regionObj = new GameObject(shelf.name);
             regionObj.transform.SetParent(transform);
             regionObj.transform.localPosition = shelf.localPosition;
             regionObj.transform.localRotation = Quaternion.identity;
             regionObj.layer = LayerMask.NameToLayer("ShelfRegion");
 
-            BoxCollider collider = regionObj.AddComponent<BoxCollider>();
+            var collider = regionObj.AddComponent<BoxCollider>();
             collider.size = shelf.size;
             collider.isTrigger = true;
 
@@ -58,7 +84,7 @@ public class FreeformBookshelf : MonoBehaviour
 
     public List<BoxCollider> GetAllShelfRegions()
     {
-        List<BoxCollider> regions = new List<BoxCollider>();
+        var regions = new List<BoxCollider>();
         foreach (var shelf in shelfAreas)
         {
             if (shelf.regionCollider != null)
@@ -73,8 +99,5 @@ public class FreeformBookshelf : MonoBehaviour
         return result;
     }
 
-    public IEnumerable<string> GetShelfNames()
-    {
-        return shelfCollidersByName.Keys;
-    }
+    public IEnumerable<string> GetShelfNames() => shelfCollidersByName.Keys;
 }

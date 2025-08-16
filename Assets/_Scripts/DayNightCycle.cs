@@ -99,11 +99,11 @@ public class DayNightCycle : MonoBehaviour
     public void SetDay(int day)
     {
         dayCounter = Mathf.Max(1, day);
-        Debug.Log($"SetDay called with value: {dayCounter}");
+        //Debug.Log($"SetDay called with value: {dayCounter}");
 
         if (dayDisplay != null)
         {
-            Debug.Log("Updating dayDisplay text");
+            //Debug.Log("Updating dayDisplay text");
             dayDisplay.text = $"Day {dayCounter:00}";
         }
         else
