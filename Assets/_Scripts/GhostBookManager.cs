@@ -9,6 +9,8 @@ public class GhostBookManager : MonoBehaviour
     [SerializeField] private float surfaceOffset = 0.03f; // Offset above surface (table) for visual clarity
     [SerializeField] private float shelfOffset = 0.4f;    // Offset above shelf surface
     [SerializeField] private float rotationSmoothSpeed = 10f; // Speed of ghost book rotation interpolation
+    [SerializeField] private float sideOnBackRelax = 0.03f; // pull forward at ±90° so it isn't too deep
+
 
     [SerializeField] private Material validMaterial;   // Green material for valid placement
     [SerializeField] private Material invalidMaterial; // Red material for invalid placement
@@ -307,13 +309,13 @@ public class GhostBookManager : MonoBehaviour
 
         rotationAmount %= 360f;
 
-        // At the top of HandleShelfGhostPlacement after you get 'hit'
+        // Shelf-local frame (never use world axes here)
         Transform shelfRegion = hit.collider.transform;
 
-        // Outward toward the player is -Z of the ShelfRegion (as you described)
-        Vector3 shelfOutward = -shelfRegion.forward; // world-space outward
-        Vector3 shelfInward = shelfRegion.forward; // into the shelf
-
+        Vector3 shelfOutward = -shelfRegion.forward; // toward player/out of shelf
+        Vector3 shelfInward = shelfRegion.forward; // into shelf
+        Vector3 shelfRight = shelfRegion.right;   // +X of shelf region
+        Vector3 shelfUp = shelfRegion.up;      // vertical for this shelf
 
         if (!NudgableStackMover.IsNudging)
         {
@@ -338,45 +340,103 @@ public class GhostBookManager : MonoBehaviour
             }
         }
 
-        // Clamp ghost position inside shelf bounds
-        Vector3 localPoint = shelfCollider.transform.InverseTransformPoint(point);
+        // --- Work in the shelf collider's local space ---
+        Transform shelfTf = shelfCollider.transform;
+
+        // Convert hit to local space
+        Vector3 localPoint = shelfTf.InverseTransformPoint(point);
+
+        // After you have shelfRight / shelfInward / shelfUp and 'localPoint'
+        Vector3 centered = localPoint - shelfCollider.center;
         Vector3 halfSize = shelfCollider.size * 0.5f;
 
-        if (currentRotationY == 0 || currentRotationY == 180)
+        // Get the held collider and its world-space size
+        var col = heldObject.GetComponent<BoxCollider>();
+        Vector3 worldSize = Vector3.Scale(col != null ? col.size : Vector3.one, heldObject.transform.lossyScale);
+        float hx = worldSize.x * 0.5f; // book local right
+        float hy = worldSize.y * 0.5f; // book local up (cover normal)
+        float hz = worldSize.z * 0.5f; // book local forward (top direction)
+
+        // Project the rotated half-extents onto the shelf X/Z axes
+        Transform bt = ghostBookInstance.transform; // current ghost pose
+        float halfFootX =
+            Mathf.Abs(Vector3.Dot(bt.right, shelfRight)) * hx +
+            Mathf.Abs(Vector3.Dot(bt.up, shelfRight)) * hy +
+            Mathf.Abs(Vector3.Dot(bt.forward, shelfRight)) * hz;
+
+        float halfFootZ =
+            Mathf.Abs(Vector3.Dot(bt.right, shelfInward)) * hx +
+            Mathf.Abs(Vector3.Dot(bt.up, shelfInward)) * hy +
+            Mathf.Abs(Vector3.Dot(bt.forward, shelfInward)) * hz;
+
+        // --- choose the BACK edge regardless of rotation ---
+        const float padX = 0.01f, padZ = 0.01f;
+
+        // X clamp as usual
+        centered.x = Mathf.Clamp(
+            centered.x,
+            -halfSize.x + halfFootX + padX,
+             halfSize.x - halfFootX - padX
+        );
+
+        // Try both Z edges and pick the deeper one along shelfInward
+        float inset = halfSize.z - (halfFootZ + padZ);
+        float zA = +inset;   // +Z edge candidate
+        float zB = -inset;   // -Z edge candidate
+
+        Vector3 cA = centered; cA.z = zA;
+        Vector3 cB = centered; cB.z = zB;
+
+        // Convert to world to compare depth along shelfInward
+        Vector3 wA = shelfTf.TransformPoint(cA + shelfCollider.center);
+        Vector3 wB = shelfTf.TransformPoint(cB + shelfCollider.center);
+
+        // Larger dot with shelfInward == deeper (more "back")
+        float depthA = Vector3.Dot(wA - shelfTf.position, shelfInward);
+        float depthB = Vector3.Dot(wB - shelfTf.position, shelfInward);
+
+        centered.z = (depthA >= depthB) ? zA : zB;
+
+        // If the book is side-on (±90°), pull slightly toward the player (still near the back).
+        bool sideOn =
+            Mathf.Approximately(Mathf.Repeat(currentRotationY + 90f, 180f), 0f); // 90° or 270°
+
+        if (sideOn && sideOnBackRelax > 0f)
         {
-            localPoint.x = Mathf.Clamp(localPoint.x, -halfSize.x + 0.2f, halfSize.x - 0.2f);
-            localPoint.z = Mathf.Clamp(localPoint.z, -halfSize.z + 0.47f, halfSize.z - 0.47f);
-        }
-        else
-        {
-            localPoint.x = Mathf.Clamp(localPoint.x, -halfSize.x + 0.05f, halfSize.x - 0.05f);
-            localPoint.z = Mathf.Clamp(localPoint.z, -halfSize.z + 0.3f, halfSize.z - 0.3f);
+            // Reduce the magnitude of centered.z by a small amount (toward shelf center/front).
+            float sign = Mathf.Sign(centered.z);                // which back edge we chose (+Z or -Z)
+            float newMag = Mathf.Max(Mathf.Abs(centered.z) - sideOnBackRelax, 0f);
+            centered.z = sign * newMag;
         }
 
-        point = shelfCollider.transform.TransformPoint(localPoint);
-        point.y = bounds.min.y + shelfOffset;
+        // Keep on the shelf floor
+        centered.y = -halfSize.y;
+
+
+        // Back to world
+        localPoint = centered + shelfCollider.center;
+        point = shelfTf.TransformPoint(localPoint);
+        point += shelfUp * shelfOffset;
+
 
         // Apply rotation and position
         currentRotation = Mathf.LerpAngle(currentRotation, rotationAmount, Time.deltaTime * rotationSmoothSpeed);
         // SHELF placement
         currentRotationY = Mathf.Repeat(Mathf.Round(rotationAmount / 90f) * 90f, 360f);
         rotationAmount = currentRotationY;
-        var inward = shelfInward;                   // Into the shelf
-        var shelfRight = Vector3.Cross(Vector3.forward, inward).normalized; // +X of shelf region
-        // Map model axes: +Z(top) -> Up, +Y(cover) -> shelfRight, => -X(spine) -> outward
-        Quaternion orientShelf = Quaternion.LookRotation(Vector3.up, shelfRight);
 
-        // Spin smoothly around vertical
-        Quaternion spinY = Quaternion.AngleAxis(currentRotation, Vector3.up);
+        // build shelf-local axes (shelfInward/shelfRight/shelfUp)
+        // update currentRotation / rotationAmount
 
-        // Final rotation
-        Quaternion targetRot = spinY * orientShelf;
+        Quaternion orientShelf = Quaternion.LookRotation(shelfUp, shelfRight);
+        Quaternion spinAroundShelfUp = Quaternion.AngleAxis(currentRotation, shelfUp);
+        Quaternion targetRot = spinAroundShelfUp * orientShelf;
+
         ghostBookInstance.transform.SetPositionAndRotation(point, targetRot);
+        ghostBookInstance.transform.localScale =
+            WorldScaleToLocal(heldObject.transform, ghostBookInstance.transform.parent);
 
-        ghostBookInstance.transform.localScale = WorldScaleToLocal(
-        heldObject.transform,
-        ghostBookInstance.transform.parent
-        );
+        // use the same 'point' and 'targetRot' for Physics.CheckBox etc.
 
 
         // Skip stacking logic entirely if nudging
