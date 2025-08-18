@@ -182,4 +182,32 @@ public class PlayerMovement : MonoBehaviour
 
     }
 
+    public float GetCameraPitch() => xRotation;
+
+    /// <summary>Teleport safely with the CharacterController.</summary>
+    public void Teleport(Vector3 pos, float yawDegrees, float pitchDegrees)
+    {
+        if (!controller) controller = GetComponent<CharacterController>();
+
+        // disable CC so we can set transform directly (avoids capsule pushback)
+        bool wasEnabled = controller.enabled;
+        controller.enabled = false;
+
+        // set body yaw
+        transform.position = pos;
+        transform.rotation = Quaternion.Euler(0f, yawDegrees, 0f);
+
+        // set camera pitch
+        xRotation = pitchDegrees;
+        if (cam) cam.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+
+        // reset falling velocity so we don't keep falling impulse from previous session
+        verticalVelocity = 0f;
+
+        // sync transforms before re-enabling
+        Physics.SyncTransforms();
+
+        controller.enabled = wasEnabled;
+    }
+
 }

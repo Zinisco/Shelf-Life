@@ -12,9 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50055c5c1b265bb4bbcbf5a2390861e1, type: 3}
   m_Name: War and Peas
   m_EditorClassIdentifier: 
-  bookID: 
+  bookID: war-and-peas
   title: War and Peas
   genre: Drama
+  cost: 10
+  price: 20
   color: {r: 0.7075472, g: 0.060833465, b: 0.02336242, a: 0}
   prefab: {fileID: 940939929322109603, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
   summary: 

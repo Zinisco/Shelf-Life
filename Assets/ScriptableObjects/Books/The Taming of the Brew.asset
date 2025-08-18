@@ -12,9 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50055c5c1b265bb4bbcbf5a2390861e1, type: 3}
   m_Name: The Taming of the Brew
   m_EditorClassIdentifier: 
-  bookID: 
+  bookID: the-taming-of-the-brew
   title: The Taming of the Brew
   genre: Romance
+  cost: 10
+  price: 20
   color: {r: 0.5283019, g: 0.2501725, b: 0.062299743, a: 0}
   prefab: {fileID: 940939929322109603, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
   summary: 

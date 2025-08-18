@@ -12,9 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50055c5c1b265bb4bbcbf5a2390861e1, type: 3}
   m_Name: The Maize Runner
   m_EditorClassIdentifier: 
-  bookID: 
+  bookID: the-maize-runner
   title: The Maize Runner
   genre: YA
+  cost: 10
+  price: 20
   color: {r: 0.042586334, g: 0.8207547, b: 0.05967678, a: 0}
   prefab: {fileID: 940939929322109603, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
   summary: 

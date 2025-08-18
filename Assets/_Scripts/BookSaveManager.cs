@@ -16,15 +16,24 @@ public class BookSaveManager : MonoBehaviour
     [System.Serializable]
     public class SaveDataWrapper
     {
-        public int saveVersion = 3;
+        public int saveVersion; // version of the save schema
         public int currentDay = 1;
+        public int walletMoney = 0;
         public List<BookSaveData> allBooks = new();
         public List<CrateSaveData> allCrates = new();
         public List<FreeformShelfSaveData> allFreeformShelves = new();
         public List<SurfaceAnchorSaveData> allSurfaces = new();
         public ComputerSaveData terminalData;
         public Vector3 playerPos;
+        public float playerYaw;       // rotation around Y for the player body
+        public float cameraPitch;    // local X rotation for your camera
     }
+    // === Save versioning ===
+    // Bump this whenever you change the save schema.
+    private const int CURRENT_SAVE_VERSION = 6;
+
+    // While in development, only accept the current version.
+    private const int MIN_COMPATIBLE_VERSION = CURRENT_SAVE_VERSION;
 
     [SerializeField] private DayNightCycle dayNightCycle;
     [SerializeField] private BookDatabase bookDatabase;
@@ -53,15 +62,38 @@ public class BookSaveManager : MonoBehaviour
     public void SaveAll()
     {
         var w = new SaveDataWrapper();
+        w.saveVersion = CURRENT_SAVE_VERSION;
         w.currentDay = dayNightCycle != null ? dayNightCycle.GetCurrentDay() : 1;
         var stackIDs = new Dictionary<BookStackRoot, string>();
         int stackCounter = 0;
 
         var player = GameObject.FindWithTag("Player");
         if (player != null)
+        {
+            var pm = player.GetComponent<PlayerMovement>();
             playerPosition = player.transform.position;
 
-        w.playerPos = playerPosition;
+            w.playerPos = playerPosition;
+            w.playerYaw = player.transform.eulerAngles.y;
+
+            // get camera pitch from your PlayerMovement (or directly from cam.localEulerAngles.x)
+            if (pm != null)
+            {
+                // expose a getter for pitch on PlayerMovement (see below)
+                w.cameraPitch = pm.GetCameraPitch();
+            }
+            else
+            {
+                var cam = player.GetComponentInChildren<Camera>()?.transform;
+                w.cameraPitch = cam ? cam.localEulerAngles.x : 0f;
+            }
+        }
+
+
+        if (CurrencyManager.Instance != null)
+            w.walletMoney = CurrencyManager.Instance.GetBalance();
+        else
+            w.walletMoney = 0;
 
         foreach (var anchor in FindObjectsOfType<SurfaceAnchor>())
         {
@@ -101,19 +133,20 @@ public class BookSaveManager : MonoBehaviour
 
         foreach (var info in FindObjectsOfType<BookInfo>())
         {
+
+            if (string.IsNullOrEmpty(info.bookID))
+            {
+                Debug.LogError($"[Save] Book '{info.name}' has no valid bookID (missing/invalid BookDefinition). Skipping.");
+                continue;
+            }
+
             float[] safeColor = new float[] { 1f, 1f, 1f };
             if (info.definition != null)
-            {
-                safeColor = new float[] {
-        info.definition.color.r,
-        info.definition.color.g,
-        info.definition.color.b
-    };
-            }
+                safeColor = new float[] { info.definition.color.r, info.definition.color.g, info.definition.color.b };
 
             var data = new BookSaveData
             {
-                bookID = info.bookID,
+                bookID = info.bookID,                   // now guaranteed non-empty
                 title = info.definition?.title ?? "",
                 genre = info.definition?.genre ?? "",
                 summary = info.definition?.summary ?? "",
@@ -134,22 +167,21 @@ public class BookSaveManager : MonoBehaviour
                 data.stackGroupID = stackIDs[info.currentStackRoot];
                 data.stackIndex = info.currentStackRoot.GetBookIndex(info.gameObject);
 
-                // inside SaveAll, when info.currentStackRoot != null ...
                 var stackRootTransform = info.currentStackRoot.transform;
                 if (stackRootTransform != null && stackRootTransform.parent != null)
                 {
+                    // Check TABLE using the ROOT's parent, not the book's transform
                     var parentAnchor = stackRootTransform.parent.GetComponent<SurfaceAnchor>();
                     if (parentAnchor != null)
                     {
-                        // TABLE parent
                         data.tableID = parentAnchor.GetID();
-                        data.shelfRef = null; // make exclusive
+                        data.shelfRef = null; // exclusive
                     }
                     else
                     {
-                        // Try SHELF parent (FreeformBookshelf region)
-                        var regionTransform = stackRootTransform.parent;
-                        var shelf = regionTransform.GetComponentInParent<FreeformBookshelf>();
+                        // SHELF via the ROOT's parent (robust region detection)
+                        var regionTransform = FindShelfRegionTransform(stackRootTransform.parent);
+                        var shelf = regionTransform ? regionTransform.GetComponentInParent<FreeformBookshelf>() : null;
                         if (shelf != null)
                         {
                             string shelfID = shelf.GetID();
@@ -159,7 +191,7 @@ public class BookSaveManager : MonoBehaviour
                                 data.shelfRef = new ShelfRef
                                 {
                                     shelfObjectID = shelfID,
-                                    regionName = regionTransform.name
+                                    regionName = GetRelativePath(shelf.transform, regionTransform)
                                 };
                             }
                         }
@@ -168,22 +200,31 @@ public class BookSaveManager : MonoBehaviour
             }
             else
             {
-                // Not in a stack — if it’s parented under a shelf region, record it too
-                if (info.transform.parent != null)
+                // Not in a stack — detect SHELF parent robustly
+                var regionTransform = FindShelfRegionTransform(info.transform); // <-- start at the book, not parent
+                var shelf = regionTransform ? regionTransform.GetComponentInParent<FreeformBookshelf>() : null;
+                if (shelf != null)
                 {
-                    var regionTransform = info.transform.parent;
-                    var shelf = regionTransform.GetComponentInParent<FreeformBookshelf>();
-                    if (shelf != null)
+                    string shelfID = shelf.GetID();
+                    if (!string.IsNullOrEmpty(shelfID))
                     {
-                        string shelfID = shelf.GetID();
-                        if (!string.IsNullOrEmpty(shelfID))
+                        data.tableID = null; // exclusive
+                        data.shelfRef = new ShelfRef
                         {
-                            data.shelfRef = new ShelfRef
-                            {
-                                shelfObjectID = shelfID,
-                                regionName = regionTransform.name
-                            };
-                        }
+                            shelfObjectID = shelfID,
+                            regionName = GetRelativePath(shelf.transform, regionTransform) // <-- save a path, not a single name
+                        };
+                    }
+                }
+
+                // Only if no shelfRef, try TABLE parent for singles
+                if (string.IsNullOrEmpty(data.stackGroupID) && data.shelfRef == null)
+                {
+                    var anchor = info.transform.GetComponentInParent<SurfaceAnchor>();
+                    if (anchor != null)
+                    {
+                        data.tableID = anchor.GetID();
+                        data.shelfRef = null; // exclusive
                     }
                 }
             }
@@ -236,20 +277,57 @@ public class BookSaveManager : MonoBehaviour
         string path = Path.Combine(Application.persistentDataPath, "booksave.json");
         if (!File.Exists(path)) { Debug.LogWarning("No save."); return; }
 
-        var w = JsonUtility.FromJson<SaveDataWrapper>(File.ReadAllText(path));
+        var json = File.ReadAllText(path);
+        var w = JsonUtility.FromJson<SaveDataWrapper>(json);
 
+        // --- Version guard ---
+        if (w == null)
+        {
+            Debug.LogWarning("[Load] Save file unreadable. Clearing.");
+            System.IO.File.Delete(path);
+            return;
+        }
+
+        if (w.saveVersion < MIN_COMPATIBLE_VERSION || w.saveVersion > CURRENT_SAVE_VERSION)
+        {
+            Debug.LogWarning($"[Load] Save version {w.saveVersion} incompatible with " +
+                             $"engine ({CURRENT_SAVE_VERSION}). Deleting old save.");
+            System.IO.File.Delete(path);
+            return;
+        }
+
+        // Restore Day
         if (dayNightCycle != null)
             dayNightCycle.SetDay(w.currentDay);
+
+        // Restore wallet
+        if (CurrencyManager.Instance != null)
+            CurrencyManager.Instance.SetBalance(w.walletMoney);
+
+        var playerGO = GameObject.FindWithTag("Player");
+        if (playerGO != null)
+        {
+            var pm = playerGO.GetComponent<PlayerMovement>();
+            if (pm != null)
+            {
+                pm.Teleport(w.playerPos, w.playerYaw, w.cameraPitch);
+            }
+            else
+            {
+                // fallback if no PlayerMovement (still disable CC)
+                var cc = playerGO.GetComponent<CharacterController>();
+                if (cc) cc.enabled = false;
+                playerGO.transform.position = w.playerPos;
+                playerGO.transform.rotation = Quaternion.Euler(0f, w.playerYaw, 0f);
+                Physics.SyncTransforms();
+                if (cc) cc.enabled = true;
+            }
+        }
 
         foreach (var b in FindObjectsOfType<BookInfo>()) Destroy(b.gameObject);
         foreach (var c in FindObjectsOfType<BookCrate>()) Destroy(c.gameObject);
         foreach (var t in FindObjectsOfType<SurfaceAnchor>()) Destroy(t.gameObject);
         foreach (var ff in FindObjectsOfType<FreeformBookshelf>()) Destroy(ff.gameObject);
-
-        if (w != null && GameObject.FindWithTag("Player") != null)
-        {
-            GameObject.FindWithTag("Player").transform.position = w.playerPos;
-        }
 
         var terminal = FindObjectOfType<ComputerTerminal>();
         if (terminal != null) Destroy(terminal.gameObject);
@@ -272,18 +350,19 @@ public class BookSaveManager : MonoBehaviour
             // (GenerateShelfRegions() is called in Awake already)
         }
 
-        // Build lookup: shelfObjectID -> FreeformBookshelf
-        var shelvesByID = new Dictionary<string, FreeformBookshelf>();
+        // Build lookup: shelfObjectID -> list of shelves (handles legacy duplicate IDs safely)
+        var shelvesByID = new Dictionary<string, List<FreeformBookshelf>>();
         foreach (var ff in FindObjectsOfType<FreeformBookshelf>())
         {
             var id = ff.GetID();
-            if (!string.IsNullOrEmpty(id))
-            {
-                shelvesByID[id] = ff;
-                // DEBUG: list regions we can parent to
-                var names = string.Join(", ", ff.GetShelfNames());
-                Debug.Log($"[Load] Shelf present: {id} with regions: [{names}]");
-            }
+            if (string.IsNullOrEmpty(id)) continue;
+
+            if (!shelvesByID.TryGetValue(id, out var list))
+                shelvesByID[id] = list = new List<FreeformBookshelf>();
+            list.Add(ff);
+
+            var names = string.Join(", ", ff.GetShelfNames());
+            Debug.Log($"[Load] Shelf present: {id} with regions: [{names}] at {ff.transform.position}");
         }
 
 
@@ -308,27 +387,42 @@ public class BookSaveManager : MonoBehaviour
         foreach (var bd in w.allBooks)
         {
             var prefab = bookDatabase.GetBookPrefabByID(bd.bookID);
-            if (prefab == null) continue;
+            if (prefab == null)
+            {
+                Debug.LogError($"[Load] No prefab found for bookID '{bd.bookID}'. Skipping this book.");
+                continue;
+            }
 
             var go = Instantiate(prefab, bd.position, bd.rotation);
             var info = go.GetComponent<BookInfo>();
             if (info != null)
             {
-                info.bookID = bd.bookID;
                 info.ObjectID = bd.shelfID;
 
-                var def = ScriptableObject.CreateInstance<BookDefinition>();
-                def.bookID = bd.bookID;
-                def.title = bd.title;
-                def.genre = bd.genre;
-                def.price = bd.price;
-                def.cost = bd.cost;
-                def.summary = bd.summary;
+                // Prefer the canonical DB definition for that bookID
+                var dbDef = bookDatabase.GetDefinitionByID(bd.bookID);
 
-                if (bd.color != null && bd.color.Length == 3)
-                    def.color = new Color(bd.color[0], bd.color[1], bd.color[2]);
+                if (dbDef != null)
+                {
+                    info.ApplyDefinition(dbDef); // <-- sets bookID internally
+                }
+                else
+                {
+                    // Fallback: reconstruct a definition snapshot from JSON
+                    var snap = ScriptableObject.CreateInstance<BookDefinition>();
+                    snap.bookID = bd.bookID; // still keep the saved ID
+                    snap.title = bd.title;
+                    snap.genre = bd.genre;
+                    snap.price = bd.price;
+                    snap.cost = bd.cost;
+                    snap.summary = bd.summary;
+                    if (bd.color != null && bd.color.Length == 3)
+                        snap.color = new Color(bd.color[0], bd.color[1], bd.color[2]);
 
-                info.ApplyDefinition(def);
+                    Debug.LogWarning($"[Load] DB missing definition for '{bd.bookID}'. Using snapshot from save.");
+                    info.ApplyDefinition(snap);
+                }
+
                 info.tags = new List<string>(bd.tags ?? new List<string>());
                 info.UpdateVisuals();
 
@@ -349,48 +443,19 @@ public class BookSaveManager : MonoBehaviour
                 // If this book is NOT part of a stack (no stackGroupID) but has a shelfRef, parent it
                 if (string.IsNullOrEmpty(bd.stackGroupID) && bd.shelfRef != null && !string.IsNullOrEmpty(bd.shelfRef.shelfObjectID))
                 {
-                    if (shelvesByID.TryGetValue(bd.shelfRef.shelfObjectID, out var shelf))
+                    var shelf = PickShelfByProximity(shelvesByID, bd.shelfRef.shelfObjectID, bd.position);
+                    if (shelf != null)
                     {
-                        // Try direct child with that name, then the dictionary, then a fallback.
-                        Transform region =
-                            shelf.transform.Find(bd.shelfRef.regionName) ??
-                            shelf.GetRegionByName(bd.shelfRef.regionName)?.transform;
-
-                        if (region == null)
-                        {
-                            // Fallback 1: first known region
-                            foreach (var name in shelf.GetShelfNames())
-                            {
-                                region = shelf.GetRegionByName(name)?.transform;
-                                if (region != null) { Debug.LogWarning($"[Load] Missing region '{bd.shelfRef.regionName}' on shelf '{bd.shelfRef.shelfObjectID}', using '{name}'"); break; }
-                            }
-                        }
-
-                        if (region == null)
-                        {
-                            // Fallback 2: shelf root
-                            Debug.LogWarning($"[Load] No region found at all on shelf '{bd.shelfRef.shelfObjectID}'. Parenting to shelf root.");
-                            region = shelf.transform;
-                        }
-
+                        Transform region = ResolveShelfRegion(shelf, bd.shelfRef.regionName);
                         go.transform.SetParent(region, worldPositionStays: true);
-                        Debug.Log($"[Load] Parent '{bd.title}' under {region.GetHierarchyPath()}");
                         var rb = go.GetComponent<Rigidbody>();
-                        if (rb != null)
-                        {
-                            rb.isKinematic = true;
-                            rb.interpolation = RigidbodyInterpolation.None;
-                            rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
-                            rb.velocity = Vector3.zero;
-                            rb.angularVelocity = Vector3.zero;
-                        }
-                        // ensure the correct layer like runtime placement
+                        if (rb) { rb.isKinematic = true; rb.velocity = Vector3.zero; rb.angularVelocity = Vector3.zero; }
                         go.layer = LayerMask.NameToLayer("Book");
-                        Debug.Log($"[Load] Parent '{bd.title}' under {region.name} (singular shelf book, kinematic on).");
+                        Debug.Log($"[Load] Parent '{bd.title}' under {region.GetHierarchyPath()}");
                     }
                     else
                     {
-                        Debug.LogWarning($"[Load] Shelf '{bd.shelfRef.shelfObjectID}' not found in scene. Book stays at world pose.");
+                        Debug.LogWarning($"[Load] Shelf '{bd.shelfRef.shelfObjectID}' not found for '{bd.title}'.");
                     }
                 }
 
@@ -409,8 +474,6 @@ public class BookSaveManager : MonoBehaviour
                                 rb.isKinematic = true;
                                 rb.interpolation = RigidbodyInterpolation.None;
                                 rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
-                                rb.velocity = Vector3.zero;
-                                rb.angularVelocity = Vector3.zero;
                             }
 
                             go.layer = LayerMask.NameToLayer("Book");
@@ -456,21 +519,17 @@ public class BookSaveManager : MonoBehaviour
             // SHELF? (only if not already parented to a table)
             if (!parented && first.shelfRef != null && !string.IsNullOrEmpty(first.shelfRef.shelfObjectID))
             {
-                if (shelvesByID.TryGetValue(first.shelfRef.shelfObjectID, out var shelf))
+                var shelf = PickShelfByProximity(shelvesByID, first.shelfRef.shelfObjectID, first.position);
+                if (shelf != null)
                 {
-                    Transform region = shelf.transform.Find(first.shelfRef.regionName)
-                                      ?? shelf.GetRegionByName(first.shelfRef.regionName)?.transform;
-
-                    if (region != null)
-                    {
-                        rootGO.transform.SetParent(region, worldPositionStays: true);
-                        root.context = StackContext.Shelf;
-                        parented = true;
-                    }
-                    else
-                    {
-                        Debug.LogWarning($"[Load] Stack region '{first.shelfRef.regionName}' missing on shelf {first.shelfRef.shelfObjectID}.");
-                    }
+                    Transform region = ResolveShelfRegion(shelf, first.shelfRef.regionName);
+                    rootGO.transform.SetParent(region, worldPositionStays: true);
+                    root.context = StackContext.Shelf;
+                    parented = true;
+                }
+                else
+                {
+                    Debug.LogWarning($"[Load] Shelf '{first.shelfRef.shelfObjectID}' not found for stack '{pair.Key}'.");
                 }
             }
 
@@ -489,8 +548,6 @@ public class BookSaveManager : MonoBehaviour
                 var rb = bookGO.GetComponent<Rigidbody>();
                 if (rb)
                 {
-                    rb.velocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
                     rb.isKinematic = true;
                     rb.interpolation = RigidbodyInterpolation.None;
                     rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
@@ -499,6 +556,152 @@ public class BookSaveManager : MonoBehaviour
             }
         }
     }
+
+    private static Transform ResolveShelfRegion(FreeformBookshelf shelf, string regionNameHint)
+    {
+        if (shelf == null || string.IsNullOrEmpty(regionNameHint)) return shelf ? shelf.transform : null;
+
+        // Normalize hint once
+        string Norm(string s) => s.Replace("(Clone)", "").Trim().ToLowerInvariant();
+        string hint = Norm(regionNameHint);
+
+        // 0) If the hint looks like a path (has '/'), try Transform.Find (supports paths)
+        if (regionNameHint.Contains("/"))
+        {
+            var tPath = shelf.transform.Find(regionNameHint);
+            if (tPath != null) return tPath;
+            // also try normalized path (remove "(Clone)" on each segment)
+            var segs = regionNameHint.Split('/');
+            for (int i = 0; i < segs.Length; i++) segs[i] = segs[i].Replace("(Clone)", "").Trim();
+            var tPath2 = shelf.transform.Find(string.Join("/", segs));
+            if (tPath2 != null) return tPath2;
+        }
+
+        // 1) Depth-first search over ALL descendants (exact, case-insensitive)
+        Transform exact = null;
+        var stack = new Stack<Transform>();
+        stack.Push(shelf.transform);
+        while (stack.Count > 0)
+        {
+            var t = stack.Pop();
+            // push children
+            for (int i = 0; i < t.childCount; i++) stack.Push(t.GetChild(i));
+
+            if (Norm(t.name) == hint) { exact = t; break; }
+        }
+        if (exact != null) return exact;
+
+        // 2) Loose match (contains/startsWith), still over ALL descendants
+        Transform loose = null;
+        stack.Clear();
+        stack.Push(shelf.transform);
+        while (stack.Count > 0)
+        {
+            var t = stack.Pop();
+            for (int i = 0; i < t.childCount; i++) stack.Push(t.GetChild(i));
+
+            string nm = Norm(t.name);
+            if (nm.Contains(hint) || hint.Contains(nm) || nm.StartsWith(hint))
+            {
+                loose = t; break;
+            }
+        }
+        if (loose != null) return loose;
+
+        // 3) Try shelf API names (closest by distance)
+        Transform best = null;
+        float bestDist = float.PositiveInfinity;
+        foreach (var name in shelf.GetShelfNames())
+        {
+            var region = shelf.GetRegionByName(name)?.transform;
+            if (region == null) continue;
+            float d = (region.position - shelf.transform.position).sqrMagnitude;
+            if (d < bestDist) { bestDist = d; best = region; }
+            // Also allow direct name equality ignoring clone suffix
+            if (Norm(name) == hint) { best = region; break; }
+        }
+        if (best != null) return best;
+
+        // 4) Final fallback: shelf root (better than null)
+        return shelf.transform;
+    }
+
+    private static Transform FindShelfRegionTransform(Transform t)
+    {
+        if (t == null) return null;
+
+        // climb until we hit a FreeformBookshelf or root
+        Transform current = t;
+        while (current != null)
+        {
+            var shelf = current.GetComponentInParent<FreeformBookshelf>();
+            if (shelf == null) return null; // not under a shelf at all
+
+            // We want the direct child under the shelf that represents a region.
+            // Accept either: layer == ShelfRegion OR has a BoxCollider that matches shelf regions.
+            if (current.parent == shelf.transform)
+            {
+                // layer match?
+                bool isShelfRegionLayer = current.gameObject.layer == LayerMask.NameToLayer("ShelfRegion");
+                // collider match?
+                var bc = current.GetComponent<BoxCollider>();
+                bool looksLikeRegion = isShelfRegionLayer || bc != null;
+
+                if (looksLikeRegion) return current;
+            }
+
+            current = current.parent;
+        }
+        return null;
+    }
+
+    private static string GetRelativePath(Transform root, Transform target)
+    {
+        if (root == null || target == null) return null;
+        var stack = new System.Collections.Generic.Stack<string>();
+        var t = target;
+        while (t != null && t != root)
+        {
+            stack.Push(t.name);
+            t = t.parent;
+        }
+        if (t != root) return target.name; // fallback: not actually a descendant
+        return string.Join("/", stack);
+    }
+
+    private static FreeformBookshelf PickShelfByProximity(
+    Dictionary<string, List<FreeformBookshelf>> map,
+    string shelfID,
+    Vector3 bookPos)
+    {
+        if (!map.TryGetValue(shelfID, out var list) || list == null || list.Count == 0)
+            return null;
+        if (list.Count == 1) return list[0];
+
+        FreeformBookshelf best = null;
+        float bestDist = float.PositiveInfinity;
+        foreach (var s in list)
+        {
+            float d = (s.transform.position - bookPos).sqrMagnitude;
+            if (d < bestDist) { bestDist = d; best = s; }
+        }
+        return best;
+    }
+
+    // Example migration hook (currently unused)
+    private bool TryMigrateSave(SaveDataWrapper w)
+    {
+        // Example:
+        // if (w.saveVersion == 3) { MigrateFromV3ToV4(w); w.saveVersion = 4; }
+        // return true if all steps succeed
+        return false; // while in dev, we just say "nope" and delete the save
+    }
+
+    // private void MigrateFromV3ToV4(SaveDataWrapper w)
+    // {
+    //     // ...do transformations on w to match the new schema...
+    // }
+
 
     public static void TriggerSave() => _I?.SaveAll();
     public static void TriggerLoad() => _I?.LoadAll();

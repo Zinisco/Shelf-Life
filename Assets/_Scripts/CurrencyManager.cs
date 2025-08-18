@@ -22,14 +22,12 @@ public class CurrencyManager : MonoBehaviour
 
     private void Start()
     {
+        // On a fresh run (no save), start with the default
         currentMoney = startingMoney;
         UpdateUI();
     }
 
-    public bool CanAfford(int amount)
-    {
-        return currentMoney >= amount;
-    }
+    public bool CanAfford(int amount) => currentMoney >= amount;
 
     public bool Spend(int amount)
     {
@@ -45,9 +43,13 @@ public class CurrencyManager : MonoBehaviour
         UpdateUI();
     }
 
-    public int GetBalance()
+    public int GetBalance() => currentMoney;
+
+    // NEW: allow save system to restore the exact balance
+    public void SetBalance(int amount)
     {
-        return currentMoney;
+        currentMoney = Mathf.Max(0, amount);
+        UpdateUI();
     }
 
     private void UpdateUI()

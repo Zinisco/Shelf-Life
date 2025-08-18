@@ -12,9 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50055c5c1b265bb4bbcbf5a2390861e1, type: 3}
   m_Name: Of Rice and Men
   m_EditorClassIdentifier: 
-  bookID: 
+  bookID: of-rice-and-men
   title: Of Rice and Men
   genre: Drama
+  cost: 10
+  price: 20
   color: {r: 0, g: 0, b: 0, a: 0}
   prefab: {fileID: 940939929322109603, guid: e30bbdc3c92dd1540a9d631fc06c064e, type: 3}
   summary: 

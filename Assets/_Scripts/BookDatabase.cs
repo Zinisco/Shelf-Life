@@ -28,5 +28,8 @@ public class BookDatabase : ScriptableObject
         var def = GetBookByID(id);
         return def != null ? def.prefab : null;
     }
+
+    public BookDefinition GetDefinitionByID(string id) => GetBookByID(id);
+
 }
 
