@@ -1,7 +1,8 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class SellPanelController : MonoBehaviour
 {
@@ -25,56 +26,64 @@ public class SellPanelController : MonoBehaviour
         {
             GameObject entry = Instantiate(pricingEntryPrefab, contentParent);
 
-            TMP_Text titleText = null;
-            TMP_Text costText = null;
-            TMP_Text profitText = null;
-            TMP_InputField priceInput = null;
-            Image bookImage = null;
+            var titleText = FindByNameInChildren<TMP_Text>(entry.transform, "TitleText");
+            var costText = FindByNameInChildren<TMP_Text>(entry.transform, "CostText");
+            var profitText = FindByNameInChildren<TMP_Text>(entry.transform, "ProfitText");
+            var priceInput = FindByNameInChildren<TMP_InputField>(entry.transform, "PriceInputField");
 
-            foreach (var text in entry.GetComponentsInChildren<TMP_Text>(true))
+            // Image (deep find) + sprite hookup
+            SetBookImage(entry.transform, book.thumbnail, book.color);
+
+            if (titleText) titleText.text = book.title;
+            if (costText) costText.text = $"Cost: ${book.cost}";
+            if (priceInput) priceInput.text = book.price.ToString();
+
+            // Wire price change → profit display + save back to definition
+            if (priceInput && profitText)
             {
-                switch (text.name)
+                priceInput.onValueChanged.AddListener(value =>
                 {
-                    case "TitleText": titleText = text; break;
-                    case "CostText": costText = text; break;
-                    case "ProfitText": profitText = text; break;
-                }
+                    if (int.TryParse(value, out int newPrice))
+                    {
+                        book.price = newPrice;
+                        int profit = newPrice - book.cost;
+                        profitText.text = $"Profit: ${profit}";
+                    }
+                    else
+                    {
+                        profitText.text = "Profit: $0";
+                    }
+                });
+
+                profitText.text = $"Profit: ${book.price - book.cost}";
             }
-
-            foreach (var input in entry.GetComponentsInChildren<TMP_InputField>(true))
-            {
-                if (input.name == "PriceInputField")
-                    priceInput = input;
-            }
-
-            foreach (var image in entry.GetComponentsInChildren<Image>(true))
-            {
-                if (image.name == "BookImage")
-                    bookImage = image;
-            }
+        }
+    }
 
 
-            titleText.text = book.title;
-            costText.text = $"Cost: ${book.cost}";
-            priceInput.text = book.price.ToString();
-            bookImage.color = book.color;
+    private static T FindByNameInChildren<T>(Transform root, string name) where T : Component
+    {
+        return root.GetComponentsInChildren<T>(true).FirstOrDefault(c => c.name == name);
+    }
 
-            priceInput.onValueChanged.AddListener((value) => {
-                int newPrice;
-                if (int.TryParse(value, out newPrice))
-                {
-                    book.price = newPrice;
-                    int profit = newPrice - book.cost;
-                    profitText.text = $"Profit: ${profit}";
-                }
-                else
-                {
-                    profitText.text = "Profit: $0";
-                }
-            });
+    private static void SetBookImage(Transform root, Sprite sprite, Color fallbackTint)
+    {
+        var img = FindByNameInChildren<Image>(root, "BookImage");
+        if (!img) return;
 
-            int initialProfit = book.price - book.cost;
-            profitText.text = $"Profit: ${initialProfit}";
+        if (sprite != null)
+        {
+            img.sprite = sprite;
+            img.preserveAspect = true;
+            img.color = Color.white;   // no tint over the art
+            img.enabled = true;
+        }
+        else
+        {
+            // No thumbnail yet? Show colored placeholder so layout still looks right.
+            img.sprite = null;
+            img.color = fallbackTint;
+            img.enabled = true;
         }
     }
 }

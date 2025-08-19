@@ -1,7 +1,8 @@
 using System.Collections.Generic;
+using System.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 public class BuyPanelController : MonoBehaviour
 {
@@ -63,6 +64,8 @@ public class BuyPanelController : MonoBehaviour
         {
             GameObject entry = Instantiate(bookEntryPrefab, contentParent);
             entry.transform.Find("TitleText").GetComponent<TMP_Text>().text = book.title;
+
+            SetBookImage(entry.transform, book.thumbnail);
 
             Button plusButton = entry.transform.Find("PlusButton").GetComponent<Button>();
             Button minusButton = entry.transform.Find("MinusButton").GetComponent<Button>();
@@ -148,6 +151,8 @@ public class BuyPanelController : MonoBehaviour
         foreach (var pair in currentOrder)
         {
             GameObject entry = Instantiate(reviewEntryPrefab, reviewContentParent);
+
+            SetBookImage(entry.transform, pair.Key.thumbnail);
 
             TMP_Text[] texts = entry.GetComponentsInChildren<TMP_Text>(true);
 
@@ -284,6 +289,22 @@ public class BuyPanelController : MonoBehaviour
             else
                 qtyText.text = "0";
         }
+    }
+
+    private static void SetBookImage(Transform root, Sprite sprite)
+    {
+        // find by name anywhere under the root (include inactive)
+        var imgTf = root.GetComponentsInChildren<Transform>(true)
+                        .FirstOrDefault(t => t.name == "BookImage");
+        if (!imgTf) return;
+
+        var img = imgTf.GetComponent<Image>();
+        if (!img) return;
+
+        img.sprite = sprite;
+        img.preserveAspect = true;
+        img.color = Color.white;
+        img.enabled = sprite != null;
     }
 
 
