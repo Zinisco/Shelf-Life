@@ -36,9 +36,11 @@ public class BookInfo : MonoBehaviour
         {
             bookID = definition.bookID;
             title = definition.title;
+            UpdateVisuals(); // reflect changes immediately in editor
         }
     }
 #endif
+
 
     public void ApplyDefinition(BookDefinition def)
     {
@@ -78,10 +80,23 @@ public class BookInfo : MonoBehaviour
     {
         if (definition == null) return;
 
-        var mr = GetComponentInChildren<MeshRenderer>();
-        if (mr) mr.material.color = definition.color;
-
+        // Update text
         if (titleText) titleText.text = definition.title;
         if (spineText) spineText.text = definition.title;
+
+        // Tint all renderers with MPB (safe in Edit Mode and Play Mode)
+        var rends = GetComponentsInChildren<MeshRenderer>(true);
+        var mpb = new MaterialPropertyBlock();
+
+        foreach (var r in rends)
+        {
+            if (!r) continue;
+
+            r.GetPropertyBlock(mpb);
+            // Attempt both common color properties (Built?in / URP / HDRP)
+            mpb.SetColor("_Color", definition.color);
+            mpb.SetColor("_BaseColor", definition.color);
+            r.SetPropertyBlock(mpb);
+        }
     }
 }
