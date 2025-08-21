@@ -8,6 +8,17 @@ public static class SaveSystem
 
     public static bool HasSave() => File.Exists(SavePath);
 
+    public static void Save()
+    {
+        // If your BookSaveManager already creates the file, this is enough:
+        BookSaveManager.TriggerSave();
+
+        // If you also stash any flags in PlayerPrefs, flush them:
+        PlayerPrefs.Save();
+
+        Debug.Log($"[SaveSystem] Saved to: {SavePath}");
+    }
+
     public static void Load()
     {
         if (!HasSave())
@@ -21,8 +32,6 @@ public static class SaveSystem
     public static void LoadOrReset()
     {
         BookSaveManager.TriggerLoad();
-        // If BookSaveManager found an incompatible save, it will delete it.
-        // You could check here again if file still exists and, if desired, immediately Save a fresh file.
         if (!HasSave())
         {
             Debug.Log("[SaveSystem] Old/corrupt save cleared during load.");
@@ -36,7 +45,7 @@ public static class SaveSystem
             File.Delete(SavePath);
             Debug.Log("[SaveSystem] Save file deleted.");
         }
-        // Only if you’re storing misc flags here
         PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
     }
 }

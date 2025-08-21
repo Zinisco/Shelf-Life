@@ -27,6 +27,11 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float aimAssistStrength = 2f; // Higher = faster adjustment
     [SerializeField] private LayerMask bookLayerMask;
 
+    public float MouseSensitivity { get => lookSensitivity; set => lookSensitivity = value; }
+    public float ControllerSensitivity { get => controllerLookSensitivity; set => controllerLookSensitivity = value; }
+    public bool InvertX { get; set; } = false;
+    public bool InvertY { get; set; } = false;
+
     private float currentSensitivity;
 
     private CharacterController controller;
@@ -118,21 +123,22 @@ public class PlayerMovement : MonoBehaviour
         controller.Move((move * currentSpeed + Vector3.up * verticalVelocity) * Time.deltaTime);
     }
 
-
     void HandleLook()
     {
-
-        // --- Normal camera control ---
         Vector2 mouseDelta = gameInput.GetMouseDelta();
         mouseDelta = Vector2.ClampMagnitude(mouseDelta, 10f);
         mouseDelta *= currentSensitivity;
 
-        xRotation -= mouseDelta.y;
+        float sx = InvertX ? -1f : 1f;
+        float sy = InvertY ? -1f : 1f;
+
+        xRotation -= sy * mouseDelta.y;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
 
         cam.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        transform.Rotate(Vector3.up * mouseDelta.x);
+        transform.Rotate(Vector3.up * (sx * mouseDelta.x));
     }
+
 
     public void ExitUI()
     {

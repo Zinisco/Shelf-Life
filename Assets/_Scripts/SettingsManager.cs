@@ -1,127 +1,82 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
-using UnityEngine.Audio;
 
 public class SettingsManager : MonoBehaviour
 {
-    [Header("UI Elements")]
-    [SerializeField] private GameObject settingsPanel;
-    [SerializeField] private Toggle fullscreenToggle;
-    [SerializeField] private TMP_Dropdown resolutionDropdown;
-    [SerializeField] private Slider masterSlider;
-    [SerializeField] private Slider musicSlider;
-    [SerializeField] private Slider sfxSlider;
-    [SerializeField] private Button resetButton;
-    [SerializeField] private AudioMixer audioMixer;
+    [Header("Root")]
+    [SerializeField] private GameObject settingsRoot; // whole settings window
 
-    [SerializeField] private float defaultMasterVolume = 0.7f;
-    [SerializeField] private float defaultMusicVolume = 0.7f;
-    [SerializeField] private float defaultSFXVolume = 0.7f;
+    [Header("Main Menu")]
+    [SerializeField] private GameObject mainMenuPanel; // whole Main Menu window
 
-    private Resolution[] resolutions;
+    [Header("Tab Buttons")]
+    [SerializeField] private Button generalButton;
+    [SerializeField] private Button graphicsButton;
+    [SerializeField] private Button accessibilityButton;
+    [SerializeField] private Button audioButton;
+    [SerializeField] private Button backButton;
 
-    private void Start()
+    [Header("Panels (exactly one is active at a time)")]
+    [SerializeField] private GameObject generalPanel;
+    [SerializeField] private GameObject graphicsPanel;
+    [SerializeField] private GameObject accessibilityPanel;
+    [SerializeField] private GameObject audioPanel;
+
+    // Optional: if you ever want to remember last-opened tab, flip this to true.
+    [SerializeField] private bool alwaysStartOnGeneral = true;
+
+    private GameObject[] _allPanels;
+
+    void Awake()
     {
-        resetButton.onClick.AddListener(ResetToDefault);
+        _allPanels = new[] { generalPanel, graphicsPanel, accessibilityPanel, audioPanel };
 
-        // Populate resolutions
-        resolutions = Screen.resolutions;
-        resolutionDropdown.ClearOptions();
+        // Wire buttons
+        if (generalButton) generalButton.onClick.AddListener(ShowGeneral);
+        if (graphicsButton) graphicsButton.onClick.AddListener(ShowGraphics);
+        if (accessibilityButton) accessibilityButton.onClick.AddListener(ShowAccessibility);
+        if (audioButton) audioButton.onClick.AddListener(ShowAudio);
+        if (backButton) backButton.onClick.AddListener(CloseSettings);
 
-        var options = new System.Collections.Generic.List<string>();
-        string currentRes = $"{Screen.currentResolution.width} x {Screen.currentResolution.height}";
-
-        for (int i = 0; i < resolutions.Length; i++)
-        {
-            string option = $"{resolutions[i].width} x {resolutions[i].height}";
-            if (!options.Contains(option))
-                options.Add(option);
-        }
-
-        resolutionDropdown.AddOptions(options);
-
-        // Load saved settings or use defaults
-        int savedResIndex = PlayerPrefs.GetInt("ResolutionIndex", options.IndexOf(currentRes));
-        resolutionDropdown.value = savedResIndex;
-        resolutionDropdown.RefreshShownValue();
-
-        fullscreenToggle.isOn = PlayerPrefs.GetInt("Fullscreen", Screen.fullScreen ? 1 : 0) == 1;
-
-        masterSlider.value = PlayerPrefs.GetFloat("MasterVolume", defaultMasterVolume);
-        musicSlider.value = PlayerPrefs.GetFloat("MusicVolume", defaultMusicVolume);
-        sfxSlider.value = PlayerPrefs.GetFloat("SFXVolume", defaultSFXVolume);
-
-        ApplySettings(); // Apply loaded values to game
+        // Start hidden; when opened we’ll default to General
+        if (settingsRoot) settingsRoot.SetActive(false);
+        SetActiveOnly(null); // ensure all panels hidden until opened
     }
 
-    public void OpenSettings() => settingsPanel.SetActive(true);
-    public void CloseSettings() => settingsPanel.SetActive(false);
-
-    public void ApplySettings()
+    // Public API (call from MainMenu / PauseMenu)
+    public void OpenSettings()
     {
-        string[] dims = resolutionDropdown.options[resolutionDropdown.value].text.Split('x');
-        int width = int.Parse(dims[0].Trim());
-        int height = int.Parse(dims[1].Trim());
+        mainMenuPanel.SetActive(false);
 
-        Screen.SetResolution(width, height, fullscreenToggle.isOn);
-
-        SetMixerVolume("MasterVolume", masterSlider.value);
-        SetMixerVolume("MusicVolume", musicSlider.value);
-        SetMixerVolume("SFXVolume", sfxSlider.value);
-
-        SaveSettings();
-        Debug.Log("Settings applied.");
+        if (settingsRoot) settingsRoot.SetActive(true);
+        if (alwaysStartOnGeneral || !AnyPanelActive())
+            ShowGeneral();
     }
 
-    private void SaveSettings()
+    public void CloseSettings()
     {
-        PlayerPrefs.SetInt("ResolutionIndex", resolutionDropdown.value);
-        PlayerPrefs.SetInt("Fullscreen", fullscreenToggle.isOn ? 1 : 0);
-        PlayerPrefs.SetFloat("MasterVolume", masterSlider.value);
-        PlayerPrefs.SetFloat("MusicVolume", musicSlider.value);
-        PlayerPrefs.SetFloat("SFXVolume", sfxSlider.value);
+        mainMenuPanel.SetActive(true);
 
-        PlayerPrefs.Save();
+        if (settingsRoot) settingsRoot.SetActive(false);
     }
 
-    public void ResetToDefault()
+    // Tab handlers
+    public void ShowGeneral() => SetActiveOnly(generalPanel);
+    public void ShowGraphics() => SetActiveOnly(graphicsPanel);
+    public void ShowAccessibility() => SetActiveOnly(accessibilityPanel);
+    public void ShowAudio() => SetActiveOnly(audioPanel);
+
+    // Core: hide all, show just one (can pass null to hide everything)
+    private void SetActiveOnly(GameObject target)
     {
-        // Resolution: choose the current screen res or the highest one
-        int defaultResIndex = 0;
-        for (int i = 0; i < resolutions.Length; i++)
-        {
-            if (resolutions[i].width == Screen.currentResolution.width &&
-                resolutions[i].height == Screen.currentResolution.height)
-            {
-                defaultResIndex = i;
-                break;
-            }
-        }
-
-        resolutionDropdown.value = defaultResIndex;
-        resolutionDropdown.RefreshShownValue();
-
-        // Fullscreen: on by default
-        fullscreenToggle.isOn = true;
-
-        // Volume sliders: 70% volume by default
-        masterSlider.value = defaultMasterVolume;
-        musicSlider.value = defaultMusicVolume;
-        sfxSlider.value = defaultSFXVolume;
-
-        PlayerPrefs.DeleteKey("ResolutionIndex");
-        PlayerPrefs.DeleteKey("Fullscreen");
-        PlayerPrefs.DeleteKey("MasterVolume");
-        PlayerPrefs.DeleteKey("MusicVolume");
-        PlayerPrefs.DeleteKey("SFXVolume");
-
-        ApplySettings(); // Apply immediately
+        foreach (var p in _allPanels)
+            if (p) p.SetActive(p == target);
     }
 
-    private void SetMixerVolume(string parameter, float sliderValue)
+    private bool AnyPanelActive()
     {
-        float volume = Mathf.Log10(Mathf.Max(sliderValue, 0.001f)) * 20f;
-        audioMixer.SetFloat(parameter, volume);
+        foreach (var p in _allPanels)
+            if (p && p.activeSelf) return true;
+        return false;
     }
 }

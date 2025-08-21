@@ -528,8 +528,6 @@ public class GhostBookManager : MonoBehaviour
             );
         }
 
-        // … after you’ve determined stackTargetBook and your blocked flag …
-
         bool validPlacement;
 
         // 1) If this book already has a StackRoot, snap via the root:
