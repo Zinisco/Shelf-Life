@@ -32,7 +32,7 @@ public class GeneralSettingsController : MonoBehaviour
     const string KEY_INVY = "InvertY";
 
     // --- Defaults ---
-    const float DEFAULT_FOV = 75f;
+    const float DEFAULT_FOV = 60f;
     const float DEFAULT_MSENS = 0.20f;
     const float DEFAULT_CSENS = 3.00f;
 

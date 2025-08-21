@@ -67,7 +67,7 @@ public class FurnitureMover : MonoBehaviour
         gameInput.OnMoveFurniturePressed += HandleMovePressed;   // start/continue holding
         gameInput.OnMoveFurnitureReleased += HandleMoveReleased;  // abort hold
         gameInput.OnPlaceFurnitureAction += HandlePlaceFurniture; // confirm placement (click/tap)
-        gameInput.OnCancelMove += HandleCancelInput;
+        gameInput.OnCancel += HandleCancelInput;
     }
 
     private void OnDisable()
@@ -79,7 +79,7 @@ public class FurnitureMover : MonoBehaviour
         gameInput.OnMoveFurniturePressed -= HandleMovePressed;
         gameInput.OnMoveFurnitureReleased -= HandleMoveReleased;
         gameInput.OnPlaceFurnitureAction -= HandlePlaceFurniture;
-        gameInput.OnCancelMove -= HandleCancelInput;
+        gameInput.OnCancel -= HandleCancelInput;
     }
 
     private void Start()

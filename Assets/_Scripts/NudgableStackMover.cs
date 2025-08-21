@@ -56,7 +56,7 @@ public class NudgableStackMover : MonoBehaviour
 
         // Optional: use existing actions for confirm/cancel + rotation on gamepad
         GameInput.Instance.OnPlaceFurnitureAction += HandleConfirm; // e.g. A / South
-        GameInput.Instance.OnCancelMove += HandleCancel;  // e.g. B / East
+        GameInput.Instance.OnCancel += HandleCancel;  // e.g. B / East
         GameInput.Instance.OnRotateLeftAction += HandleRotateLeftStep;
         GameInput.Instance.OnRotateRightAction += HandleRotateRightStep;
     }
@@ -69,7 +69,7 @@ public class NudgableStackMover : MonoBehaviour
         GameInput.Instance.OnFreeMovePerformed -= HandleFreeMovePerformed;
 
         GameInput.Instance.OnPlaceFurnitureAction -= HandleConfirm;
-        GameInput.Instance.OnCancelMove -= HandleCancel;
+        GameInput.Instance.OnCancel -= HandleCancel;
         GameInput.Instance.OnRotateLeftAction -= HandleRotateLeftStep;
         GameInput.Instance.OnRotateRightAction -= HandleRotateRightStep;
     }

@@ -21,11 +21,13 @@ public class GameInput : MonoBehaviour
 
     public event Action OnMoveFurniturePressed;
     public event Action OnMoveFurnitureReleased;
-    public event Action OnCancelMove;
+    public event Action OnCancel;
 
     public event Action OnFreeMoveStarted;
     public event Action OnFreeMoveCanceled;
     public event Action<InputAction.CallbackContext> OnFreeMovePerformed;
+
+    public event Action OnPause;
 
 
     [SerializeField] private PlayerInput playerInput;
@@ -71,12 +73,13 @@ public class GameInput : MonoBehaviour
 
         playerInputActions.Player.MoveFurniture.started += ctx => OnMoveFurniturePressed?.Invoke();
         playerInputActions.Player.MoveFurniture.canceled += ctx => OnMoveFurnitureReleased?.Invoke();
-        playerInputActions.Player.Cancel.performed += ctx => OnCancelMove?.Invoke();
+        playerInputActions.Player.Cancel.performed += ctx => OnCancel?.Invoke();
 
         playerInputActions.Player.FreeMove.started += ctx => OnFreeMoveStarted?.Invoke();
         playerInputActions.Player.FreeMove.performed += ctx => OnFreeMovePerformed?.Invoke(ctx);
         playerInputActions.Player.FreeMove.canceled += ctx => OnFreeMoveCanceled?.Invoke();
 
+        playerInputActions.Player.PauseGame.performed += ctx => OnPause?.Invoke();
 
         playerInputActions.Player.MoveFurniture.performed += MoveFurniture_performed;
 
@@ -93,10 +96,12 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.Interact.performed -= Interact_performed;
         playerInputActions.Player.Run.performed -= Run_performed;
 
-        playerInputActions.Player.Cancel.performed -= ctx => OnCancelMove?.Invoke();
+        playerInputActions.Player.Cancel.performed -= ctx => OnCancel?.Invoke();
         playerInputActions.Player.FreeMove.started -= ctx => OnFreeMoveStarted?.Invoke();
         playerInputActions.Player.FreeMove.performed -= ctx => OnFreeMovePerformed?.Invoke(ctx);
         playerInputActions.Player.FreeMove.canceled -= ctx => OnFreeMoveCanceled?.Invoke();
+
+        playerInputActions.Player.PauseGame.performed -= ctx => OnPause?.Invoke();
 
 
         playerInputActions.Dispose();
