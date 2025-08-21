@@ -53,6 +53,9 @@ public class PauseMenuController : MonoBehaviour
 
         if (restartCancelButton) restartCancelButton.onClick.AddListener(HideRestartPrompt);
         if (restartHoldButton) restartHoldButton.onCompleted.AddListener(DoRestartConfirmed);
+
+        bool allowManualSave = (GameModeConfig.CurrentMode == GameMode.Zen);
+        if (saveButton) saveButton.interactable = allowManualSave;
     }
 
     void Update()
@@ -100,13 +103,26 @@ public class PauseMenuController : MonoBehaviour
     // ---------- Save / Quit ----------
     public void SaveGame()
     {
+        // Hard gate in case someone re-enables the button at runtime
+        if (GameModeConfig.CurrentMode != GameMode.Zen)
+        {
+            // Show a small “Manual saving disabled in Standard mode” toast
+            if (saveFeedback)
+            {
+                StopAllCoroutines();
+                saveFeedback.SetActive(true);
+                StartCoroutine(HideAfterSeconds(saveFeedback, 1.2f));
+            }
+            return;
+        }
+
         SaveSystem.Save();
 
         if (saveFeedback)
         {
             StopAllCoroutines();
             saveFeedback.SetActive(true);
-            StartCoroutine(HideAfterSeconds(saveFeedback, 1.2f)); // little “Saved!” toast
+            StartCoroutine(HideAfterSeconds(saveFeedback, 1.2f));
         }
     }
 

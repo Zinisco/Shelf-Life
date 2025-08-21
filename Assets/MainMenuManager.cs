@@ -28,6 +28,13 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private HoldToConfirmButton confirmReallySureHold;
     [SerializeField] private Button cancelReallySureButton;
 
+    [Header("New Game Mode Chooser (if implemented)")]
+    [SerializeField] private Button newStandardButton;     // “New Game (Standard)”
+    [SerializeField] private Button newZenModeButton;  // “New Game (Zen Mode)”
+    [SerializeField] private GameObject modeChooserPanel;  // small panel shown only if CanChooseModeNow()
+
+    private GameMode _selectedNewMode = GameMode.Standard;
+
     private void Start()
     {
         startButton.onClick.AddListener(OnStartPressed);
@@ -48,6 +55,12 @@ public class MainMenuManager : MonoBehaviour
 
         // Enable/disable Continue based on (editor-safe) HasSave()
         continueButton.interactable = HasSave();
+
+        if (newStandardButton) newStandardButton.onClick.AddListener(() => SelectModeAndStart(GameMode.Standard));
+        if (newZenModeButton) newZenModeButton.onClick.AddListener(() => SelectModeAndStart(GameMode.Zen));
+
+        if (modeChooserPanel)
+            modeChooserPanel.SetActive(GameModeConfig.CanChooseModeNow());
     }
 
     /// <summary>
@@ -106,16 +119,29 @@ public class MainMenuManager : MonoBehaviour
         confirmReallySureHold.ResetHold();
     }
 
+    private void SelectModeAndStart(GameMode mode)
+    {
+        // If a save exists we should NOT allow choosing a mode — offer overwrite flow first.
+        if (!GameModeConfig.CanChooseModeNow())
+        {
+            OnStartPressed();
+            return;
+        }
+
+        _selectedNewMode = mode;
+        OnStartPressed(); 
+    }
+
     public void ConfirmStartNewGame()
     {
-        Debug.Log("[MainMenuManager] Confirmed new game = Clearing save and loading GameScene via LoadScene");
         overwritePromptPanel.SetActive(false);
         reallySurePromptPanel.SetActive(false);
 
+        // Clear any old save and set the new mode
         SaveSystem.ClearSave();
+        GameModeConfig.StartNewGame(_selectedNewMode);
 
         SceneLoader.sceneToLoad = "GameScene";
-        Debug.Log($"[MainMenuManager] Set SceneLoader.sceneToLoad = '{SceneLoader.sceneToLoad}', now loading 'LoadScene'");
         SceneManager.LoadScene("LoadScene");
     }
 
