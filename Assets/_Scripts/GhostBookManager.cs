@@ -67,15 +67,18 @@ public class GhostBookManager : MonoBehaviour
 
     private void HandleRotateLeft(object sender, EventArgs e)
     {
+        if (NudgableStackMover.IsNudging) return;
         float step = GameInput.Instance.IsPrecisionModifierHeld() ? 15f : 90f;
         RotateGhostStep(-step);
     }
 
     private void HandleRotateRight(object sender, EventArgs e)
     {
+        if (NudgableStackMover.IsNudging) return;
         float step = GameInput.Instance.IsPrecisionModifierHeld() ? 15f : 90f;
         RotateGhostStep(step);
     }
+
 
 
     // Continuously updates the ghost book position and rotation based on raycast from camera
@@ -295,17 +298,20 @@ public class GhostBookManager : MonoBehaviour
         latestShelfTransform = hit.collider.transform;
 
         // Handle scroll rotation input
-        float scroll = Input.GetAxis("Mouse ScrollWheel");
-        if (Mathf.Abs(scroll) > 0.01f)
+        if (!NudgableStackMover.IsNudging)
         {
-            currentRotationY += scroll > 0 ? 90f : -90f;
-            currentRotationY = Mathf.Repeat(currentRotationY, 360f);
-            rotationLocked = true;
-        }
+            float scroll = Input.GetAxis("Mouse ScrollWheel");
+            if (Mathf.Abs(scroll) > 0.01f)
+            {
+                currentRotationY += scroll > 0 ? 90f : -90f;
+                currentRotationY = Mathf.Repeat(currentRotationY, 360f);
+                rotationLocked = true;
+            }
 
-        float angleStep = 90f;
-        if (scroll > 0) rotationAmount += angleStep;
-        else if (scroll < 0) rotationAmount -= angleStep;
+            float angleStep = 90f;
+            if (scroll > 0) rotationAmount += angleStep;
+            else if (scroll < 0) rotationAmount -= angleStep;
+        }
 
         rotationAmount %= 360f;
 
@@ -709,10 +715,13 @@ public class GhostBookManager : MonoBehaviour
 
     public void RotateGhostStep(float deltaDegrees)
     {
+        if (NudgableStackMover.IsNudging) return;
         if (ghostBookInstance == null || !ghostBookInstance.activeSelf) return;
+
         rotationLocked = true;
         rotationAmount = Mathf.Repeat(rotationAmount + deltaDegrees, 360f);
     }
+
 
 
     public void ResetRotation(bool isNearShelf = false)
