@@ -715,13 +715,12 @@ public class GhostBookManager : MonoBehaviour
 
     public void RotateGhostStep(float deltaDegrees)
     {
-        if (NudgableStackMover.IsNudging) return;
+        
         if (ghostBookInstance == null || !ghostBookInstance.activeSelf) return;
 
         rotationLocked = true;
         rotationAmount = Mathf.Repeat(rotationAmount + deltaDegrees, 360f);
     }
-
 
 
     public void ResetRotation(bool isNearShelf = false)
