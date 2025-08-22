@@ -4,6 +4,9 @@ using TMPro;
 public class CurrencyManager : MonoBehaviour
 {
     public static CurrencyManager Instance { get; private set; }
+    public int MoneyEarnedToday { get; private set; }
+    public int MoneySpentToday { get; private set; }
+    public int BooksSoldToday { get; private set; }
 
     [SerializeField] private int startingMoney = 100;
     [SerializeField] private TMP_Text walletText;
@@ -33,15 +36,21 @@ public class CurrencyManager : MonoBehaviour
     {
         if (!CanAfford(amount)) return false;
         currentMoney -= amount;
+        MoneySpentToday += amount;
         UpdateUI();
         return true;
     }
-
-    public void Add(int amount)
+    public void Add(int amount, bool isSale = false)
     {
         currentMoney += amount;
+        MoneyEarnedToday += amount;
+
+        if (isSale)
+            BooksSoldToday += 1;
+
         UpdateUI();
     }
+
 
     public int GetBalance() => currentMoney;
 
@@ -50,6 +59,13 @@ public class CurrencyManager : MonoBehaviour
     {
         currentMoney = Mathf.Max(0, amount);
         UpdateUI();
+    }
+
+    public void ResetDailyStats()
+    {
+        MoneyEarnedToday = 0;
+        MoneySpentToday = 0;
+        BooksSoldToday = 0;
     }
 
     private void UpdateUI()

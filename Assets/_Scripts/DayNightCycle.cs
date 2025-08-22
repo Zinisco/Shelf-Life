@@ -141,4 +141,5 @@ public class DayNightCycle : MonoBehaviour
 
     public void StartTime() => timeRunning = true;
     public void StopTime() => timeRunning = false;
+
 }

@@ -1,4 +1,5 @@
 using System;
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -19,6 +20,9 @@ public class PauseMenuController : MonoBehaviour
     [SerializeField] private GameObject pauseMenuRoot;
     [SerializeField] private GameObject firstSelected; // focus when opening pause
     [SerializeField] private GameObject pauseMenuLayout;
+    [SerializeField] private GameObject settingsMenu;
+    private StoreSignController storeSign;
+
 
     [Header("Top-level Buttons")]
     [SerializeField] private Button resumeButton;
@@ -34,6 +38,15 @@ public class PauseMenuController : MonoBehaviour
     [SerializeField] private Button restartCancelButton;
     [SerializeField] private GameObject restartFirstSelected;       // focus when confirm panel opens
 
+    [Header("Quit Confirm Panel")]
+    [SerializeField] private GameObject quitConfirmPanel;
+    [SerializeField] private HoldToConfirmButton quitHoldButton;
+    [SerializeField] private Button quitCancelButton;
+    [SerializeField] private GameObject quitFirstSelected;
+
+    [Header("Tooltip")]
+    [SerializeField] private GameObject saveTooltip;
+
     [Header("Optional save feedback")]
     [SerializeField] private GameObject saveFeedback; // e.g. "Saved!" text; auto hides
 
@@ -41,7 +54,7 @@ public class PauseMenuController : MonoBehaviour
     [SerializeField] private MonoBehaviour saveServiceBehaviour; // drag a component that implements IGameSaver
     private IGameSaver saveService;
 
-    private bool pauseToggleRequested = false;
+    private bool isBeforeStoreOpens = true;
 
 
     private bool isGamePaused;
@@ -79,22 +92,66 @@ public class PauseMenuController : MonoBehaviour
         if (restartCancelButton) restartCancelButton.onClick.AddListener(HideRestartPrompt);
         if (restartHoldButton) restartHoldButton.onCompleted.AddListener(DoRestartConfirmed);
 
-        bool allowManualSave = (GameModeConfig.CurrentMode == GameMode.Zen);
+        if (quitCancelButton) quitCancelButton.onClick.AddListener(HideQuitPrompt);
+        if (quitHoldButton) quitHoldButton.onCompleted.AddListener(DoQuitConfirmed);
+
+
         if (saveButton)
         {
-            saveButton.interactable = allowManualSave;
+            saveButton.interactable = true; // Always allow interaction
             saveButton.gameObject.SetActive(true);
         }
-        else
-        {
-            saveButton.gameObject.SetActive(false);
-        }
+
     }
 
     private void Start()
     {
+        storeSign = FindObjectOfType<StoreSignController>();
+
         GameInput.Instance.OnPauseAction += GameInput_OnPauseAction;
     }
+
+    private void Update()
+    {
+        DayNightCycle dayCycle = FindObjectOfType<DayNightCycle>();
+        if (dayCycle == null)
+        {
+            Debug.LogWarning("DayNightCycle not found. Cannot determine save availability.");
+            return;
+        }
+
+        bool isBefore = false;
+        bool isDayEnded = false;
+
+        if (dayCycle != null)
+            isBefore = !dayCycle.IsTimeRunning;
+
+        if (storeSign != null)
+            isDayEnded = storeSign.HasDayEnded;
+
+        // Only allow save before store opens
+        bool allowSave = isBefore && !isDayEnded;
+
+        if (saveButton != null)
+        {
+            saveButton.interactable = allowSave;
+
+            if (saveTooltip != null)
+                saveTooltip.SetActive(!allowSave);
+        }
+
+        // Reset condition (e.g., if returning to pre-day state)
+        if (!isBeforeStoreOpens && allowSave)
+        {
+            Debug.Log("Save re-enabled at start of new day.");
+            if (saveButton != null) saveButton.interactable = true;
+            if (saveTooltip != null) saveTooltip.SetActive(false);
+        }
+
+        isBeforeStoreOpens = allowSave;
+    }
+
+
 
     private void GameInput_OnPauseAction(object sender, EventArgs e)
     {
@@ -104,14 +161,20 @@ public class PauseMenuController : MonoBehaviour
     // ---------- Restart flow ----------
     private void ShowRestartPrompt()
     {
-        if (!restartConfirmPanel) { DoRestartConfirmed(); return; } // safety: restart immediately if no UI
+        if (!restartConfirmPanel)
+        {
+            DoRestartConfirmed(); // fallback
+            return;
+        }
+
         restartConfirmPanel.SetActive(true);
+        restartHoldButton.ResetHold();
         pauseMenuLayout.SetActive(false);
-        // Set gamepad/keyboard focus
-        if (restartFirstSelected) EventSystem.current?.SetSelectedGameObject(restartFirstSelected);
-        // Reset the hold button visual
-        if (restartHoldButton) restartHoldButton.ResetHold();
+
+        if (restartFirstSelected)
+            EventSystem.current?.SetSelectedGameObject(restartFirstSelected);
     }
+
 
     private void HideRestartPrompt()
     {
@@ -136,26 +199,32 @@ public class PauseMenuController : MonoBehaviour
     // ---------- Save / Quit ----------
     public void SaveGame()
     {
-        // Hard gate in case someone re-enables the button at runtime
-        if (GameModeConfig.CurrentMode != GameMode.Zen)
+        if (storeSign == null || saveButton == null) return;
+
+        bool canSave = saveButton.interactable;
+
+        if (canSave)
         {
-            // Show a small “Manual saving disabled in Standard mode” toast
+            SaveSystem.Save();
+
             if (saveFeedback)
             {
                 StopAllCoroutines();
                 saveFeedback.SetActive(true);
                 StartCoroutine(HideAfterSeconds(saveFeedback, 1.2f));
             }
-            return;
         }
-
-        SaveSystem.Save();
-
-        if (saveFeedback)
+        else
         {
-            StopAllCoroutines();
-            saveFeedback.SetActive(true);
-            StartCoroutine(HideAfterSeconds(saveFeedback, 1.2f));
+            if (saveFeedback && saveFeedback.TryGetComponent<TMP_Text>(out var feedbackText))
+            {
+                StopAllCoroutines();
+                feedbackText.text = "Saving disabled after store has opened.";
+                saveFeedback.SetActive(true);
+                StartCoroutine(HideAfterSeconds(saveFeedback, 1.5f));
+            }
+
+            Debug.Log("Cannot save during or after store hours.");
         }
     }
 
@@ -179,11 +248,52 @@ public class PauseMenuController : MonoBehaviour
 
     public void QuitToDesktop()
     {
-        // If you want a confirm step, add a second hold-to-confirm panel like restart.
+        if (GameModeConfig.CurrentMode == GameMode.Zen)
+        {
+            Application.Quit();
+        }
+        else
+        {
+            ShowQuitPrompt();
+        }
+    }
+
+    private void ShowQuitPrompt()
+    {
+        if (!quitConfirmPanel)
+        {
+            DoQuitConfirmed(); // fallback if panel is missing
+            return;
+        }
+
+        quitConfirmPanel.SetActive(true);
+        quitHoldButton.ResetHold();
+        pauseMenuLayout.SetActive(false);
+
+        if (quitFirstSelected)
+            EventSystem.current?.SetSelectedGameObject(quitFirstSelected);
+    }
+
+    private void HideQuitPrompt()
+    {
+        if (quitConfirmPanel)
+        {
+            quitConfirmPanel.SetActive(false);
+            pauseMenuLayout.SetActive(true);
+        }
+
+        if (firstSelected && isGamePaused)
+            EventSystem.current?.SetSelectedGameObject(firstSelected);
+    }
+
+    private void DoQuitConfirmed()
+    {
+        Time.timeScale = 1f;
         Application.Quit();
     }
 
-    // ---------- Core ----------
+    // ---------- Pause / Unpause ----------
+
     public void TogglePauseGame()
     {
         isGamePaused = !isGamePaused;
@@ -201,8 +311,13 @@ public class PauseMenuController : MonoBehaviour
         {
             Time.timeScale = 1f;
             pauseMenuRoot.SetActive(false);
+            settingsMenu.SetActive(false);
             Cursor.visible = false;
             Cursor.lockState = CursorLockMode.Locked;
+
+            HideRestartPrompt(); // ensure restart panel closes
+            HideQuitPrompt(); 
+
             OnGameUnpaused?.Invoke(this, EventArgs.Empty);
         }
     }

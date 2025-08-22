@@ -75,7 +75,7 @@ public class StoreSignController : MonoBehaviour
         {
             hasDayStarted = false;
             wasDayCompleted = false;
-            dayNightCycle.ResetDay(); // You'll define this method below
+            dayNightCycle.ResetDay();
             Debug.Log("System reset. Ready for next day.");
         }
         else
@@ -103,4 +103,6 @@ public class StoreSignController : MonoBehaviour
         signVisual.rotation = endRot;
         isRotating = false;
     }
+
+    public bool HasDayEnded => !storeIsOpen && wasDayCompleted;
 }
