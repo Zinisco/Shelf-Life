@@ -125,6 +125,9 @@ public class PlayerMovement : MonoBehaviour
 
     void HandleLook()
     {
+        if (PauseMenuController.Instance != null && PauseMenuController.Instance.IsPaused)
+            return;
+
         Vector2 mouseDelta = gameInput.GetMouseDelta();
         mouseDelta = Vector2.ClampMagnitude(mouseDelta, 10f);
         mouseDelta *= currentSensitivity;

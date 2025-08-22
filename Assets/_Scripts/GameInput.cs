@@ -18,6 +18,7 @@ public class GameInput : MonoBehaviour
     public event EventHandler OnRotateRightAction;
     public event EventHandler OnInteractAction;
     public event EventHandler OnRunAction;
+    public event EventHandler OnPauseAction;
 
     public event Action OnMoveFurniturePressed;
     public event Action OnMoveFurnitureReleased;
@@ -26,8 +27,6 @@ public class GameInput : MonoBehaviour
     public event Action OnFreeMoveStarted;
     public event Action OnFreeMoveCanceled;
     public event Action<InputAction.CallbackContext> OnFreeMovePerformed;
-
-    public event Action OnPause;
 
 
     [SerializeField] private PlayerInput playerInput;
@@ -79,7 +78,7 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.FreeMove.performed += ctx => OnFreeMovePerformed?.Invoke(ctx);
         playerInputActions.Player.FreeMove.canceled += ctx => OnFreeMoveCanceled?.Invoke();
 
-        playerInputActions.Player.PauseGame.performed += ctx => OnPause?.Invoke();
+        playerInputActions.Player.PauseGame.performed += Pause_performed;
 
         playerInputActions.Player.MoveFurniture.performed += MoveFurniture_performed;
 
@@ -101,49 +100,61 @@ public class GameInput : MonoBehaviour
         playerInputActions.Player.FreeMove.performed -= ctx => OnFreeMovePerformed?.Invoke(ctx);
         playerInputActions.Player.FreeMove.canceled -= ctx => OnFreeMoveCanceled?.Invoke();
 
-        playerInputActions.Player.PauseGame.performed -= ctx => OnPause?.Invoke();
+        playerInputActions.Player.PauseGame.performed -= Pause_performed;
 
 
         playerInputActions.Dispose();
     }
 
+    private void Pause_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
+    {
+        OnPauseAction?.Invoke(this, EventArgs.Empty);
+    }
 
     private void MoveFurniture_performed(InputAction.CallbackContext context)
     {
+        if (PauseMenuController.Instance.IsPaused) return;
         OnPlaceFurnitureAction?.Invoke(this, EventArgs.Empty);
     }
 
     private void PickUpObject_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
+        if (PauseMenuController.Instance.IsPaused) return;
         OnPickUpObjectAction?.Invoke(this, EventArgs.Empty);
     }
 
     private void ShelveObject_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
+        if (PauseMenuController.Instance.IsPaused) return;
         OnShelveObjectAction?.Invoke(this, EventArgs.Empty);
     }
 
     private void RotateLeft_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
+        if (PauseMenuController.Instance.IsPaused) return;
         OnRotateLeftAction?.Invoke(this, EventArgs.Empty);
     }
 
     private void RotateRight_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
+        if (PauseMenuController.Instance.IsPaused) return;
         OnRotateRightAction?.Invoke(this, EventArgs.Empty);
     }
     private void ScrollRotate_performed(InputAction.CallbackContext context)
     {
+        if (PauseMenuController.Instance.IsPaused) return;
         OnScrollRotate?.Invoke(this, context);
     }
 
     private void Interact_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
+        if (PauseMenuController.Instance.IsPaused) return;
         OnInteractAction?.Invoke(this, EventArgs.Empty);
     }
 
     private void Run_performed(UnityEngine.InputSystem.InputAction.CallbackContext obj)
     {
+        if (PauseMenuController.Instance.IsPaused) return;
         OnRunAction?.Invoke(this, EventArgs.Empty);
     }
 

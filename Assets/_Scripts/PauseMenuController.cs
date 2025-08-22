@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
@@ -9,6 +10,11 @@ using UnityEngine.UI;
 /// </summary>
 public class PauseMenuController : MonoBehaviour
 {
+    public static PauseMenuController Instance { get; private set; }
+
+    public event EventHandler OnGamePaused;
+    public event EventHandler OnGameUnpaused;
+
     [Header("Root & Focus")]
     [SerializeField] private GameObject pauseMenuRoot;
     [SerializeField] private GameObject firstSelected; // focus when opening pause
@@ -17,6 +23,7 @@ public class PauseMenuController : MonoBehaviour
     [Header("Top-level Buttons")]
     [SerializeField] private Button resumeButton;
     [SerializeField] private Button restartButton;  // opens confirm panel
+    [SerializeField] private Button settingsButton;
     [SerializeField] private Button saveButton;
     [SerializeField] private Button mainMenuButton;
     [SerializeField] private Button quitButton;
@@ -34,26 +41,37 @@ public class PauseMenuController : MonoBehaviour
     [SerializeField] private MonoBehaviour saveServiceBehaviour; // drag a component that implements IGameSaver
     private IGameSaver saveService;
 
-    private bool _isPaused;
+    private bool pauseToggleRequested = false;
+
+
+    private bool isGamePaused;
+    public bool IsPaused => isGamePaused;
 
     void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+
         // save service handshake
         saveService = saveServiceBehaviour as IGameSaver;
 
-        // Start hidden & unpaused
-        SetPaused(false, force: true);
         HideRestartPrompt();
 
-        if (GameInput.Instance != null)
-        {
-            GameInput.Instance.OnPause += HandlePauseAction;
-            GameInput.Instance.OnCancel += HandleCancelAction;
-        }
-
         // Wire buttons
-        if (resumeButton) resumeButton.onClick.AddListener(Resume);
+        if (resumeButton) resumeButton.onClick.AddListener(TogglePauseGame);
         if (restartButton) restartButton.onClick.AddListener(ShowRestartPrompt);
+        if(settingsButton) settingsButton.onClick.AddListener(() =>
+        {
+            SettingsManager settingsManager = FindObjectOfType<SettingsManager>();
+            if (settingsManager != null)
+            {
+                settingsManager.OpenSettings();
+            }
+        });
         if (saveButton) saveButton.onClick.AddListener(SaveGame);
         if (mainMenuButton) mainMenuButton.onClick.AddListener(QuitToMainMenu);
         if (quitButton) quitButton.onClick.AddListener(QuitToDesktop);
@@ -73,9 +91,15 @@ public class PauseMenuController : MonoBehaviour
         }
     }
 
-    // ---------- Public API ----------
-    public void TogglePause() => SetPaused(!_isPaused);
-    public void Resume() => SetPaused(false);
+    private void Start()
+    {
+        GameInput.Instance.OnPauseAction += GameInput_OnPauseAction;
+    }
+
+    private void GameInput_OnPauseAction(object sender, EventArgs e)
+    {
+        TogglePauseGame();
+    }
 
     // ---------- Restart flow ----------
     private void ShowRestartPrompt()
@@ -98,7 +122,7 @@ public class PauseMenuController : MonoBehaviour
         }
 
         // Return focus to top-level pause menu
-        if (firstSelected && _isPaused) EventSystem.current?.SetSelectedGameObject(firstSelected);
+        if (firstSelected && isGamePaused) EventSystem.current?.SetSelectedGameObject(firstSelected);
     }
 
     private void DoRestartConfirmed()
@@ -135,28 +159,14 @@ public class PauseMenuController : MonoBehaviour
         }
     }
 
-    private void HandlePauseAction()
-    {
-        // If the restart confirm is up, Esc/Pause closes it first
-        if (restartConfirmPanel && restartConfirmPanel.activeSelf)
-            HideRestartPrompt();
-        else
-            TogglePause();
-    }
 
     private void HandleCancelAction()
     {
-        if (_isPaused)
+        if (!isGamePaused) return;
+
+        if (restartConfirmPanel != null && restartConfirmPanel.activeSelf)
         {
-            // If the confirm panel is open, cancel returns to pause menu instead of unpausing
-            if (restartConfirmPanel != null && restartConfirmPanel.activeSelf)
-            {
-                HideRestartPrompt(); // Returns to pause menu layout
-            }
-            else
-            {
-                Resume(); // Fully unpause the game
-            }
+            HideRestartPrompt();
         }
     }
 
@@ -174,26 +184,30 @@ public class PauseMenuController : MonoBehaviour
     }
 
     // ---------- Core ----------
-    private void SetPaused(bool paused, bool force = false)
+    public void TogglePauseGame()
     {
-        if (_isPaused == paused && !force) return;
-        _isPaused = paused;
+        isGamePaused = !isGamePaused;
 
-        if (pauseMenuRoot) pauseMenuRoot.SetActive(paused);
-        Time.timeScale = paused ? 0f : 1f;
-
-        Cursor.visible = paused;
-        Cursor.lockState = paused ? CursorLockMode.None : CursorLockMode.Locked;
-
-        // Clear/Set selection for nav
-        if (paused)
-            EventSystem.current?.SetSelectedGameObject(firstSelected ? firstSelected : null);
+        if (isGamePaused)
+        {
+            Time.timeScale = 0f;
+            pauseMenuRoot.SetActive(true);
+            Cursor.visible = true;
+            Cursor.lockState = CursorLockMode.None;
+            EventSystem.current?.SetSelectedGameObject(firstSelected); // Optional: set initial button focus
+            OnGamePaused?.Invoke(this, EventArgs.Empty);
+        }
         else
-            EventSystem.current?.SetSelectedGameObject(null);
-
-        // If closing, also close any confirm panels
-        if (!paused) HideRestartPrompt();
+        {
+            Time.timeScale = 1f;
+            pauseMenuRoot.SetActive(false);
+            Cursor.visible = false;
+            Cursor.lockState = CursorLockMode.Locked;
+            OnGameUnpaused?.Invoke(this, EventArgs.Empty);
+        }
     }
+
+
 
     private System.Collections.IEnumerator HideAfterSeconds(GameObject go, float t)
     {
@@ -204,17 +218,6 @@ public class PauseMenuController : MonoBehaviour
             yield return null;
         }
         if (go) go.SetActive(false);
-    }
-
-    void OnDestroy()
-    {
-        if (GameInput.Instance != null)
-        {
-            GameInput.Instance.OnPause -= HandlePauseAction;
-            GameInput.Instance.OnCancel -= HandleCancelAction;
-        }
-
-        if (_isPaused) Time.timeScale = 1f; // safety
     }
 }
 

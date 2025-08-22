@@ -449,7 +449,11 @@ public class NudgableStackMover : MonoBehaviour
     }
 
     private void HandleConfirm(object _, EventArgs __) { if (isNudging) ConfirmPlacement(); }
-    private void HandleCancel() { if (isNudging) CancelNudging(); }
+    private void HandleCancel() {
+        if (PauseMenuController.Instance != null && PauseMenuController.Instance.IsPaused)
+            return;
+        if (isNudging) CancelNudging(); 
+    }
 
     private void HandleRotateLeftStep(object _, EventArgs __) { if (isNudging && originalContext == StackContext.Table) rotationAmount = (rotationAmount - (GameInput.Instance.IsPrecisionModifierHeld() ? 15f : 90f)) % 360f; }
     private void HandleRotateRightStep(object _, EventArgs __) { if (isNudging && originalContext == StackContext.Table) rotationAmount = (rotationAmount + (GameInput.Instance.IsPrecisionModifierHeld() ? 15f : 90f)) % 360f; }

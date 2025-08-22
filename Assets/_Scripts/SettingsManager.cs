@@ -22,6 +22,11 @@ public class SettingsManager : MonoBehaviour
     [SerializeField] private GameObject accessibilityPanel;
     [SerializeField] private GameObject audioPanel;
 
+    [Header("Game UI")]
+    [SerializeField] private GameObject dayText;
+    [SerializeField] private GameObject timeText;
+    [SerializeField] private GameObject moneyText;
+
     // Optional: if you ever want to remember last-opened tab, flip this to true.
     [SerializeField] private bool alwaysStartOnGeneral = true;
 
@@ -46,7 +51,10 @@ public class SettingsManager : MonoBehaviour
     // Public API (call from MainMenu / PauseMenu)
     public void OpenSettings()
     {
-        mainMenuPanel.SetActive(false);
+        if (mainMenuPanel) mainMenuPanel.SetActive(false);
+        if (dayText) dayText.SetActive(false);
+        if (timeText) timeText.SetActive(false);
+        if (moneyText) moneyText.SetActive(false);
 
         if (settingsRoot) settingsRoot.SetActive(true);
         if (alwaysStartOnGeneral || !AnyPanelActive())
@@ -55,10 +63,14 @@ public class SettingsManager : MonoBehaviour
 
     public void CloseSettings()
     {
-        mainMenuPanel.SetActive(true);
+        if (dayText) dayText.SetActive(true);
+        if (timeText) timeText.SetActive(true);
+        if (moneyText) moneyText.SetActive(true);
+        if (mainMenuPanel) mainMenuPanel.SetActive(true);
 
         if (settingsRoot) settingsRoot.SetActive(false);
     }
+
 
     // Tab handlers
     public void ShowGeneral() => SetActiveOnly(generalPanel);

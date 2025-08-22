@@ -805,6 +805,9 @@ MonoBehaviour:
   graphicsPanel: {fileID: 1551378560}
   accessibilityPanel: {fileID: 1551378561}
   audioPanel: {fileID: 1551378562}
+  dayText: {fileID: 1614372241}
+  timeText: {fileID: 231161318}
+  moneyText: {fileID: 1268075933}
   alwaysStartOnGeneral: 1
 --- !u!114 &65924129
 MonoBehaviour:
@@ -820,9 +823,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pauseMenuRoot: {fileID: 1133299379}
   firstSelected: {fileID: 1687641409}
-  pauseMenuLayout: {fileID: 0}
+  pauseMenuLayout: {fileID: 1681031903}
   resumeButton: {fileID: 1687641411}
   restartButton: {fileID: 78952322}
+  settingsButton: {fileID: 349115909}
   saveButton: {fileID: 313581690}
   mainMenuButton: {fileID: 1774577912}
   quitButton: {fileID: 944324845}
@@ -9758,6 +9762,7 @@ Transform:
   - {fileID: 981259266}
   - {fileID: 1103811676}
   - {fileID: 368218406}
+  - {fileID: 2085628848}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1177249527
@@ -13073,9 +13078,73 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 65924127}
     m_Modifications:
+    - target: {fileID: 1274555920986260052, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1274555920986260052, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1274555920986260052, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1321456563330452426, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1321456563330452426, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1321456563330452426, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3368185871049296877, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3368185871049296877, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3368185871049296877, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
     - target: {fileID: 6075589266555645967, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
       propertyPath: m_Name
       value: SettingsMenu
+      objectReference: {fileID: 0}
+    - target: {fileID: 6075589266555645967, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6260808568322670306, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6260808568322670306, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6260808568322670306, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6530164482475027049, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6530164482475027049, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6530164482475027049, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 7263018541160040736, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
       propertyPath: m_Pivot.x
@@ -18211,6 +18280,50 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2080262107}
   m_CullTransparentMesh: 1
+--- !u!1 &2085628847
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2085628848}
+  - component: {fileID: 2085628849}
+  m_Layer: 0
+  m_Name: Timescale Watcher
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2085628848
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2085628847}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1175120301}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2085628849
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2085628847}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 24435d1edffa6c24ebfc197c4f935b50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2120552602
 GameObject:
   m_ObjectHideFlags: 0

@@ -1122,6 +1122,9 @@ MonoBehaviour:
   graphicsPanel: {fileID: 204091483}
   accessibilityPanel: {fileID: 1603504769}
   audioPanel: {fileID: 1501471033}
+  dayText: {fileID: 0}
+  timeText: {fileID: 0}
+  moneyText: {fileID: 0}
   alwaysStartOnGeneral: 1
 --- !u!1 &417063894
 GameObject:
@@ -5174,9 +5177,69 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 391122212}
     m_Modifications:
+    - target: {fileID: 1274555920986260052, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1274555920986260052, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1274555920986260052, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1321456563330452426, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1321456563330452426, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1321456563330452426, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3368185871049296877, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3368185871049296877, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3368185871049296877, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
     - target: {fileID: 6075589266555645967, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
       propertyPath: m_Name
       value: SettingsMenu
+      objectReference: {fileID: 0}
+    - target: {fileID: 6260808568322670306, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6260808568322670306, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6260808568322670306, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6530164482475027049, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6530164482475027049, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 6530164482475027049, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
       objectReference: {fileID: 0}
     - target: {fileID: 7263018541160040736, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
       propertyPath: m_Pivot.x

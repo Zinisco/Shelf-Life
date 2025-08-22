@@ -479,6 +479,9 @@ public class FurnitureMover : MonoBehaviour
 
     private void HandleCancelInput()
     {
+        if (PauseMenuController.Instance != null && PauseMenuController.Instance.IsPaused)
+            return;
+
         // If we're in the hold-to-start phase, cancel the hold UI
         if (!isMoving)
         {
