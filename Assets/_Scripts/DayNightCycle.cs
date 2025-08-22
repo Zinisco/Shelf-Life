@@ -34,12 +34,26 @@ public class DayNightCycle : MonoBehaviour
 
     void Start()
     {
+        if (GameModeConfig.CurrentMode == GameMode.Zen)
+        {
+            Debug.Log("[ZenMode] DayNightCycle + UI disabled.");
+
+            // Disable associated UI elements
+            if (dayDisplay != null) dayDisplay.gameObject.SetActive(false);
+            if (timeDisplay != null) timeDisplay.gameObject.SetActive(false);
+            if (computerTimeDisplay != null) computerTimeDisplay.gameObject.SetActive(false);
+
+            // Disable this component's behavior
+            enabled = false;
+            return;
+        }
+
         timeSpeed = 24f / (dayDurationInMinutes * 60f);
 
-        // Safety: refresh day UI in case it wasn't set yet
         if (dayDisplay != null)
             dayDisplay.text = $"Day {dayCounter:00}";
     }
+
 
 
     void Update()
@@ -53,7 +67,10 @@ public class DayNightCycle : MonoBehaviour
         if (timeDisplay != null) timeDisplay.text = currentFormattedTime;
         if (computerTimeDisplay != null) computerTimeDisplay.text = currentFormattedTime;
 
-        UpdateSun();
+        if (GameModeConfig.CurrentMode == GameMode.Standard)
+        {
+            UpdateSun();
+        }
 
         // Automatically stop time at 9PM
         if (currentTime >= 21f)

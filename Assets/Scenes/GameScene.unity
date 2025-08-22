@@ -3278,7 +3278,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 65, y: -9}
+  m_AnchoredPosition: {x: 65, y: 75}
   m_SizeDelta: {x: 40, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &338199038
@@ -10495,7 +10495,7 @@ MonoBehaviour:
   m_VertexBufferAutoSizeReduction: 0
   m_useMaxVisibleDescender: 1
   m_pageToDisplay: 1
-  m_margin: {x: 0, y: 0, z: 86.89798, w: 18.933472}
+  m_margin: {x: 0, y: -0.005830765, z: 86.89798, w: 18.933472}
   m_isUsingLegacyAnimationComponent: 0
   m_isVolumetricText: 0
   m_hasFontAssetChanged: 0
@@ -12788,6 +12788,7 @@ MonoBehaviour:
   backButton: {fileID: 1143351185}
   confirmButton: {fileID: 554707405}
   randomButton: {fileID: 2050364529}
+  priceTextButton: {fileID: 42275716}
   randomQuantityPanel: {fileID: 2120552602}
   quantityInputField: {fileID: 402752136}
   confirmRandomButton: {fileID: 54970317}
@@ -13970,8 +13971,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1839960913}
   m_HandleRect: {fileID: 1839960912}
   m_Direction: 0
-  m_Value: 1.000061
-  m_Size: 0.9987246
+  m_Value: 0.9999695
+  m_Size: 0.9987244
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -15168,6 +15169,8 @@ MonoBehaviour:
   designPanel: {fileID: 1805891500}
   managePanel: {fileID: 810247648}
   sellPanel: {fileID: 1287968558}
+  sellButton: {fileID: 2141125354}
+  manageButton: {fileID: 2049503739}
   buyPanelController: {fileID: 1524277455}
 --- !u!1 &1731265737
 GameObject:
@@ -16402,7 +16405,7 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 29538381}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.0012754202, y: 0}
+  m_AnchorMin: {x: 0.0012755601, y: 0}
   m_AnchorMax: {x: 0.99999994, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 20, y: 20}
@@ -16961,7 +16964,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 67, y: 163.3}
+  m_AnchoredPosition: {x: 65, y: 160}
   m_SizeDelta: {x: 40, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1957948780
@@ -17745,7 +17748,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 63.4, y: -95}
+  m_AnchoredPosition: {x: 65, y: -104}
   m_SizeDelta: {x: 40, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2049503741
@@ -18034,7 +18037,7 @@ MonoBehaviour:
   m_ChildAlignment: 0
   m_StartCorner: 0
   m_StartAxis: 0
-  m_CellSize: {x: 110, y: 110}
+  m_CellSize: {x: 130, y: 130}
   m_Spacing: {x: 0, y: 20}
   m_Constraint: 1
   m_ConstraintCount: 7
@@ -18459,7 +18462,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.5}
   m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 66.4, y: 79}
+  m_AnchoredPosition: {x: 65, y: -13}
   m_SizeDelta: {x: 40, y: 40}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2141125356

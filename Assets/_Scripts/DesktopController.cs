@@ -8,7 +8,24 @@ public class DesktopMenuController : MonoBehaviour
     public GameObject managePanel;
     public GameObject sellPanel;
 
+    public GameObject sellButton;
+    public GameObject manageButton;
+
     public BuyPanelController buyPanelController;
+
+    private void Awake()
+    {
+        if (GameModeConfig.CurrentMode == GameMode.Zen)
+        {
+            sellButton.gameObject.SetActive(false);
+            manageButton.gameObject.SetActive(false);
+        }
+        else
+        {
+            sellButton.gameObject.SetActive(true);
+            manageButton.gameObject.SetActive(true);
+        }
+    }
 
     public void OpenBuy()
     {

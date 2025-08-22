@@ -55,6 +55,11 @@ public class CurrencyManager : MonoBehaviour
     private void UpdateUI()
     {
         if (walletText != null)
-            walletText.text = $"$ {currentMoney}";
+        {
+            if (GameModeConfig.CurrentMode == GameMode.Zen)
+                walletText.text = "Zen Mode";
+            else
+                walletText.text = $"$ {currentMoney}";
+        }
     }
 }

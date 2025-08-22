@@ -12,6 +12,16 @@ public class StoreSignController : MonoBehaviour
     private bool isRotating = false;
     private bool wasDayCompleted = false;
 
+    void Start()
+    {
+        if (GameModeConfig.CurrentMode == GameMode.Zen)
+        {
+            Debug.Log("[ZenMode] StoreSignController disabled.");
+            gameObject.SetActive(false); // Disable the whole sign
+        }
+    }
+
+
     void Update()
     {
         if (Mouse.current.leftButton.wasPressedThisFrame)

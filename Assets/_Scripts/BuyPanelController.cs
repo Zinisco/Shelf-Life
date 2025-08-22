@@ -20,6 +20,7 @@ public class BuyPanelController : MonoBehaviour
     public Button backButton;
     public Button confirmButton;
     public Button randomButton;
+    public GameObject priceTextButton;
 
     [Header("Random Button Panel")]
     public GameObject randomQuantityPanel;
@@ -40,6 +41,11 @@ public class BuyPanelController : MonoBehaviour
 
     private void Start()
     {
+        if(GameModeConfig.CurrentMode == GameMode.Zen)
+        {
+            priceTextButton.SetActive(false);
+        }
+
         // Auto-fill from BookDatabase
         if (bookDatabase != null)
             availableBooks = bookDatabase.allBooks;
@@ -72,8 +78,12 @@ public class BuyPanelController : MonoBehaviour
             TMP_Text quantityText = entry.transform.Find("QuantityText").GetComponent<TMP_Text>();
             TMP_Text priceText = entry.transform.Find("PriceText").GetComponent<TMP_Text>();
 
-
             quantityText.text = "0";
+
+            if (GameModeConfig.CurrentMode == GameMode.Zen)
+                priceText.text = " ";
+            else
+                priceText.text = $"${book.cost}";
 
             plusButton.onClick.AddListener(() => {
                 AddBook(book, quantityText);
@@ -165,14 +175,27 @@ public class BuyPanelController : MonoBehaviour
                 else if (txt.name == "GenreText")
                     txt.text = pair.Key.genre;
                 else if (txt.name == "PriceText")
-                    txt.text = $"${pair.Key.cost}";
+                {
+                    if (GameModeConfig.CurrentMode == GameMode.Zen)
+                        txt.text = " ";
+                    else
+                        txt.text = $"${pair.Key.cost}";
+                }
             }
         }
 
         int totalCost = GetTotalCost();
 
-        if (totalCostText != null)
-            totalCostText.text = $"Total: ${totalCost}";
+        if (GameModeConfig.CurrentMode == GameMode.Zen)
+        {
+            if (totalCostText != null) totalCostText.text = "Free!";
+        }
+        else
+        {
+            if (totalCostText != null)
+                totalCostText.text = $"Total: ${totalCost}";
+        }
+
 
         UpdateConfirmButtonState();
     }
@@ -181,13 +204,19 @@ public class BuyPanelController : MonoBehaviour
     {
         int totalCost = GetTotalCost();
 
-        confirmButton.interactable = CurrencyManager.Instance != null && CurrencyManager.Instance.CanAfford(totalCost);
+        if (GameModeConfig.CurrentMode == GameMode.Zen)
+        {
+            confirmButton.interactable = true;
+            if (totalCostText != null) totalCostText.text = " ";
+            if (totalCostTextFirstPage != null) totalCostTextFirstPage.text = " ";
+        }
+        else
+        {
+            confirmButton.interactable = CurrencyManager.Instance != null && CurrencyManager.Instance.CanAfford(totalCost);
+            if (totalCostText != null) totalCostText.text = $"Total: ${totalCost}";
+            if (totalCostTextFirstPage != null) totalCostTextFirstPage.text = $"Total: ${totalCost}";
+        }
 
-        if (totalCostText != null)
-            totalCostText.text = $"Total: ${totalCost}";
-
-        if (totalCostTextFirstPage != null)
-            totalCostTextFirstPage.text = $"Total: ${totalCost}";
     }
 
 
@@ -246,7 +275,13 @@ public class BuyPanelController : MonoBehaviour
         foreach (var book in finalOrder)
             totalCost += book.cost;
 
-        if (CurrencyManager.Instance != null && CurrencyManager.Instance.Spend(totalCost))
+        if (GameModeConfig.CurrentMode == GameMode.Zen)
+        {
+            // Zen mode: no payment required
+            deliveryManager.DeliverCrate(finalOrder);
+            Debug.Log($"[ZenMode] Delivered crate with {finalOrder.Count} books for free.");
+        }
+        else if (CurrencyManager.Instance != null && CurrencyManager.Instance.Spend(totalCost))
         {
             deliveryManager.DeliverCrate(finalOrder);
             Debug.Log($"Spent ${totalCost} on crate with {finalOrder.Count} books.");
@@ -256,6 +291,7 @@ public class BuyPanelController : MonoBehaviour
             Debug.LogWarning("Not enough money!");
             return;
         }
+
 
         currentOrder.Clear();
         CloseAll();
