@@ -57,10 +57,15 @@ public class StoreSignController : MonoBehaviour
         {
             // Player closes the store manually
             storeIsOpen = false;
-            wasDayCompleted = true; // Mark day as completed
+            wasDayCompleted = true;
             dayNightCycle.StopTime();
             StartCoroutine(SmoothRotateSign(180f));
             Debug.Log("Store closed.");
+
+            // Trigger End of Day Summary
+            var endPrompt = FindObjectOfType<EndOfDaySummaryController>();
+            if (endPrompt != null)
+                endPrompt.gameObject.SetActive(true); // This will run OnEnable
         }
         else
         {

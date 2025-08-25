@@ -8246,7 +8246,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -15.0299225}
+  m_AnchoredPosition: {x: 0, y: -15.029907}
   m_SizeDelta: {x: 800, y: -1.9397545}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &888046725
@@ -12015,7 +12015,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 5, y: 5}
+  m_SizeDelta: {x: 3, y: 3}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1278483953
 MonoBehaviour:
@@ -16826,6 +16826,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   uiRoot: {fileID: 1728015203}
+  orderPanel: {fileID: 1524277451}
+  orderReviewPanel: {fileID: 1162287896}
+  randomBookPanel: {fileID: 2120552602}
+  pricingPanel: {fileID: 1287968558}
+  designPanel: {fileID: 1805891500}
+  managePanel: {fileID: 810247648}
 --- !u!1 &1687641409
 GameObject:
   m_ObjectHideFlags: 0

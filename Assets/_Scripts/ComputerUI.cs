@@ -8,6 +8,8 @@ public class ComputerUI : MonoBehaviour
 {
     public GameObject uiRoot;
 
+    public GameObject orderPanel, orderReviewPanel, randomBookPanel, pricingPanel, designPanel, managePanel;
+
     public static bool IsUIOpen { get; private set; }
 
     private void Start()
@@ -39,6 +41,12 @@ public class ComputerUI : MonoBehaviour
             StartCoroutine(AnimateScale(uiRoot.transform, uiRoot.transform.localScale, Vector3.zero, 0.2f, () =>
             {
                 uiRoot.SetActive(false); // Hide after shrinking
+                orderPanel.SetActive(false);
+                orderReviewPanel.SetActive(false);
+                designPanel.SetActive(false);
+                managePanel.SetActive(false);
+                randomBookPanel.SetActive(false);
+                pricingPanel.SetActive(false);
             }));
         }
 

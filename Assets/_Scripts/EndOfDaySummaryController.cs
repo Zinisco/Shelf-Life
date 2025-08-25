@@ -34,8 +34,20 @@ public class EndOfDaySummaryController : MonoBehaviour
     {
         promptActive = false;
         summaryActive = false;
-        Invoke(nameof(ShowPrompt), 1.5f); // Delay to avoid accidental input
+
+        // Only show prompt if the store is closed and day ended
+        var storeSign = FindObjectOfType<StoreSignController>();
+        if (storeSign != null && storeSign.HasDayEnded)
+        {
+            Invoke(nameof(ShowPrompt), 1.5f);
+        }
+        else
+        {
+            Debug.Log("EndOfDaySummaryController enabled but day hasn't ended. Prompt will not be shown.");
+            gameObject.SetActive(false); // Immediately disable if not supposed to be active
+        }
     }
+
 
     private void ShowPrompt()
     {

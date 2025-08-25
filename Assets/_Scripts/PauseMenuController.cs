@@ -296,6 +296,10 @@ public class PauseMenuController : MonoBehaviour
 
     public void TogglePauseGame()
     {
+        // Prevent pausing when computer UI is open
+        if (ComputerUI.IsUIOpen)
+            return;
+
         isGamePaused = !isGamePaused;
 
         if (isGamePaused)
@@ -304,7 +308,7 @@ public class PauseMenuController : MonoBehaviour
             pauseMenuRoot.SetActive(true);
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
-            EventSystem.current?.SetSelectedGameObject(firstSelected); // Optional: set initial button focus
+            EventSystem.current?.SetSelectedGameObject(firstSelected);
             OnGamePaused?.Invoke(this, EventArgs.Empty);
         }
         else
@@ -315,14 +319,12 @@ public class PauseMenuController : MonoBehaviour
             Cursor.visible = false;
             Cursor.lockState = CursorLockMode.Locked;
 
-            HideRestartPrompt(); // ensure restart panel closes
-            HideQuitPrompt(); 
+            HideRestartPrompt();
+            HideQuitPrompt();
 
             OnGameUnpaused?.Invoke(this, EventArgs.Empty);
         }
     }
-
-
 
     private System.Collections.IEnumerator HideAfterSeconds(GameObject go, float t)
     {
