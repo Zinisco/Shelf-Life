@@ -300,6 +300,9 @@ public class PauseMenuController : MonoBehaviour
         if (ComputerUI.IsUIOpen)
             return;
 
+        if (EndOfDaySummaryController.IsUIOpen)
+            return;
+
         isGamePaused = !isGamePaused;
 
         if (isGamePaused)

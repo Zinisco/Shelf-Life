@@ -17,9 +17,12 @@ public class EndOfDaySummaryController : MonoBehaviour
     [SerializeField] private TMP_Text moneyEarnedText;
     [SerializeField] private TMP_Text profitText;
     [SerializeField] private Button continueButton;
+    [SerializeField] private TMP_Text tooltipText;
 
     private bool promptActive = false;
     private bool summaryActive = false;
+
+    public static bool IsUIOpen { get; private set; }
 
     private void Awake()
     {
@@ -28,24 +31,19 @@ public class EndOfDaySummaryController : MonoBehaviour
 
         if (promptText != null) promptText.SetActive(false);
         if (summaryPanel != null) summaryPanel.SetActive(false);
+        if (tooltipText != null) tooltipText.gameObject.SetActive(false);
+
     }
 
     private void OnEnable()
     {
         promptActive = false;
         summaryActive = false;
+    }
 
-        // Only show prompt if the store is closed and day ended
-        var storeSign = FindObjectOfType<StoreSignController>();
-        if (storeSign != null && storeSign.HasDayEnded)
-        {
-            Invoke(nameof(ShowPrompt), 1.5f);
-        }
-        else
-        {
-            Debug.Log("EndOfDaySummaryController enabled but day hasn't ended. Prompt will not be shown.");
-            gameObject.SetActive(false); // Immediately disable if not supposed to be active
-        }
+    public void ShowPromptWithDelay(float delay)
+    {
+        Invoke(nameof(ShowPrompt), delay);
     }
 
 
@@ -54,19 +52,38 @@ public class EndOfDaySummaryController : MonoBehaviour
         promptActive = true;
         if (promptText != null)
             promptText.SetActive(true);
+        IsUIOpen = true;
     }
 
     private void Update()
     {
         if (promptActive && !summaryActive)
         {
+            var storeSign = FindObjectOfType<StoreSignController>();
+            bool storeIsClosed = storeSign != null && !storeSign.IsStoreOpen();
+
             if (Keyboard.current?.eKey.wasPressedThisFrame == true ||
                 Gamepad.current?.buttonNorth.wasPressedThisFrame == true)
             {
-                ShowSummary();
+                if (storeIsClosed)
+                {
+                    ShowSummary();
+                    if (tooltipText != null) tooltipText.gameObject.SetActive(false); // Hide tooltip if it was showing
+                }
+                else
+                {
+                    // Show tooltip message
+                    if (tooltipText != null)
+                    {
+                        tooltipText.text = "Store must be closed to continue...";
+                        tooltipText.gameObject.SetActive(true);
+                    }
+                }
             }
         }
     }
+
+
 
     private void ShowSummary()
     {
@@ -104,5 +121,7 @@ public class EndOfDaySummaryController : MonoBehaviour
 
         if (summaryPanel != null) summaryPanel.SetActive(false);
         gameObject.SetActive(false);
+
+        IsUIOpen = false;
     }
 }

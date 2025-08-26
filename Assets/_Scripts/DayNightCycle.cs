@@ -72,12 +72,26 @@ public class DayNightCycle : MonoBehaviour
             UpdateSun();
         }
 
-        // Automatically stop time at 9PM
         if (currentTime >= 21f)
         {
             StopTime();
             Debug.Log("Store hours ended. Please close up.");
+
+            var storeSign = FindObjectOfType<StoreSignController>();
+            if (storeSign != null && storeSign.HasDayStarted)
+            {
+                var wasAlreadyClosed = !storeSign.IsStoreOpen();
+                storeSign.ForceCompleteDay();
+
+                var endPrompt = FindObjectOfType<EndOfDaySummaryController>();
+                if (endPrompt != null)
+                {
+                    endPrompt.gameObject.SetActive(true);
+                    endPrompt.ShowPromptWithDelay(1.5f); // Call new method below
+                }
+            }
         }
+
     }
 
     void UpdateSun()

@@ -55,21 +55,28 @@ public class StoreSignController : MonoBehaviour
         }
         else if (storeIsOpen)
         {
-            // Player closes the store manually
             storeIsOpen = false;
-            wasDayCompleted = true;
-            dayNightCycle.StopTime();
             StartCoroutine(SmoothRotateSign(180f));
-            Debug.Log("Store closed.");
+            Debug.Log("Store closed to customers.");
 
-            // Trigger End of Day Summary
-            var endPrompt = FindObjectOfType<EndOfDaySummaryController>();
-            if (endPrompt != null)
-                endPrompt.gameObject.SetActive(true); // This will run OnEnable
+            if (dayNightCycle.CurrentHour >= 21f)
+            {
+                wasDayCompleted = true;
+
+                var endPrompt = FindObjectOfType<EndOfDaySummaryController>();
+                if (endPrompt != null)
+                    endPrompt.gameObject.SetActive(true);
+            }
+        }
+        else if (!storeIsOpen && dayNightCycle.CurrentHour < 21f)
+        {
+            storeIsOpen = true;
+            StartCoroutine(SmoothRotateSign(180f));
+            Debug.Log("Store reopened!");
         }
         else
         {
-            Debug.Log("Store is already closed.");
+            Debug.Log("Store is already closed for the day.");
         }
     }
 
@@ -88,6 +95,12 @@ public class StoreSignController : MonoBehaviour
             Debug.Log("Cannot reset: Day not completed.");
         }
     }
+
+    public void ForceCompleteDay()
+    {
+        wasDayCompleted = true;
+    }
+
 
     System.Collections.IEnumerator SmoothRotateSign(float angle)
     {
@@ -110,4 +123,7 @@ public class StoreSignController : MonoBehaviour
     }
 
     public bool HasDayEnded => !storeIsOpen && wasDayCompleted;
+    public bool IsStoreOpen() => storeIsOpen;
+    public bool HasDayStarted => hasDayStarted;
+
 }
