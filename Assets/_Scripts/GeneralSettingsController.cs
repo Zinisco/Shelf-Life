@@ -34,7 +34,7 @@ public class GeneralSettingsController : MonoBehaviour
     // --- Defaults ---
     const float DEFAULT_FOV = 60f;
     const float DEFAULT_MSENS = 0.20f;
-    const float DEFAULT_CSENS = 3.00f;
+    const float DEFAULT_CSENS = 2.00f;
 
     // --- Ranges ---
     const float MIN_FOV = 40f;

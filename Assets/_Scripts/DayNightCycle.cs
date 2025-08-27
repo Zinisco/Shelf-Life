@@ -29,6 +29,8 @@ public class DayNightCycle : MonoBehaviour
     public Transform sunPivot;
     public Vector3 rotationAxis = Vector3.right;
 
+    private bool hasShownEndPrompt = false;
+
     public bool IsTimeRunning => timeRunning; // External read access
     public float CurrentHour => Mathf.Floor(currentTime);
 
@@ -71,25 +73,29 @@ public class DayNightCycle : MonoBehaviour
         {
             UpdateSun();
         }
-
-        if (currentTime >= 21f)
+        if (currentTime >= 21f && !hasShownEndPrompt)
         {
             StopTime();
-            Debug.Log("Store hours ended. Please close up.");
+            Debug.Log("9PM reached. Prompting end-of-day...");
 
+            var endPrompt = FindObjectOfType<EndOfDaySummaryController>();
+            if (endPrompt != null)
+            {
+                endPrompt.gameObject.SetActive(true);
+                endPrompt.ShowPromptWithDelay(1.5f);
+            }
+
+            // Now check if store is already closed to trigger immediate ForceCompleteDay
             var storeSign = FindObjectOfType<StoreSignController>();
             if (storeSign != null && storeSign.HasDayStarted)
             {
-                var wasAlreadyClosed = !storeSign.IsStoreOpen();
-                storeSign.ForceCompleteDay();
-
-                var endPrompt = FindObjectOfType<EndOfDaySummaryController>();
-                if (endPrompt != null)
+                if (!storeSign.IsStoreOpen())
                 {
-                    endPrompt.gameObject.SetActive(true);
-                    endPrompt.ShowPromptWithDelay(1.5f); // Call new method below
+                    storeSign.ForceCompleteDay();
                 }
             }
+
+            hasShownEndPrompt = true;
         }
 
     }
@@ -112,6 +118,8 @@ public class DayNightCycle : MonoBehaviour
         currentTime = 9f;
         StopTime();
         UpdateSun();
+
+        hasShownEndPrompt = false;
 
         // Increment day
         dayCounter++;

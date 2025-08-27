@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using TMPro;
+using System.Collections;
 
 public class EndOfDaySummaryController : MonoBehaviour
 {
@@ -18,6 +19,15 @@ public class EndOfDaySummaryController : MonoBehaviour
     [SerializeField] private TMP_Text profitText;
     [SerializeField] private Button continueButton;
     [SerializeField] private TMP_Text tooltipText;
+
+    [SerializeField] private CanvasGroup fadeCanvasGroup;
+    [SerializeField] private float fadeDuration = 1.5f;
+
+    [SerializeField] private TMP_Text promptTextTMP;
+    [SerializeField] private TMP_SpriteAsset keyboardSpriteAsset;
+    [SerializeField] private TMP_SpriteAsset gamepadSpriteAsset;
+
+
 
     private bool promptActive = false;
     private bool summaryActive = false;
@@ -37,8 +47,17 @@ public class EndOfDaySummaryController : MonoBehaviour
 
     private void OnEnable()
     {
+        GameInput.Instance.OnControlSchemeChanged += HandleControlSchemeChanged;
+
         promptActive = false;
         summaryActive = false;
+    }
+
+    private void OnDisable()
+    {
+        if (GameInput.Instance != null)
+            GameInput.Instance.OnControlSchemeChanged -= HandleControlSchemeChanged;
+
     }
 
     public void ShowPromptWithDelay(float delay)
@@ -50,10 +69,16 @@ public class EndOfDaySummaryController : MonoBehaviour
     private void ShowPrompt()
     {
         promptActive = true;
+
+        UpdatePromptText();
+
         if (promptText != null)
             promptText.SetActive(true);
+
         IsUIOpen = true;
     }
+
+
 
     private void Update()
     {
@@ -89,20 +114,32 @@ public class EndOfDaySummaryController : MonoBehaviour
     {
         promptActive = false;
         summaryActive = true;
+
         if (promptText != null) promptText.SetActive(false);
         if (summaryPanel != null) summaryPanel.SetActive(true);
 
-        int currentDay = FindObjectOfType<DayNightCycle>().GetCurrentDay();
+        // Stop time
+        Time.timeScale = 0f;
 
+        // Lock player movement/look
+        var player = FindObjectOfType<PlayerMovement>();
+        if (player != null)
+            player.IsLocked = true;
+
+        // Unlock cursor
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        // Update summary data
+        int currentDay = FindObjectOfType<DayNightCycle>().GetCurrentDay();
         var currency = CurrencyManager.Instance;
         int booksSold = currency.BooksSoldToday;
         float moneySpent = currency.MoneySpentToday;
         float moneyEarned = currency.MoneyEarnedToday;
         float profit = moneyEarned - moneySpent;
 
-        // Update UI Text
         dayText.text = $"Day {currentDay}";
-        customersText.text = $"Customers: TBD"; // If you add tracking later
+        customersText.text = $"Customers: TBD";
         booksSoldText.text = $"Books Sold: {booksSold}";
         moneySpentText.text = $"Spent: ${moneySpent:F2}";
         moneyEarnedText.text = $"Earned: ${moneyEarned:F2}";
@@ -112,6 +149,43 @@ public class EndOfDaySummaryController : MonoBehaviour
 
     private void OnContinue()
     {
+        if (!summaryActive) return;
+        StartCoroutine(FadeAndReset());
+    }
+
+    private void UpdatePromptText()
+    {
+        if (GameInput.Instance.IsGamepadActive)
+        {
+            promptTextTMP.spriteAsset = gamepadSpriteAsset;
+            promptTextTMP.text = "Press \u00A0\u00A0\u00A0 <sprite name=\"buttonY\"> to continue";
+        }
+        else
+        {
+            promptTextTMP.spriteAsset = keyboardSpriteAsset;
+            promptTextTMP.text = "Press \u00A0\u00A0\u00A0 <sprite name=\"keyE\"> to continue";
+        }
+    }
+
+    private void HandleControlSchemeChanged(string newScheme)
+    {
+        if (promptActive)
+            UpdatePromptText();
+    }
+
+
+    private IEnumerator FadeAndReset()
+    {
+        float elapsed = 0f;
+
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.unscaledDeltaTime; // Use unscaled time because Time.timeScale = 0
+            float t = Mathf.Clamp01(elapsed / fadeDuration);
+            fadeCanvasGroup.alpha = t;
+            yield return null;
+        }
+
         if (GameModeConfig.CurrentMode == GameMode.Standard)
             SaveSystem.Save();
 
@@ -121,7 +195,26 @@ public class EndOfDaySummaryController : MonoBehaviour
 
         if (summaryPanel != null) summaryPanel.SetActive(false);
         gameObject.SetActive(false);
-
         IsUIOpen = false;
+
+        // Resume time
+        Time.timeScale = 1f;
+
+        // Re-lock cursor
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        // Unlock player
+        var player = FindObjectOfType<PlayerMovement>();
+        if (player != null)
+            player.IsLocked = false;
+
+        // Reset fade
+        fadeCanvasGroup.alpha = 0f;
+
+        var sign = FindObjectOfType<StoreSignController>();
+        if (sign != null)
+            sign.ResetForNewDay();
     }
+
 }

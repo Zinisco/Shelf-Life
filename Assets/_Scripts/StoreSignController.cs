@@ -46,13 +46,13 @@ public class StoreSignController : MonoBehaviour
     {
         if (!hasDayStarted)
         {
-            // First click to open store
             hasDayStarted = true;
             storeIsOpen = true;
             dayNightCycle.StartTime();
             StartCoroutine(SmoothRotateSign(180f));
             Debug.Log("Store opened!");
         }
+
         else if (storeIsOpen)
         {
             storeIsOpen = false;
@@ -95,6 +95,15 @@ public class StoreSignController : MonoBehaviour
             Debug.Log("Cannot reset: Day not completed.");
         }
     }
+
+    public void ResetForNewDay()
+    {
+        storeIsOpen = false;
+        wasDayCompleted = false;
+        hasDayStarted = false;
+    }
+
+
 
     public void ForceCompleteDay()
     {
