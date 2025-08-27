@@ -110,11 +110,24 @@ public class GhostBookManager : MonoBehaviour
             Transform anchor = displayHit.transform.Find("BookAnchor");
             if (anchor != null)
             {
+                BookInfo existingBook = anchor.GetComponentsInChildren<BookInfo>()
+     .FirstOrDefault(b => b.gameObject != heldObject);
+                BookInfo heldInfo = heldObject.GetComponent<BookInfo>();
+
+                // Only show ghost if no other book is present OR titles are different
+                if (existingBook != null && heldInfo != null && existingBook.title == heldInfo.title)
+                {
+                    // Titles match — don’t allow ghost
+                    ghostBookInstance.SetActive(false);
+                    latestGhostValid = false;
+                    return;
+                }
+
+
                 ShowSingleGhost(heldObject);
 
                 Quaternion anchorRotation = anchor.rotation * Quaternion.Euler(0f, 90f, 0f);
                 ghostBookInstance.transform.SetPositionAndRotation(anchor.position, anchorRotation);
-
                 ghostBookInstance.transform.localScale = WorldScaleToLocal(heldObject.transform, ghostBookInstance.transform.parent);
 
                 SetGhostMaterial(true);
@@ -122,6 +135,7 @@ public class GhostBookManager : MonoBehaviour
                 return;
             }
         }
+
 
         // If not on shelf or book display, try table placement
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableMask) &&

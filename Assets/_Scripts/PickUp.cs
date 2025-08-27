@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -389,13 +390,51 @@ public class PickUp : MonoBehaviour
             Transform anchor = displayHit.transform.Find("BookAnchor");
             if (anchor != null)
             {
+                // Check if a book already exists
+                BookInfo existingBook = anchor.GetComponentsInChildren<BookInfo>()
+    .FirstOrDefault(b => b.gameObject != heldObject);
+
+                BookInfo heldInfo = heldObject.GetComponent<BookInfo>();
+
+                if (existingBook != null && heldInfo != null)
+                {
+                    if (existingBook.title != heldInfo.title)
+                    {
+                        // SWAP order: place current held book, then pick up the one on the anchor
+
+                        GameObject bookToSwap = heldObject;
+
+                        // 1. Place the currently held book onto the anchor
+                        Quaternion displayAnchorRotation = anchor.rotation * Quaternion.Euler(0f, 90f, 0f);
+                        bookToSwap.transform.SetParent(anchor, worldPositionStays: true);
+                        StartCoroutine(AnimateBookPlacement(bookToSwap, anchor, displayAnchorRotation));
+                        FinalizeBookPlacement(); // clears heldObject
+
+
+                        // 2. Detach and pick up the book that was already on the anchor
+                        existingBook.transform.SetParent(null);
+                        DropObject(existingBook.gameObject); // now becomes held
+
+                        return;
+                    }
+
+                    else
+                    {
+                        Debug.Log("Titles match. No swap allowed.");
+                        return; // Do nothing if same book
+                    }
+                }
+
+                // Now place the held object on the anchor
                 Quaternion anchorRotation = anchor.rotation * Quaternion.Euler(0f, 90f, 0f);
                 heldObject.transform.SetPositionAndRotation(anchor.position, anchorRotation);
-                heldObject.transform.SetParent(displayHit.transform, worldPositionStays: true);
+                heldObject.transform.SetParent(anchor, worldPositionStays: true);
+
                 FinalizeBookPlacement();
                 return;
             }
         }
+
 
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableSurfaceMask))
         {
@@ -485,6 +524,48 @@ public class PickUp : MonoBehaviour
             FinalizeBookPlacement();
         }
     }
+
+    private void DropObject(GameObject newHeld)
+    {
+        DropObject(); // Drops the current one
+
+        heldObject = newHeld;
+        heldObjectRb = heldObject.GetComponent<Rigidbody>();
+
+        // Copy logic from TryPickup() to make it "held"
+        heldObjectOriginalLayer = heldObject.layer;
+        heldObject.layer = LayerMask.NameToLayer("HeldObject");
+
+        if (heldObjectRb != null)
+        {
+            heldObjectRb.isKinematic = false;
+            heldObjectRb.interpolation = RigidbodyInterpolation.Interpolate;
+            heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        }
+
+        heldObject.transform.position = holdPosition.position;
+        Quaternion rotation = Quaternion.LookRotation(Vector3.up, -playerCamera.transform.forward);
+        heldObject.transform.rotation = rotation;
+        heldObject.transform.Rotate(Vector3.right, 60f, Space.Self);
+
+        holdJoint = holdPosition.gameObject.AddComponent<FixedJoint>();
+        holdJoint.connectedBody = heldObjectRb;
+        holdJoint.breakForce = Mathf.Infinity;
+        holdJoint.breakTorque = Mathf.Infinity;
+
+        // Ensure ghost is reinitialized
+        ghostBookManager.ResetRotation(true);
+        ghostBookManager.UpdateGhost(
+            heldObject,
+            playerCamera,
+            shelfMask,
+            bookDisplayMask,
+            tableSurfaceMask,
+            ref currentYRotation
+        );
+    }
+
+
 
     private void FinalizeBookPlacement()
     {
@@ -605,6 +686,27 @@ public class PickUp : MonoBehaviour
         yield return new WaitForEndOfFrame();
         if (root != null) Destroy(root.gameObject);
     }
+
+    private IEnumerator AnimateBookPlacement(GameObject book, Transform target, Quaternion rotation, float duration = 0.25f)
+    {
+        Vector3 startPos = book.transform.position;
+        Quaternion startRot = book.transform.rotation;
+        Vector3 endPos = target.position;
+
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            float t = elapsed / duration;
+            book.transform.position = Vector3.Lerp(startPos, endPos, t);
+            book.transform.rotation = Quaternion.Slerp(startRot, rotation, t);
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        book.transform.position = endPos;
+        book.transform.rotation = rotation;
+    }
+
 
     public bool IsHoldingObject()
     {
