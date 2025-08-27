@@ -68,7 +68,7 @@ MonoBehaviour:
     m_AscentLine: 0
     m_CapLine: 0
     m_MeanLine: 0
-    m_Baseline: 0
+    m_Baseline: 1
     m_DescentLine: 0
     m_SuperscriptOffset: 0
     m_SuperscriptSize: 0

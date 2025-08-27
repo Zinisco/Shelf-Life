@@ -9,6 +9,7 @@ TagManager:
   - Furniture
   - BookCrate
   - Book
+  - BookDisplay
   layers:
   - Default
   - TransparentFX
@@ -29,7 +30,7 @@ TagManager:
   - Table
   - MovingFurniture
   - ShelfRegion
-  - 
+  - BookDisplay
   - 
   - 
   - 

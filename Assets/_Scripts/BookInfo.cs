@@ -92,11 +92,15 @@ public class BookInfo : MonoBehaviour
         {
             if (!r) continue;
 
-            r.GetPropertyBlock(mpb);
-            // Attempt both common color properties (Built?in / URP / HDRP)
-            mpb.SetColor("_Color", definition.color);
-            mpb.SetColor("_BaseColor", definition.color);
-            r.SetPropertyBlock(mpb);
+            var materials = r.sharedMaterials;
+            if (materials.Length == 0) continue;
+
+            // Only apply color to material index 0
+            r.GetPropertyBlock(mpb, 0);
+            mpb.SetColor("_Color", definition.color);      // Standard Shader
+            mpb.SetColor("_BaseColor", definition.color);  // URP / HDRP Shader
+            r.SetPropertyBlock(mpb, 0);
         }
+
     }
 }

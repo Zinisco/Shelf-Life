@@ -82,7 +82,7 @@ public class GhostBookManager : MonoBehaviour
 
 
     // Continuously updates the ghost book position and rotation based on raycast from camera
-    public void UpdateGhost(GameObject heldObject, Camera camera, LayerMask shelfMask, LayerMask tableMask, ref float currentRotationY)
+    public void UpdateGhost(GameObject heldObject, Camera camera, LayerMask shelfMask, LayerMask bookDisplayMask, LayerMask tableMask, ref float currentRotationY)
     {
         // Hide ghost if no object is held
         if (heldObject == null)
@@ -104,7 +104,26 @@ public class GhostBookManager : MonoBehaviour
             return;
         }
 
-        // If not on shelf, try table placement
+        // Try placing on Book Displays
+        if (Physics.Raycast(ray, out RaycastHit displayHit, 3f, bookDisplayMask))
+        {
+            Transform anchor = displayHit.transform.Find("BookAnchor");
+            if (anchor != null)
+            {
+                ShowSingleGhost(heldObject);
+
+                Quaternion anchorRotation = anchor.rotation * Quaternion.Euler(0f, 90f, 0f);
+                ghostBookInstance.transform.SetPositionAndRotation(anchor.position, anchorRotation);
+
+                ghostBookInstance.transform.localScale = WorldScaleToLocal(heldObject.transform, ghostBookInstance.transform.parent);
+
+                SetGhostMaterial(true);
+                latestGhostValid = true;
+                return;
+            }
+        }
+
+        // If not on shelf or book display, try table placement
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableMask) &&
             Vector3.Dot(hit.normal, Vector3.up) > 0.9f)
         {

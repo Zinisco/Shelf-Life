@@ -14,6 +14,7 @@ public class PickUp : MonoBehaviour
     [SerializeField] private BookStackManager bookStackManager; // Manages stackability rules
     [SerializeField] private GameInput gameInput; // Custom input system
     [SerializeField] private Transform holdPosition; // Where the held book should appear
+    [SerializeField] private LayerMask bookDisplayMask;
 
     [Header("Pickup Settings")]
     [SerializeField] private float pickupRange = 4f; // Max pickup distance
@@ -57,6 +58,7 @@ public class PickUp : MonoBehaviour
                 heldObject,
                 playerCamera,
                 shelfMask,
+                bookDisplayMask,
                 tableSurfaceMask,
                 ref currentYRotation
             );
@@ -381,6 +383,20 @@ public class PickUp : MonoBehaviour
         }
 
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+
+        if (Physics.Raycast(ray, out RaycastHit displayHit, 3f, bookDisplayMask))
+        {
+            Transform anchor = displayHit.transform.Find("BookAnchor");
+            if (anchor != null)
+            {
+                Quaternion anchorRotation = anchor.rotation * Quaternion.Euler(0f, 90f, 0f);
+                heldObject.transform.SetPositionAndRotation(anchor.position, anchorRotation);
+                heldObject.transform.SetParent(displayHit.transform, worldPositionStays: true);
+                FinalizeBookPlacement();
+                return;
+            }
+        }
+
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, tableSurfaceMask))
         {
             Transform tableTransform = hit.transform;

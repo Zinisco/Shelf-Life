@@ -12,6 +12,7 @@ public class NudgableStackMover : MonoBehaviour
     [SerializeField] private Camera playerCamera;
     [SerializeField] private LayerMask tableSurfaceMask;
     [SerializeField] private LayerMask shelfSurfaceMask;
+    [SerializeField] private LayerMask bookDisplayMask;
 
     [SerializeField] private GameObject holdVisualObject; // Assign this in the inspector
     [SerializeField] private UnityEngine.UI.Image holdVisualRing; // Assign the ring fill UI here
@@ -180,6 +181,7 @@ public class NudgableStackMover : MonoBehaviour
      heldGhost,
      playerCamera,
      shelfSurfaceMask,
+     bookDisplayMask,
      tableSurfaceMask,
      ref currentYRotation
  );
