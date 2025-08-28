@@ -129,6 +129,21 @@ public class PickUp : MonoBehaviour
 
         bool isBookDisplay = hit.collider.CompareTag("BookDisplay");
 
+        if (isBookDisplay)
+        {
+            Transform anchor = hit.collider.transform.Find("BookAnchor");
+            if (anchor != null)
+            {
+                BookInfo bookOnDisplay = anchor.GetComponentInChildren<BookInfo>();
+                if (bookOnDisplay != null)
+                {
+                    Debug.Log("[TryPickup] Cannot pick up BookDisplay — it has a book on it.");
+                    return;
+                }
+            }
+        }
+
+
         if (!hit.collider.CompareTag("Pickable") &&
             !hit.collider.CompareTag("BookCrate") &&
             !hit.collider.CompareTag("Book") &&

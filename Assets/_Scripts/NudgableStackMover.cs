@@ -48,6 +48,7 @@ public class NudgableStackMover : MonoBehaviour
 
     private bool isPlacementValid = false;
 
+
     private void OnEnable()
     {
         if (GameInput.Instance == null) return;
