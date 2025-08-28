@@ -13,6 +13,7 @@ public class PickUp : MonoBehaviour
     [SerializeField] private Collider playerCollider; // Player's collider to avoid collision issues
     [SerializeField] private GhostBookManager ghostBookManager; // Manages the ghost book visual
     [SerializeField] private BookStackManager bookStackManager; // Manages stackability rules
+    [SerializeField] private GhostBookDisplayManager ghostDisplayManager;
     [SerializeField] private GameInput gameInput; // Custom input system
     [SerializeField] private Transform holdPosition; // Where the held book should appear
     [SerializeField] private LayerMask bookDisplayMask;
@@ -32,7 +33,7 @@ public class PickUp : MonoBehaviour
     private void Awake()
     {
         // Ensure proper mask is set
-        pickableLayerMask = LayerMask.GetMask("Pickable", "Book");
+        pickableLayerMask = LayerMask.GetMask("Pickable", "Book", "BookDisplay");
     }
 
     private void Start()
@@ -41,6 +42,7 @@ public class PickUp : MonoBehaviour
         gameInput.OnPickUpObjectAction += GameInput_OnPickUpObjectAction;
         gameInput.OnShelveObjectAction += GameInput_OnShelveObjectAction;
         ghostBookManager.Init();
+        ghostDisplayManager.Init();
 
         // Ensure holdPosition has a kinematic Rigidbody
         if (!holdPosition.TryGetComponent(out holdRb))
@@ -52,8 +54,13 @@ public class PickUp : MonoBehaviour
 
     private void Update()
     {
-        // Continuously update ghost placement while holding an object
-        if (heldObject != null)
+        if (heldObject == null) return;
+
+        if (heldObject.CompareTag("BookDisplay"))
+        {
+            ghostDisplayManager.UpdateGhost(heldObject, playerCamera, tableSurfaceMask);
+        }
+        else
         {
             ghostBookManager.UpdateGhost(
                 heldObject,
@@ -65,6 +72,7 @@ public class PickUp : MonoBehaviour
             );
         }
     }
+
 
     private void GameInput_OnPickUpObjectAction(object sender, System.EventArgs e)
     {
@@ -83,18 +91,19 @@ public class PickUp : MonoBehaviour
     {
         if (NudgableStackMover.IsNudging)
         {
-            // Let the nudging system handle its own “confirm” input; do nothing here.
-            return;
+            return; // let nudging system handle input
         }
 
         if (heldObject == null)
         {
-            Debug.Log("[PickUp] Shelve pressed with no held object; ignoring.");
+            // New: Try to pick up from BookDisplay
+            TryPickupBookDisplayBook();
             return;
         }
 
         TryShelveBook();
     }
+
 
     private void TryPickup()
     {
@@ -118,12 +127,24 @@ public class PickUp : MonoBehaviour
 
         if (!gotHit) return;
 
-        // --- Your original logic from here down stays the same ---
+        bool isBookDisplay = hit.collider.CompareTag("BookDisplay");
+
         if (!hit.collider.CompareTag("Pickable") &&
             !hit.collider.CompareTag("BookCrate") &&
-            !hit.collider.CompareTag("Book")) return;
+            !hit.collider.CompareTag("Book") &&
+            !isBookDisplay) return;
+
 
         GameObject baseBook = hit.collider.gameObject;
+
+        if (!isBookDisplay &&
+    baseBook.transform.parent != null &&
+    baseBook.transform.parent.CompareTag("BookDisplay"))
+        {
+            Debug.Log("[TryPickup] Skipped pickup — book is on a BookDisplay.");
+            return;
+        }
+
         heldObject = GetTopmostBook(baseBook);
 
         // Detect if we're near a shelf when picking up
@@ -170,6 +191,12 @@ public class PickUp : MonoBehaviour
             StartCoroutine(DelayedRemoveFromStack(root, heldObject));
         }
 
+        if (heldObjectRb == null)
+        {
+            Debug.LogError("Held object missing Rigidbody!");
+            return;
+        }
+
         // Prepare Rigidbody settings for held object
         if (heldObjectRb != null)
         {
@@ -178,10 +205,29 @@ public class PickUp : MonoBehaviour
             heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
             heldObject.transform.position = holdPosition.position;
 
-            // Face object away from the camera
             Quaternion rotation = Quaternion.LookRotation(Vector3.up, -playerCamera.transform.forward);
-            heldObject.transform.rotation = rotation;
-            heldObject.transform.Rotate(Vector3.right, 60f, Space.Self);
+            if (heldObject.CompareTag("BookDisplay"))
+            {
+                // Rotate 90° around Y so the display faces you
+                heldObject.transform.rotation = rotation;
+                heldObject.transform.Rotate(Vector3.right, 90f, Space.Self);
+            }
+            else
+            {
+                heldObject.transform.rotation = rotation;
+                heldObject.transform.Rotate(Vector3.right, 60f, Space.Self);
+            }
+
+        }
+
+        // Set ghost display held object only if this is a BookDisplay
+        if (heldObject.CompareTag("BookDisplay"))
+        {
+            ghostDisplayManager.SetHeldObject(heldObject);
+        }
+        else
+        {
+            ghostDisplayManager.SetHeldObject(null); // disable ghost rotation / input
         }
 
         // Attach using a fixed joint
@@ -189,6 +235,9 @@ public class PickUp : MonoBehaviour
         holdJoint.connectedBody = heldObjectRb;
         holdJoint.breakForce = Mathf.Infinity;
         holdJoint.breakTorque = Mathf.Infinity;
+
+        Debug.Log($"Picked up: {heldObject.name} at {heldObject.transform.position}");
+
     }
 
 
@@ -228,6 +277,9 @@ public class PickUp : MonoBehaviour
             }
         }
 
+        ghostDisplayManager.SetHeldObject(null);
+        ghostDisplayManager.HideGhost();
+
         // Destroy joint
         if (holdJoint != null)
         {
@@ -262,11 +314,20 @@ public class PickUp : MonoBehaviour
         }
 
         BookInfo heldInfo = heldObject.GetComponent<BookInfo>();
+
         if (heldInfo == null)
         {
+            if (heldObject.CompareTag("BookDisplay"))
+            {
+                Debug.Log("[PickUp] Shelving BookDisplay — redirecting to TryPlaceOnSurface.");
+                TryPlaceOnSurface();
+                return;
+            }
+
             Debug.LogWarning("[PickUp] Held object has no BookInfo; cannot shelve.");
             return;
         }
+
 
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
         if (Physics.Raycast(ray, out RaycastHit hit, 3f, shelfMask))
@@ -384,6 +445,40 @@ public class PickUp : MonoBehaviour
         }
 
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+
+        if (heldObject.CompareTag("BookDisplay"))
+        {
+            if (!ghostDisplayManager.IsValidPlacement())
+            {
+                Debug.Log("Invalid BookDisplay placement.");
+                return;
+            }
+
+            Vector3 ghostPos = ghostDisplayManager.GetGhostPosition();
+            Quaternion ghostRot = ghostDisplayManager.GetGhostRotation();
+
+          
+            if (Physics.Raycast(ray, out RaycastHit tableHit, 3f, tableSurfaceMask))
+            {
+                Transform tableTransform = tableHit.transform;
+
+                heldObject.transform.SetPositionAndRotation(ghostPos, ghostRot);
+                heldObject.transform.SetParent(tableTransform, worldPositionStays: true);
+
+                Rigidbody rb = heldObject.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.isKinematic = true;
+                    rb.interpolation = RigidbodyInterpolation.None;
+                    rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+                }
+
+                heldObject.layer = LayerMask.NameToLayer("Book");
+                EnablePlayerCollision(heldObject, ignore: true);
+                FinalizeBookPlacement();
+                return;
+            }
+        }
 
         if (Physics.Raycast(ray, out RaycastHit displayHit, 3f, bookDisplayMask))
         {
@@ -545,8 +640,15 @@ public class PickUp : MonoBehaviour
 
         heldObject.transform.position = holdPosition.position;
         Quaternion rotation = Quaternion.LookRotation(Vector3.up, -playerCamera.transform.forward);
+        if (heldObject.CompareTag("BookDisplay"))
+        {
+            // Rotate 90° around Y so the display faces you
+            rotation *= Quaternion.Euler(0f, 0f, 0f);
+        }
+
         heldObject.transform.rotation = rotation;
         heldObject.transform.Rotate(Vector3.right, 60f, Space.Self);
+
 
         holdJoint = holdPosition.gameObject.AddComponent<FixedJoint>();
         holdJoint.connectedBody = heldObjectRb;
@@ -565,8 +667,6 @@ public class PickUp : MonoBehaviour
         );
     }
 
-
-
     private void FinalizeBookPlacement()
     {
         if (heldObject.TryGetComponent(out Rigidbody rb))
@@ -577,9 +677,12 @@ public class PickUp : MonoBehaviour
         }
 
         heldObject.layer = LayerMask.NameToLayer("Book");
-        EnablePlayerCollision(heldObject);
+        EnablePlayerCollision(heldObject, ignore: true);
         ClearHeldBook();
         ghostBookManager.HideGhost();
+        ghostDisplayManager.HideGhost();
+        ghostDisplayManager.SetHeldObject(null);
+        heldObject = null;
     }
 
     // Walks up the stack chain to get the topmost book matching title
@@ -626,12 +729,13 @@ public class PickUp : MonoBehaviour
         }
     }
 
-    private void EnablePlayerCollision(GameObject obj)
+    private void EnablePlayerCollision(GameObject obj, bool ignore)
     {
         Collider col = obj.GetComponent<Collider>();
         if (col != null && playerCollider != null)
-            Physics.IgnoreCollision(col, playerCollider, false);
+            Physics.IgnoreCollision(col, playerCollider, ignore);
     }
+
 
     // Attempts to find a safe place to drop the book using step increments
     private Vector3 FindSafeDropPosition()
@@ -662,6 +766,26 @@ public class PickUp : MonoBehaviour
 
         return origin + (forward * 0.3f) + (Camera.main.transform.right * 0.2f);
     }
+
+    private void TryPickupBookDisplayBook()
+    {
+        Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
+        if (Physics.Raycast(ray, out RaycastHit hit, 3f, bookDisplayMask))
+        {
+            Transform anchor = hit.transform.Find("BookAnchor");
+            if (anchor == null) return;
+
+            BookInfo bookToPickup = anchor.GetComponentInChildren<BookInfo>();
+            if (bookToPickup == null) return;
+
+            GameObject book = bookToPickup.gameObject;
+
+            // Detach from display and pick it up
+            book.transform.SetParent(null);
+            DropObject(book); // reuses DropObject(GameObject) logic
+        }
+    }
+
 
     private IEnumerator DelayedRemoveFromStack(BookStackRoot root, GameObject book)
     {
