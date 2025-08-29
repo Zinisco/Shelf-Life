@@ -40,3 +40,13 @@ public class ShelfRef
     public string shelfObjectID;   // FreeformBookshelf.ObjectID
     public string regionName;      // ShelfArea name (child GameObject name)
 }
+
+[System.Serializable]
+public class BookDisplaySaveData
+{
+    public string objectID;
+    public Vector3 position;
+    public Quaternion rotation;
+    public string attachedBookID;
+    public string tableID;
+}

@@ -251,8 +251,6 @@ public class PickUp : MonoBehaviour
         holdJoint.breakForce = Mathf.Infinity;
         holdJoint.breakTorque = Mathf.Infinity;
 
-        Debug.Log($"Picked up: {heldObject.name} at {heldObject.transform.position}");
-
     }
 
 

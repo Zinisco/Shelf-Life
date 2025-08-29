@@ -1,7 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using static UnityEngine.Rendering.DebugUI;
 
 [System.Serializable]
 public class SurfaceAnchorSaveData
@@ -23,6 +25,7 @@ public class BookSaveManager : MonoBehaviour
         public List<CrateSaveData> allCrates = new();
         public List<FreeformShelfSaveData> allFreeformShelves = new();
         public List<SurfaceAnchorSaveData> allSurfaces = new();
+        public List<BookDisplaySaveData> allBookDisplays = new();
         public ComputerSaveData terminalData;
         public Vector3 playerPos;
         public float playerYaw;       // rotation around Y for the player body
@@ -30,7 +33,7 @@ public class BookSaveManager : MonoBehaviour
     }
     // === Save versioning ===
     // Bump this whenever you change the save schema.
-    private const int CURRENT_SAVE_VERSION = 6;
+    private const int CURRENT_SAVE_VERSION = 7;
 
     // While in development, only accept the current version.
     private const int MIN_COMPATIBLE_VERSION = CURRENT_SAVE_VERSION;
@@ -133,6 +136,12 @@ public class BookSaveManager : MonoBehaviour
 
         foreach (var info in FindObjectsOfType<BookInfo>())
         {
+
+            if (string.IsNullOrEmpty(info.bookID) && info.definition != null)
+            {
+                info.ApplyDefinition(info.definition);
+            }
+
 
             if (string.IsNullOrEmpty(info.bookID))
             {
@@ -257,6 +266,37 @@ public class BookSaveManager : MonoBehaviour
             });
         }
 
+        foreach (var display in FindObjectsOfType<BookDisplay>())
+        {
+            string id = display.GetComponent<BookDisplay>()?.GetID(); // assumes BookDisplay has a unique ID
+            if (string.IsNullOrEmpty(id)) continue;
+
+            string tableID = null;
+            var anchor = display.transform.parent?.GetComponent<SurfaceAnchor>();
+            if (anchor != null)
+            {
+                tableID = anchor.GetID();
+            }
+
+            string attachedBookID = null;
+            if (display.attachedBook != null)
+            {
+                var info = display.attachedBook.GetComponent<BookInfo>();
+                if (info != null && !string.IsNullOrEmpty(info.bookID))
+                    attachedBookID = info.bookID;
+            }
+
+            w.allBookDisplays.Add(new BookDisplaySaveData
+            {
+                objectID = id,
+                position = display.transform.position,
+                rotation = display.transform.rotation,
+                attachedBookID = attachedBookID,
+                tableID = tableID // save anchor ID
+            });
+        }
+
+
         var terminal = FindObjectOfType<ComputerTerminal>();
         if (terminal != null)
         {
@@ -328,6 +368,7 @@ public class BookSaveManager : MonoBehaviour
         foreach (var c in FindObjectsOfType<BookCrate>()) Destroy(c.gameObject);
         foreach (var t in FindObjectsOfType<SurfaceAnchor>()) Destroy(t.gameObject);
         foreach (var ff in FindObjectsOfType<FreeformBookshelf>()) Destroy(ff.gameObject);
+        foreach (var bd in FindObjectsOfType<BookDisplay>()) Destroy(bd.gameObject);
 
         var terminal = FindObjectOfType<ComputerTerminal>();
         if (terminal != null) Destroy(terminal.gameObject);
@@ -383,9 +424,37 @@ public class BookSaveManager : MonoBehaviour
         }
 
         var stacksByID = new Dictionary<string, List<(BookSaveData, GameObject)>>();
+        var displaysByID = new Dictionary<string, BookDisplay>();
+
+        foreach (var bdd in w.allBookDisplays)
+        {
+            var prefab = Resources.Load<GameObject>("BookDisplay");
+            var go = Instantiate(prefab, bdd.position, bdd.rotation);
+            var display = go.GetComponent<BookDisplay>();
+            if (display == null) continue;
+
+            display.SetID(bdd.objectID);
+            displaysByID[bdd.objectID] = display;
+
+            // Parent to table if needed
+            if (!string.IsNullOrEmpty(bdd.tableID))
+            {
+                foreach (var anchor in FindObjectsOfType<SurfaceAnchor>())
+                {
+                    if (anchor.GetID() == bdd.tableID)
+                    {
+                        go.transform.SetParent(anchor.transform, worldPositionStays: true);
+                        break;
+                    }
+                }
+            }
+        }
+
+        Dictionary<string, List<GameObject>> instantiatedBooksByID = new();
 
         foreach (var bd in w.allBooks)
         {
+
             var prefab = bookDatabase.GetBookPrefabByID(bd.bookID);
             if (prefab == null)
             {
@@ -459,6 +528,10 @@ public class BookSaveManager : MonoBehaviour
                     }
                 }
 
+                if (!instantiatedBooksByID.TryGetValue(bd.bookID, out var list))
+                    instantiatedBooksByID[bd.bookID] = list = new List<GameObject>();
+                list.Add(go);
+
                 // If this book is NOT part of a stack but has a tableID, parent it and freeze
                 if (string.IsNullOrEmpty(bd.stackGroupID) && !string.IsNullOrEmpty(bd.tableID))
                 {
@@ -485,6 +558,46 @@ public class BookSaveManager : MonoBehaviour
 
             }
         }
+
+        foreach (var bdd in w.allBookDisplays)
+        {
+            if (string.IsNullOrEmpty(bdd.attachedBookID)) continue;
+
+            if (displaysByID.TryGetValue(bdd.objectID, out var display))
+            {
+                if (instantiatedBooksByID.TryGetValue(bdd.attachedBookID, out var candidates) && candidates.Count > 0)
+                {
+                    var go = candidates[0];
+                    candidates.RemoveAt(0); // prevent reuse
+
+                    var bookInfo = go.GetComponent<BookInfo>();
+                    if (bookInfo != null)
+                    {
+                        go.transform.SetParent(display.transform.Find("BookAnchor"), worldPositionStays: false);
+                        go.transform.localPosition = Vector3.zero;
+                        go.transform.localRotation = Quaternion.Euler(0, 90, 0);
+
+                        display.attachedBook = go;
+
+                        var rb = go.GetComponent<Rigidbody>();
+                        if (rb)
+                        {
+                            rb.isKinematic = true;
+                            rb.interpolation = RigidbodyInterpolation.None;
+                            rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+                        }
+
+                        bookInfo.currentStackRoot = null;
+                        bookInfo.UpdateVisuals();
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning($"[Load] No remaining instance for bookID {bdd.attachedBookID} to place on display {bdd.objectID}.");
+                }
+            }
+        }
+
 
         foreach (var pair in stacksByID)
         {

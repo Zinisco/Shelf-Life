@@ -81,6 +81,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   titleText: {fileID: 8574068824914450158}
   spineText: {fileID: 6103417470195975679}
+  secondaryMaterial: {fileID: 4382737335783463193, guid: dbbf6ce6421a8dd47b5c75690ffdaf32, type: 3}
   definition: {fileID: 0}
   tags: []
   Position: {x: 0, y: 0, z: 0}
@@ -88,6 +89,7 @@ MonoBehaviour:
   ObjectID: 
   title: 
   currentStackRoot: {fileID: 0}
+  masterMaterial: {fileID: 0}
 --- !u!65 &5011039745262841221
 BoxCollider:
   m_ObjectHideFlags: 0

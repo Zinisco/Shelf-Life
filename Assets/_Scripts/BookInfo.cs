@@ -8,6 +8,8 @@ public class BookInfo : MonoBehaviour
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private TMP_Text spineText;
 
+    [SerializeField] private Material secondaryMaterial; // Set in prefab
+
     [Header("Definition")]
     public BookDefinition definition;
 
@@ -23,9 +25,10 @@ public class BookInfo : MonoBehaviour
 
     public string bookID { get; private set; }
 
+    [SerializeField] private Material masterMaterial; // Drag in the master material via Inspector
+
     private void Awake()
     {
-        // Be lenient here: crates will set the definition right after instantiation.
         EnsureBookID(logIfMissing: false);
     }
 
@@ -36,11 +39,10 @@ public class BookInfo : MonoBehaviour
         {
             bookID = definition.bookID;
             title = definition.title;
-            UpdateVisuals(); // reflect changes immediately in editor
+            UpdateVisuals();
         }
     }
 #endif
-
 
     public void ApplyDefinition(BookDefinition def)
     {
@@ -58,9 +60,6 @@ public class BookInfo : MonoBehaviour
         UpdateVisuals();
     }
 
-    /// <summary>
-    /// If a definition is already present, copy its ID/title. If not, optionally log.
-    /// </summary>
     public void EnsureBookID(bool logIfMissing)
     {
         if (!string.IsNullOrEmpty(bookID)) return;
@@ -80,11 +79,9 @@ public class BookInfo : MonoBehaviour
     {
         if (definition == null) return;
 
-        // Update text
         if (titleText) titleText.text = definition.title;
         if (spineText) spineText.text = definition.title;
 
-        // Tint all renderers with MPB (safe in Edit Mode and Play Mode)
         var rends = GetComponentsInChildren<MeshRenderer>(true);
         var mpb = new MaterialPropertyBlock();
 
@@ -92,15 +89,23 @@ public class BookInfo : MonoBehaviour
         {
             if (!r) continue;
 
-            var materials = r.sharedMaterials;
-            if (materials.Length == 0) continue;
+            var mats = r.sharedMaterials;
 
-            // Only apply color to material index 0
+            if (masterMaterial != null && mats.Length > 0)
+            {
+                mats[0] = masterMaterial;
+                if (mats.Length > 1 && secondaryMaterial != null)
+                    mats[1] = secondaryMaterial;
+
+                r.sharedMaterials = mats;
+            }
+
+
+            // Apply color to _Color and _BaseColor using MPB
             r.GetPropertyBlock(mpb, 0);
-            mpb.SetColor("_Color", definition.color);      // Standard Shader
-            mpb.SetColor("_BaseColor", definition.color);  // URP / HDRP Shader
+            mpb.SetColor("_Color", definition.color);      // For Standard Shader
+            mpb.SetColor("_BaseColor", definition.color);  // For URP/HDRP
             r.SetPropertyBlock(mpb, 0);
         }
-
     }
 }
