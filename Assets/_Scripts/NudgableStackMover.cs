@@ -381,6 +381,17 @@ public class NudgableStackMover : MonoBehaviour
             Quaternion ghostRot = ghostBookDisplayManager.GetGhostRotation();
             selectedDisplay.transform.SetPositionAndRotation(ghostPos, ghostRot);
 
+            // Try to parent to the surface hit
+            if (Physics.Raycast(ghostPos + Vector3.up * 0.1f, Vector3.down, out RaycastHit hit, 2f, tableSurfaceMask))
+            {
+                Transform table = hit.transform;
+                selectedDisplay.transform.SetParent(table);
+            }
+            else
+            {
+                selectedDisplay.transform.SetParent(null); // fallback: unparent if table not found
+            }
+
             // Wait one frame before enabling physics to prevent jitter
             StartCoroutine(DelayedEnablePhysics(displayRigidbody));
 
@@ -495,6 +506,7 @@ public class NudgableStackMover : MonoBehaviour
                 selectedDisplay.transform.SetPositionAndRotation(displayOriginalPosition, displayOriginalRotation);
                 if (displayRigidbody != null) displayRigidbody.isKinematic = true;
             }
+
 
             selectedDisplay = null;
             isDisplayNudging = false;
