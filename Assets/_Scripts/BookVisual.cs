@@ -21,10 +21,9 @@ public class BookVisual : MonoBehaviour
         if (coverRenderer)
         {
             if (_mpb == null) _mpb = new MaterialPropertyBlock();
-            coverRenderer.GetPropertyBlock(_mpb);
             _mpb.SetColor(ColorProp, def.color);      // Built-in / many shaders
             _mpb.SetColor(BaseColorProp, def.color);  // URP/HDRP Lit
-            coverRenderer.SetPropertyBlock(_mpb);
+            coverRenderer.SetPropertyBlock(_mpb, 0);
         }
     }
 }

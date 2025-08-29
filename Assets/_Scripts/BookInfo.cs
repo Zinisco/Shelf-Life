@@ -91,6 +91,7 @@ public class BookInfo : MonoBehaviour
 
             var mats = r.sharedMaterials;
 
+            // Replace materials
             if (masterMaterial != null && mats.Length > 0)
             {
                 mats[0] = masterMaterial;
@@ -100,12 +101,15 @@ public class BookInfo : MonoBehaviour
                 r.sharedMaterials = mats;
             }
 
-
-            // Apply color to _Color and _BaseColor using MPB
+            // Apply color ONLY to element 0
             r.GetPropertyBlock(mpb, 0);
             mpb.SetColor("_Color", definition.color);      // For Standard Shader
             mpb.SetColor("_BaseColor", definition.color);  // For URP/HDRP
             r.SetPropertyBlock(mpb, 0);
+
+            // Clear MPB for other submeshes (especially element 1)
+            r.SetPropertyBlock(null, 1);
         }
     }
+
 }
