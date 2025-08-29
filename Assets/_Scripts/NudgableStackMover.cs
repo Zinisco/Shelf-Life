@@ -13,6 +13,7 @@ public class NudgableStackMover : MonoBehaviour
     [SerializeField] private LayerMask tableSurfaceMask;
     [SerializeField] private LayerMask shelfSurfaceMask;
     [SerializeField] private LayerMask bookDisplayMask;
+    [SerializeField] private GhostBookDisplayManager ghostBookDisplayManager;
 
     [SerializeField] private GameObject holdVisualObject; // Assign this in the inspector
     [SerializeField] private UnityEngine.UI.Image holdVisualRing; // Assign the ring fill UI here
@@ -47,6 +48,13 @@ public class NudgableStackMover : MonoBehaviour
     private float originalYRotation;
 
     private bool isPlacementValid = false;
+
+
+    private BookDisplay selectedDisplay;
+    private Vector3 displayOriginalPosition;
+    private Quaternion displayOriginalRotation;
+    private bool isDisplayNudging = false;
+    private Rigidbody displayRigidbody;
 
 
     private void OnEnable()
@@ -84,7 +92,8 @@ public class NudgableStackMover : MonoBehaviour
         if (freeMoveHeld && !isNudging)
         {
             Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
-            if (Physics.Raycast(ray, out RaycastHit hit, 3f, bookLayer))
+
+            if (Physics.Raycast(ray, out RaycastHit hit, 3f, bookLayer | bookDisplayMask))
             {
                 BookInfo hitInfo = hit.collider.GetComponent<BookInfo>();
                 if (hitInfo != null && hitInfo.currentStackRoot != null)
@@ -105,12 +114,35 @@ public class NudgableStackMover : MonoBehaviour
                         if (holdVisualObject) holdVisualObject.SetActive(false);
                     }
                 }
+                else
+                {
+                    BookDisplay display = hit.collider.GetComponent<BookDisplay>();
+                    if (display != null)
+                    {
+                        if (selectedDisplay == null || selectedDisplay != display)
+                        {
+                            selectedDisplay = display;
+                            holdTimer = 0f;
+                            if (holdVisualObject) holdVisualObject.SetActive(true);
+                        }
+
+                        holdTimer += Time.deltaTime;
+                        if (holdVisualRing) holdVisualRing.fillAmount = Mathf.Clamp01(holdTimer / holdTime);
+
+                        if (holdTimer >= holdTime)
+                        {
+                            BeginDisplayNudging();
+                            if (holdVisualObject) holdVisualObject.SetActive(false);
+                        }
+                    }
+                }
             }
         }
         else if (!freeMoveHeld && !isNudging)
         {
             holdTimer = 0f;
-            selectedStackRoot = null; 
+            selectedStackRoot = null;
+            selectedDisplay = null;
             if (holdVisualObject) holdVisualObject.SetActive(false);
         }
 
@@ -173,9 +205,59 @@ public class NudgableStackMover : MonoBehaviour
         ghostBookManager.ShowGhost(heldGhost, selectedStackRoot.books.Count);  
     }
 
+    private void BeginDisplayNudging()
+    {
+        if (selectedDisplay == null) return;
+
+        isNudging = true;
+        IsNudging = true;
+        isDisplayNudging = true;
+
+        displayOriginalPosition = selectedDisplay.transform.position;
+        displayOriginalRotation = selectedDisplay.transform.rotation;
+
+        displayRigidbody = selectedDisplay.GetComponent<Rigidbody>();
+        if (displayRigidbody != null)
+            displayRigidbody.isKinematic = true;
+
+        // Disable BookDisplay renderers
+        originalRenderers = selectedDisplay.GetComponentsInChildren<Renderer>();
+        foreach (var rend in originalRenderers)
+            rend.enabled = false;
+
+        // If there's an attached book in the BookAnchor, disable its renderers too
+        var bookAnchor = selectedDisplay.GetComponentInChildren<BookDisplay>();
+        if (bookAnchor && bookAnchor.attachedBook != null)
+        {
+            foreach (var rend in bookAnchor.attachedBook.GetComponentsInChildren<Renderer>())
+                rend.enabled = false;
+        }
+
+
+        heldGhost = selectedDisplay.gameObject;
+        ghostBookDisplayManager.SetHeldObject(heldGhost);
+        ghostBookDisplayManager.SetCamera(playerCamera);
+        ghostBookDisplayManager.SetValidMask(tableSurfaceMask); // or your desired surface(s)
+        ghostBookDisplayManager.Init();
+
+    }
+
+
     void UpdateGhostFollow()
     {
-        if (ghostBookManager == null || heldGhost == null || selectedStackRoot == null)
+        if (ghostBookManager == null || heldGhost == null)
+            return;
+
+        if (isDisplayNudging)
+        {
+            // Update ghost for BookDisplay
+            ghostBookDisplayManager.UpdateGhost(heldGhost, playerCamera, tableSurfaceMask);
+            isPlacementValid = ghostBookDisplayManager.IsValidPlacement();
+
+            return;
+        }
+
+        if (selectedStackRoot == null)
             return;
 
         ghostBookManager.UpdateGhost(
@@ -268,6 +350,53 @@ public class NudgableStackMover : MonoBehaviour
             return;
         }
 
+        if (isDisplayNudging)
+        {
+            if (!isPlacementValid)
+            {
+                Debug.LogWarning("BookDisplay placement invalid.");
+                return;
+            }
+
+            // Re-enable visuals
+            if (originalRenderers != null)
+            {
+                foreach (var rend in originalRenderers)
+                {
+                    if (rend != null)
+                        rend.enabled = true;
+                }
+            }
+
+            // Re-enable book attached to display
+            var bookAnchor = selectedDisplay.GetComponentInChildren<BookDisplay>();
+            if (bookAnchor && bookAnchor.attachedBook != null)
+            {
+                foreach (var rend in bookAnchor.attachedBook.GetComponentsInChildren<Renderer>())
+                    rend.enabled = true;
+            }
+
+
+            Vector3 ghostPos = ghostBookDisplayManager.GetGhostPosition();
+            Quaternion ghostRot = ghostBookDisplayManager.GetGhostRotation();
+            selectedDisplay.transform.SetPositionAndRotation(ghostPos, ghostRot);
+
+            // Wait one frame before enabling physics to prevent jitter
+            StartCoroutine(DelayedEnablePhysics(displayRigidbody));
+
+            selectedDisplay = null;
+            isDisplayNudging = false;
+            isNudging = false;
+            IsNudging = false;
+            heldGhost = null;
+            ghostBookDisplayManager.HideGhost();
+            ghostBookDisplayManager.SetHeldObject(null);
+            PauseMenuController.Instance?.BlockPauseFor(0.1f);
+            Debug.Log("Placed BookDisplay.");
+            return;
+        }
+
+
         if (selectedStackRoot == null)
         {
             Debug.LogWarning("No stack selected to place.");
@@ -354,10 +483,32 @@ public class NudgableStackMover : MonoBehaviour
         ghostBookManager.HideGhost();
         isNudging = false;
         IsNudging = false;
+        PauseMenuController.Instance?.BlockPauseFor(0.1f);
     }
 
     private void CancelNudging()
     {
+        if (isDisplayNudging)
+        {
+            if (selectedDisplay != null)
+            {
+                selectedDisplay.transform.SetPositionAndRotation(displayOriginalPosition, displayOriginalRotation);
+                if (displayRigidbody != null) displayRigidbody.isKinematic = true;
+            }
+
+            selectedDisplay = null;
+            isDisplayNudging = false;
+            isNudging = false;
+            IsNudging = false;
+            heldGhost = null;
+            ghostBookDisplayManager.HideGhost();
+            ghostBookDisplayManager.SetHeldObject(null);  // This clears the reference and stops Update() from reactivating the ghost
+            if (holdVisualObject != null) holdVisualObject.SetActive(false);
+            Debug.Log("Canceled BookDisplay nudging.");
+            return;
+        }
+
+
         if (selectedStackRoot != null)
         {
             // Reset to original position and rotation
@@ -386,6 +537,7 @@ public class NudgableStackMover : MonoBehaviour
         ghostBookManager.HideGhost();
         isNudging = false;
         IsNudging = false;
+        PauseMenuController.Instance?.BlockPauseFor(0.1f);
 
         Debug.Log("Nudging canceled.");
     }
@@ -442,6 +594,11 @@ public class NudgableStackMover : MonoBehaviour
         if (holdVisualObject) holdVisualObject.SetActive(false);
     }
 
+    private IEnumerator DelayedEnablePhysics(Rigidbody rb)
+    {
+        yield return new WaitForFixedUpdate(); // wait for physics update
+        if (rb != null) rb.isKinematic = true;
+    }
 
     // If your FreeMove is a Vector2 (stick), you can read it here for optional nudging-offset usage later
     private Vector2 freeMoveVec = Vector2.zero;

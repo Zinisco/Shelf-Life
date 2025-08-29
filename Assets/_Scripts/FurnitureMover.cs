@@ -309,6 +309,7 @@ public class FurnitureMover : MonoBehaviour
         isMoving = false;
 
         postPlaceTimer = postPlaceCooldown;
+        PauseMenuController.Instance?.BlockPauseFor(0.1f);
     }
 
     private bool TryFindFurniture(out GameObject furniture)
@@ -530,6 +531,8 @@ public class FurnitureMover : MonoBehaviour
     private void CancelMove()
     {
         if (selectedFurniture == null) return;
+
+        PauseMenuController.Instance?.BlockPauseFor(0.1f);
 
         // Restore original transform
         selectedFurniture.transform.position = originalPosition;

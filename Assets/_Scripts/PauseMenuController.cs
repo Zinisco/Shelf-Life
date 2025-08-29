@@ -56,6 +56,8 @@ public class PauseMenuController : MonoBehaviour
 
     private bool isBeforeStoreOpens = true;
 
+    private float pauseBlockTimer = 0f;
+
 
     private bool isGamePaused;
     public bool IsPaused => isGamePaused;
@@ -113,6 +115,9 @@ public class PauseMenuController : MonoBehaviour
 
     private void Update()
     {
+        if (pauseBlockTimer > 0f)
+            pauseBlockTimer -= Time.unscaledDeltaTime;
+
         DayNightCycle dayCycle = FindObjectOfType<DayNightCycle>();
         if (dayCycle == null)
         {
@@ -296,6 +301,10 @@ public class PauseMenuController : MonoBehaviour
 
     public void TogglePauseGame()
     {
+        // Prevent pausing during book nudging or furniture movement
+        if (NudgableStackMover.IsNudging || FurnitureMoverIsActive())
+            return;
+
         // Prevent pausing when computer UI is open
         if (ComputerUI.IsUIOpen)
             return;
@@ -339,7 +348,20 @@ public class PauseMenuController : MonoBehaviour
         }
         if (go) go.SetActive(false);
     }
+
+    private bool FurnitureMoverIsActive()
+    {
+        FurnitureMover mover = FindObjectOfType<FurnitureMover>();
+        return mover != null && mover.IsMovingFurniture();
+    }
+
+    public void BlockPauseFor(float duration)
+    {
+        pauseBlockTimer = duration;
+    }
+
 }
+
 
 /// <summary>
 /// Optional save interface—implement this somewhere in your game and assign it in the inspector.

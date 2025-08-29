@@ -778,6 +778,11 @@ public class GhostBookManager : MonoBehaviour
         return new Vector3(sx, sy, sz);
     }
 
+    public bool IsCurrentGhostPlacementValid()
+    {
+        return latestGhostValid;
+    }
+
 
     public void SetGhostMaterial(bool isValid)
     {

@@ -480,6 +480,7 @@ public class PickUp : MonoBehaviour
                 heldObject.transform.SetPositionAndRotation(ghostPos, ghostRot);
                 heldObject.transform.SetParent(tableTransform, worldPositionStays: true);
 
+
                 Rigidbody rb = heldObject.GetComponent<Rigidbody>();
                 if (rb != null)
                 {
@@ -539,6 +540,12 @@ public class PickUp : MonoBehaviour
                 Quaternion anchorRotation = anchor.rotation * Quaternion.Euler(0f, 90f, 0f);
                 heldObject.transform.SetPositionAndRotation(anchor.position, anchorRotation);
                 heldObject.transform.SetParent(anchor, worldPositionStays: true);
+
+                BookDisplay display = anchor.GetComponentInParent<BookDisplay>();
+                if (display != null)
+                {
+                    display.attachedBook = heldObject;
+                }
 
                 FinalizeBookPlacement();
                 return;
@@ -797,6 +804,12 @@ public class PickUp : MonoBehaviour
 
             // Detach from display and pick it up
             book.transform.SetParent(null);
+            BookDisplay display = anchor.GetComponentInParent<BookDisplay>();
+            if (display != null && display.attachedBook == book)
+            {
+                display.attachedBook = null;
+            }
+
             DropObject(book); // reuses DropObject(GameObject) logic
         }
     }
