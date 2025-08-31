@@ -49,8 +49,10 @@ public class FurnitureMover : MonoBehaviour
 
     private bool isMoving = false;
     private float rotationAmount = 0f;
+    private Renderer[] ghostRenderers;
 
     private Dictionary<GameObject, int> originalLayers = new Dictionary<GameObject, int>();
+    private Dictionary<Renderer, Material[]> originalMaterials = new Dictionary<Renderer, Material[]>();
 
 
     private void OnEnable()
@@ -181,11 +183,11 @@ public class FurnitureMover : MonoBehaviour
         originalFurnitureLayer = selectedFurniture.layer;
         selectedFurniture.layer = movingFurnitureLayer;
 
-        // Also change all children
-        originalLayers.Clear(); // Reset
-
         foreach (Transform child in selectedFurniture.GetComponentsInChildren<Transform>(true))
         {
+            if (ghostVisual != null && child.IsChildOf(ghostVisual.transform))
+                continue;
+
             originalLayers[child.gameObject] = child.gameObject.layer;
             child.gameObject.layer = movingFurnitureLayer;
         }
@@ -205,15 +207,32 @@ public class FurnitureMover : MonoBehaviour
             ghostRenderer = ghostVisual.GetComponentInChildren<Renderer>();
 
         originalRenderers = selectedFurniture.GetComponentsInChildren<Renderer>();
+        originalMaterials.Clear();
+
         foreach (var rend in originalRenderers)
         {
-            if (rend != ghostRenderer) // Don't disable the ghost
+            if (rend != null && !rend.transform.IsChildOf(ghostVisual.transform))
+            {
+                // Store original materials
+                originalMaterials[rend] = rend.materials;
+
+                // Disable the renderer entirely
                 rend.enabled = false;
+
+                // Optional: If you want to show ghost materials on certain things, comment out the line above
+                // and use this instead:
+                // Material[] ghostMats = new Material[rend.materials.Length];
+                // for (int i = 0; i < ghostMats.Length; i++)
+                //     ghostMats[i] = validMaterial;
+                // rend.materials = ghostMats;
+            }
         }
 
         if (ghostVisual != null)
         {
             ghostVisual.SetActive(true);
+
+            ghostRenderers = ghostVisual.GetComponentsInChildren<Renderer>();
 
             Transform arrowTransform = ghostVisual.transform.Find("Arrow");
             if (arrowTransform != null)
@@ -229,10 +248,6 @@ public class FurnitureMover : MonoBehaviour
             }
         }
     }
-
-
-
-
 
     private void HandlePlaceFurniture(object sender, EventArgs e)
     {
@@ -264,9 +279,6 @@ public class FurnitureMover : MonoBehaviour
         Vector3 correctPosition = new Vector3(ghostPos.x, y, ghostPos.z);
         selectedFurniture.transform.position = correctPosition;
 
-
-        selectedFurniture.transform.position = correctPosition;
-
         selectedFurniture.transform.rotation = ghostVisual.transform.rotation;
 
         // Cache all the furniture’s colliders
@@ -288,6 +300,16 @@ public class FurnitureMover : MonoBehaviour
             }
         }
 
+        if (originalMaterials != null)
+        {
+            foreach (var kvp in originalMaterials)
+            {
+                if (kvp.Key != null)
+                    kvp.Key.materials = kvp.Value;
+            }
+            originalMaterials.Clear();
+        }
+
         selectedFurniture.layer = originalFurnitureLayer;
 
         if (originalLayers != null)
@@ -307,6 +329,7 @@ public class FurnitureMover : MonoBehaviour
         ghostRenderer = null;
         rotationAmount = 0f;
         isMoving = false;
+        ghostRenderers = null;
 
         postPlaceTimer = postPlaceCooldown;
         PauseMenuController.Instance?.BlockPauseFor(0.1f);
@@ -358,14 +381,27 @@ public class FurnitureMover : MonoBehaviour
 
         ghostVisual.transform.localPosition = ghostOffset;
 
-        if (ghostRenderer != null)
+        bool canPlace = CanPlaceGhost();
+        Material ghostMat = canPlace ? validMaterial : invalidMaterial;
+
+        if (ghostRenderers != null)
         {
-            bool canPlace = CanPlaceGhost();
-            Material mat = canPlace ? validMaterial : invalidMaterial;
-            ghostRenderer.material = mat;
-            if (arrowRenderer != null)
-                arrowRenderer.material = mat;
+            foreach (var rend in ghostRenderers)
+            {
+                if (rend != null)
+                {
+                    Material[] ghostMats = new Material[rend.materials.Length];
+                    for (int i = 0; i < ghostMats.Length; i++)
+                        ghostMats[i] = ghostMat;
+                    rend.materials = ghostMats;
+                }
+            }
         }
+
+
+        if (arrowRenderer != null)
+            arrowRenderer.material = ghostMat;
+
     }
 
     private void HandleMovePressed()
@@ -542,6 +578,16 @@ public class FurnitureMover : MonoBehaviour
         foreach (var rend in originalRenderers)
             if (rend != null) rend.enabled = true;
 
+        if (originalMaterials != null)
+        {
+            foreach (var kvp in originalMaterials)
+            {
+                if (kvp.Key != null)
+                    kvp.Key.materials = kvp.Value;
+            }
+            originalMaterials.Clear();
+        }
+
         // Stop ignoring collisions with player
         var furnitureCols = selectedFurniture.GetComponentsInChildren<Collider>();
         foreach (var c in furnitureCols)
@@ -566,6 +612,7 @@ public class FurnitureMover : MonoBehaviour
         ghostRenderer = null;
         rotationAmount = 0f;
         isMoving = false;
+        ghostRenderers = null;
 
         // Also ensure hold UI is off
         isHoldingToMove = false;
