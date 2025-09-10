@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 7385970031096712603}
   - component: {fileID: 8747083622117493603}
   - component: {fileID: 3706719495326016989}
-  m_Layer: 10
+  m_Layer: 13
   m_Name: ComputerTerminal
   m_TagString: Furniture
   m_Icon: {fileID: 0}
@@ -72,8 +72,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 3.6158342, y: 3.2263517, z: 1.5155287}
-  m_Center: {x: -0.12144828, y: 1.6329384, z: 0.331069}
+  m_Size: {x: 3.6158342, y: 1.9491161, z: 1.5155287}
+  m_Center: {x: -0.12144828, y: 0.9943206, z: 0.331069}
 --- !u!65 &8747083622117493603
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -117,7 +117,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3022769775146280339}
-  m_Layer: 9
+  m_Layer: 13
   m_Name: Ghost
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -205,7 +205,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: ed8cec1df7ec77d4586e75348ac2425b, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 13
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -288,6 +288,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: abe2a717be07bf141915070295d50a23, type: 3}
       propertyPath: m_Name
       value: Keyboard
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: abe2a717be07bf141915070295d50a23, type: 3}
+      propertyPath: m_Layer
+      value: 13
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -381,7 +385,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: aade6cb0de4592b40a12fde1f166fa64, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 13
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -473,6 +477,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: OfficeDesk
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: aade6cb0de4592b40a12fde1f166fa64, type: 3}
+      propertyPath: m_Layer
+      value: 13
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -557,7 +565,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: abe2a717be07bf141915070295d50a23, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 13
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -625,11 +633,44 @@ PrefabInstance:
       propertyPath: m_Name
       value: ComputerMonitor
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: ed8cec1df7ec77d4586e75348ac2425b, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ed8cec1df7ec77d4586e75348ac2425b, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8912988318768471044}
   m_SourcePrefab: {fileID: 100100000, guid: ed8cec1df7ec77d4586e75348ac2425b, type: 3}
+--- !u!1 &4655073915193477118 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: ed8cec1df7ec77d4586e75348ac2425b, type: 3}
+  m_PrefabInstance: {fileID: 5502075886302034607}
+  m_PrefabAsset: {fileID: 0}
+--- !u!65 &8912988318768471044
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4655073915193477118}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.064677715, y: 0.044079907, z: 0.04409228}
+  m_Center: {x: 0.0066385223, y: -0.005887129, z: -0.003614533}
 --- !u!4 &5463417905368210756 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ed8cec1df7ec77d4586e75348ac2425b, type: 3}
@@ -705,7 +746,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 920b6329d87078b468549ca504961200, type: 3}
       propertyPath: m_Layer
-      value: 9
+      value: 13
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -784,6 +825,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 920b6329d87078b468549ca504961200, type: 3}
       propertyPath: m_Name
       value: ComputerMouse
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 920b6329d87078b468549ca504961200, type: 3}
+      propertyPath: m_Layer
+      value: 13
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

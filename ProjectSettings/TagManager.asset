@@ -24,7 +24,7 @@ TagManager:
   - Furniture
   - Pickable
   - Ground
-  - TabelSpot
+  - Desk
   - HeldObject
   - Book
   - Table

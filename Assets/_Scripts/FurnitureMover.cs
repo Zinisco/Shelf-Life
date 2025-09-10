@@ -23,6 +23,7 @@ public class FurnitureMover : MonoBehaviour
 
     [SerializeField] private Image progressRingUI;
 
+    private PlantMover plantMover;
     private GameObject selectedFurniture;
     private GameObject ghostVisual;
     private Renderer ghostRenderer;
@@ -87,6 +88,7 @@ public class FurnitureMover : MonoBehaviour
     private void Start()
     {
         pickUp = FindObjectOfType<PickUp>();
+        plantMover = FindObjectOfType<PlantMover>();
         playerCol = PlayerCollider;
 
         // Get correct layer index from Unity
@@ -99,8 +101,12 @@ public class FurnitureMover : MonoBehaviour
 
     private void Update()
     {
-        if (ComputerUI.IsUIOpen || (pickUp != null && pickUp.IsHoldingObject()))
+        if (ComputerUI.IsUIOpen ||
+       (pickUp != null && pickUp.IsHoldingObject()) ||
+       (plantMover != null && plantMover.IsMovingPlant()))
+        {
             return;
+        }
 
         if (postPlaceTimer > 0f)
         {
@@ -161,18 +167,14 @@ public class FurnitureMover : MonoBehaviour
 
     private void HandleStartMove(object sender, EventArgs e)
     {
-        Debug.Log("Trying to start furniture move...");
-
         if (ComputerUI.IsUIOpen) return; // Prevent initiating furniture move
 
         if (pickUp != null && pickUp.IsHoldingObject()) return;
 
         if (isMoving || !TryFindFurniture(out selectedFurniture))
         {
-            Debug.Log("Cannot move: already moving or no furniture found.");
             return;
         }
-        Debug.Log($"Started moving: {selectedFurniture.name}");
 
         isMoving = true;
         ghostVisual = selectedFurniture.transform.Find("Ghost")?.gameObject;
@@ -218,13 +220,6 @@ public class FurnitureMover : MonoBehaviour
 
                 // Disable the renderer entirely
                 rend.enabled = false;
-
-                // Optional: If you want to show ghost materials on certain things, comment out the line above
-                // and use this instead:
-                // Material[] ghostMats = new Material[rend.materials.Length];
-                // for (int i = 0; i < ghostMats.Length; i++)
-                //     ghostMats[i] = validMaterial;
-                // rend.materials = ghostMats;
             }
         }
 
@@ -340,9 +335,10 @@ public class FurnitureMover : MonoBehaviour
         furniture = null;
         Ray ray = new Ray(playerCamera.position, playerCamera.forward);
         if (!Physics.Raycast(ray, out RaycastHit hit, 3f))
+        {
             return false;
+        }
 
-        // fallback to any tagged Furniture root
         MovableFurniture movable = hit.collider.GetComponentInParent<MovableFurniture>();
         if (movable != null && movable.CanMove())
         {
@@ -350,9 +346,9 @@ public class FurnitureMover : MonoBehaviour
             return true;
         }
 
-
         return false;
     }
+
 
     private void UpdateGhostPosition()
     {
