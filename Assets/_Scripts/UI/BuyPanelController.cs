@@ -69,70 +69,72 @@ public class BuyPanelController : MonoBehaviour
         foreach (var book in availableBooks)
         {
             GameObject entry = Instantiate(bookEntryPrefab, contentParent);
-            entry.transform.Find("TitleText").GetComponent<TMP_Text>().text = book.title;
+            var ui = entry.GetComponent<BookEntryUI>();
+            if (ui == null) continue;
 
-            SetBookImage(entry.transform, book.thumbnail);
+            // Fill UI
+            ui.titleText.text = book.title;
+            ui.priceText.text = GameModeConfig.CurrentMode == GameMode.Zen ? " " : $"${book.cost}";
+            ui.quantityInputField.text = "0";
 
-            Button plusButton = entry.transform.Find("PlusButton").GetComponent<Button>();
-            Button minusButton = entry.transform.Find("MinusButton").GetComponent<Button>();
-            TMP_Text quantityText = entry.transform.Find("QuantityText").GetComponent<TMP_Text>();
-            TMP_Text priceText = entry.transform.Find("PriceText").GetComponent<TMP_Text>();
+            if (ui.bookImage != null)
+            {
+                ui.bookImage.sprite = book.thumbnail;
+                ui.bookImage.preserveAspect = true;
+            }
 
-            quantityText.text = "0";
+            // Hook up buttons
+            ui.plusButton.onClick.AddListener(() => AddBook(book, ui.quantityInputField));
+            ui.minusButton.onClick.AddListener(() => RemoveBook(book, ui.quantityInputField));
 
-            if (GameModeConfig.CurrentMode == GameMode.Zen)
-                priceText.text = " ";
-            else
-                priceText.text = $"${book.cost}";
-
-            plusButton.onClick.AddListener(() => {
-                AddBook(book, quantityText);
-            });
-
-            minusButton.onClick.AddListener(() => {
-                RemoveBook(book, quantityText);
+            // Hook up input
+            ui.quantityInputField.onEndEdit.AddListener((val) =>
+            {
+                if (int.TryParse(val, out int newQty))
+                {
+                    newQty = Mathf.Clamp(newQty, 0, maxPerBookType);
+                    SetBookQuantity(book, newQty, ui.quantityInputField);
+                }
+                else
+                {
+                    ui.quantityInputField.text = currentOrder.ContainsKey(book)
+                        ? currentOrder[book].ToString()
+                        : "0";
+                }
             });
         }
 
         UpdateBookCountText();
     }
 
-    private void AddBook(BookDefinition book, TMP_Text quantityText)
+    private void AddBook(BookDefinition book, TMP_InputField qtyInput)
     {
         int total = GetTotalBookCount();
-        if (total >= maxBooksPerOrder)
-            return;
+        if (total >= maxBooksPerOrder) return;
 
         if (!currentOrder.ContainsKey(book))
             currentOrder[book] = 0;
 
-        // Check per-book limit
-        if (currentOrder[book] >= maxPerBookType)
-            return;
-
-        if (currentOrder[book] >= maxPerBookType)
-        {
-            Debug.Log("Can't order more than 5 of the same book.");
-            return;
-        }
+        if (currentOrder[book] >= maxPerBookType) return;
 
         currentOrder[book]++;
-        quantityText.text = currentOrder[book].ToString();
+        qtyInput.text = currentOrder[book].ToString();
+
         UpdateBookCountText();
         UpdateConfirmButtonState();
     }
 
 
-    private void RemoveBook(BookDefinition book, TMP_Text quantityText)
+    private void RemoveBook(BookDefinition book, TMP_InputField qtyInput)
     {
-        if (!currentOrder.ContainsKey(book))
-            return;
+        if (!currentOrder.ContainsKey(book)) return;
 
         currentOrder[book]--;
         if (currentOrder[book] <= 0)
             currentOrder.Remove(book);
 
-        quantityText.text = currentOrder.ContainsKey(book) ? currentOrder[book].ToString() : "0";
+        qtyInput.text = currentOrder.ContainsKey(book) ? currentOrder[book].ToString() : "0";
+
         UpdateBookCountText();
         UpdateConfirmButtonState();
     }
@@ -160,28 +162,43 @@ public class BuyPanelController : MonoBehaviour
 
         foreach (var pair in currentOrder)
         {
+            BookDefinition book = pair.Key;
+            int quantity = pair.Value;
+
             GameObject entry = Instantiate(reviewEntryPrefab, reviewContentParent);
+            var ui = entry.GetComponent<ReviewBookEntryUI>();
 
-            SetBookImage(entry.transform, pair.Key.thumbnail);
+            // Fill UI
+            ui.titleText.text = book.title;
+            ui.genreText.text = book.genre;
+            ui.priceText.text = GameModeConfig.CurrentMode == GameMode.Zen ? " " : $"${book.cost}";
+            ui.quantityInputField.text = quantity.ToString();
 
-            TMP_Text[] texts = entry.GetComponentsInChildren<TMP_Text>(true);
-
-            foreach (TMP_Text txt in texts)
+            if (ui.bookImage != null)
             {
-                if (txt.name == "TitleText")
-                    txt.text = pair.Key.title;
-                else if (txt.name == "QuantityText")
-                    txt.text = $"x{pair.Value}";
-                else if (txt.name == "GenreText")
-                    txt.text = pair.Key.genre;
-                else if (txt.name == "PriceText")
-                {
-                    if (GameModeConfig.CurrentMode == GameMode.Zen)
-                        txt.text = " ";
-                    else
-                        txt.text = $"${pair.Key.cost}";
-                }
+                ui.bookImage.sprite = book.thumbnail;
+                ui.bookImage.preserveAspect = true;
             }
+
+            // Hook up buttons
+            ui.plusButton.onClick.AddListener(() => AddBook(book, ui.quantityInputField));
+            ui.minusButton.onClick.AddListener(() => RemoveBook(book, ui.quantityInputField));
+
+            // Hook up input
+            ui.quantityInputField.onEndEdit.AddListener((val) =>
+            {
+                if (int.TryParse(val, out int newQty))
+                {
+                    newQty = Mathf.Clamp(newQty, 0, maxPerBookType);
+                    SetBookQuantity(book, newQty, ui.quantityInputField);
+                }
+                else
+                {
+                    ui.quantityInputField.text = currentOrder.ContainsKey(book)
+                        ? currentOrder[book].ToString()
+                        : "0";
+                }
+            });
         }
 
         int totalCost = GetTotalCost();
@@ -196,9 +213,10 @@ public class BuyPanelController : MonoBehaviour
                 totalCostText.text = $"Total: ${totalCost}";
         }
 
-
         UpdateConfirmButtonState();
     }
+
+
 
     private void UpdateConfirmButtonState()
     {
@@ -217,6 +235,26 @@ public class BuyPanelController : MonoBehaviour
             if (totalCostTextFirstPage != null) totalCostTextFirstPage.text = $"Total: ${totalCost}";
         }
 
+    }
+
+    private void SetBookQuantity(BookDefinition book, int newQty, TMP_InputField qtyInput)
+    {
+        newQty = Mathf.Clamp(newQty, 0, maxPerBookType);
+
+        if (newQty == 0)
+        {
+            currentOrder.Remove(book);
+        }
+        else
+        {
+            currentOrder[book] = newQty;
+        }
+
+        // Force UI update to show clamped value
+        qtyInput.text = currentOrder.ContainsKey(book) ? currentOrder[book].ToString() : "0";
+
+        UpdateBookCountText();
+        UpdateConfirmButtonState();
     }
 
 
@@ -292,19 +330,22 @@ public class BuyPanelController : MonoBehaviour
             return;
         }
 
-
+        // Clear order
         currentOrder.Clear();
         CloseAll();
         UpdateBookCountText();
-        UpdateWalletUI(); // Refresh after spending
+        UpdateWalletUI();
         UpdateConfirmButtonState();
 
+        // Reset UI quantities on first page
         foreach (Transform child in contentParent)
         {
-            TMP_Text qtyText = child.Find("QuantityText").GetComponent<TMP_Text>();
-            qtyText.text = "0";
+            var ui = child.GetComponent<BookEntryUI>(); // was ReviewBookEntryUI
+            if (ui != null)
+                ui.quantityInputField.text = "0";
         }
     }
+
 
     public void CloseAll()
     {
@@ -316,33 +357,16 @@ public class BuyPanelController : MonoBehaviour
     {
         foreach (Transform child in contentParent)
         {
-            TMP_Text titleText = child.Find("TitleText").GetComponent<TMP_Text>();
-            TMP_Text qtyText = child.Find("QuantityText").GetComponent<TMP_Text>();
+            var ui = child.GetComponent<BookEntryUI>();
+            if (ui == null) continue;
 
-            var book = availableBooks.Find(b => b.title == titleText.text);
+            var book = availableBooks.Find(b => b.title == ui.titleText.text);
             if (book != null && currentOrder.ContainsKey(book))
-                qtyText.text = currentOrder[book].ToString();
+                ui.quantityInputField.text = currentOrder[book].ToString();
             else
-                qtyText.text = "0";
+                ui.quantityInputField.text = "0";
         }
     }
-
-    private static void SetBookImage(Transform root, Sprite sprite)
-    {
-        // find by name anywhere under the root (include inactive)
-        var imgTf = root.GetComponentsInChildren<Transform>(true)
-                        .FirstOrDefault(t => t.name == "BookImage");
-        if (!imgTf) return;
-
-        var img = imgTf.GetComponent<Image>();
-        if (!img) return;
-
-        img.sprite = sprite;
-        img.preserveAspect = true;
-        img.color = Color.white;
-        img.enabled = sprite != null;
-    }
-
 
     private int GetTotalCost()
     {
@@ -360,11 +384,12 @@ public class BuyPanelController : MonoBehaviour
 
         foreach (Transform child in contentParent)
         {
-            TMP_Text qtyText = child.Find("QuantityText").GetComponent<TMP_Text>();
-            if (qtyText != null)
-                qtyText.text = "0";
+            var ui = child.GetComponent<ReviewBookEntryUI>();
+            if (ui != null)
+                ui.quantityInputField.text = "0";
         }
     }
+
 
 
     public List<BookDefinition> GetFinalOrder()

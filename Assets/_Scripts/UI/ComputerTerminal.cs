@@ -80,7 +80,7 @@ public class ComputerTerminal : MonoBehaviour
         if (Physics.Raycast(ray, out hit, 5f)) // adjust range as needed
         {
             // Check if this terminal was hit
-            return hit.transform == this.transform;
+            return hit.transform == transform || hit.transform.IsChildOf(transform);
         }
 
         return false;
