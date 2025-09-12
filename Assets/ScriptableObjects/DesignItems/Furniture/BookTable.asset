@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   category: 0
   itemName: Book Table
-  itemImage: {fileID: 0}
+  itemImage: {fileID: 21300000, guid: e6273da456d392f42a732f0bb86d1aed, type: 3}
   itemPrefab: {fileID: 8309916831982774950, guid: 6ab1fef2d9ac29b44a0b86f7393d759f, type: 3}
   price: 100
   description: 

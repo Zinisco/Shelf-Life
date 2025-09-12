@@ -107,9 +107,11 @@ public class BookInfo : MonoBehaviour
             mpb.SetColor("_BaseColor", definition.color);  // For URP/HDRP
             r.SetPropertyBlock(mpb, 0);
 
-            // Clear MPB for other submeshes (especially element 1)
-            r.SetPropertyBlock(null, 1);
+            // Only clear if a second submesh actually exists
+            if (mats.Length > 1)
+            {
+                r.SetPropertyBlock(null, 1);
+            }
         }
     }
-
 }

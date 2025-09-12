@@ -22,23 +22,60 @@ public class BookDefinitionInspector : Editor
         GUILayout.Space(4);
         using (new EditorGUILayout.HorizontalScope())
         {
-            if (GUILayout.Button("Ping Thumbnail", GUILayout.Height(22)))
+            if (GUILayout.Button("Default"))
             {
-                if (def.thumbnail != null) EditorGUIUtility.PingObject(def.thumbnail);
+                BookPreviewGenerator.GenerateForDefinition(def, orthographic: true);
             }
 
-            if (GUILayout.Button("Regenerate Thumbnail", GUILayout.Height(22)))
+            if (GUILayout.Button("Top View"))
             {
-                var sprite = BookPreviewGenerator.GenerateForDefinition(def); // helper below
-                if (sprite != null)
-                {
-                    def.thumbnail = sprite;
-                    EditorUtility.SetDirty(def);
-                    AssetDatabase.SaveAssets();
-                    Repaint();
-                }
+                BookPreviewGenerator.GenerateForDefinition(
+                    def, orthographic: true,
+                    customCamOffset: new Vector3(0, 5, 0),
+                    customCamEuler: new Vector3(90, 0, 0)
+                );
+            }
+
+            if (GUILayout.Button("Bottom View"))
+            {
+                BookPreviewGenerator.GenerateForDefinition(
+                    def, orthographic: true,
+                    customCamOffset: new Vector3(0, -5, 0),
+                    customCamEuler: new Vector3(-90, 0, 0)
+                );
             }
         }
+
+        using (new EditorGUILayout.HorizontalScope())
+        {
+            if (GUILayout.Button("Left View"))
+            {
+                BookPreviewGenerator.GenerateForDefinition(
+                    def, orthographic: true,
+                    customCamOffset: new Vector3(-5, 0, 0),
+                    customCamEuler: new Vector3(0, 90, 0)
+                );
+            }
+
+            if (GUILayout.Button("Right View"))
+            {
+                BookPreviewGenerator.GenerateForDefinition(
+                    def, orthographic: true,
+                    customCamOffset: new Vector3(5, 0, 0),
+                    customCamEuler: new Vector3(0, -90, 0)
+                );
+            }
+
+            if (GUILayout.Button("Perspective View"))
+            {
+                BookPreviewGenerator.GenerateForDefinition(
+                    def, orthographic: false,
+                    customCamOffset: new Vector3(3, 2.5f, -5),
+                    customCamEuler: new Vector3(25, -30, 0)
+                );
+            }
+        }
+
     }
 
     public override bool HasPreviewGUI()

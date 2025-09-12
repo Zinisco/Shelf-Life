@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   category: 2
   itemName: Zanzibar
-  itemImage: {fileID: 0}
+  itemImage: {fileID: 21300000, guid: d6b902cf0a960ba498a714e13d0e8803, type: 3}
   itemPrefab: {fileID: 6244323191912569174, guid: 275d2a01fcd5cf44b8525fdcbc4404ab, type: 3}
   price: 40
   description: 

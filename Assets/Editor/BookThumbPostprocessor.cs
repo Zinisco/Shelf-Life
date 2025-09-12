@@ -53,7 +53,6 @@ public class BookThumbPostprocessor : AssetPostprocessor
                 // Don't early-return: multiple defs could share same filename by accident.
             }
         }
-        AssetDatabase.SaveAssets();
     }
 }
 #endif

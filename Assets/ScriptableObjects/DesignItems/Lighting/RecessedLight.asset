@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   category: 1
   itemName: Recessed Light
-  itemImage: {fileID: 0}
+  itemImage: {fileID: 21300000, guid: 060262cd220d2ca418c99618c7147d0e, type: 3}
   itemPrefab: {fileID: 3723793643338908546, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
   price: 30
   description: 

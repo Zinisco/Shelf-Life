@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   category: 2
   itemName: Book Display
-  itemImage: {fileID: 0}
+  itemImage: {fileID: 21300000, guid: 63b1ab9e8a8b0264ebed78a99a9e4b0f, type: 3}
   itemPrefab: {fileID: 2307712202499325776, guid: 77e6e83898134c249af7ee3baec0bff7, type: 3}
   price: 20
   description: 
