@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: the-da-vinci-cold
   title: The Da Vinci Cold
-  genre: Mystery
+  genre: 1
   cost: 10
   price: 20
   color: {r: 0.745283, g: 0.0035154943, b: 0.0035154943, a: 0}

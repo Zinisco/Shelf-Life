@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: rockingjay
   title: Rockingjay
-  genre: YA
+  genre: 10
   cost: 10
   price: 20
   color: {r: 0.04223035, g: 0.636544, b: 0.6886792, a: 0}

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: tomorrow-and-tomorrow-and-tamales
   title: Tomorrow and Tomorrow and Tamales
-  genre: Sci-Fi
+  genre: 2
   cost: 10
   price: 20
   color: {r: 0.004182993, g: 0.7554842, b: 0.8867924, a: 0}

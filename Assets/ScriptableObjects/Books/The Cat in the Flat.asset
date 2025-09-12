@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: the-cat-in-the-flat
   title: The Cat in the Flat
-  genre: Children's
+  genre: 10
   cost: 10
   price: 20
   color: {r: 0, g: 0, b: 0, a: 0}

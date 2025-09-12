@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: gone-grill
   title: Gone Grill
-  genre: Mystery
+  genre: 1
   cost: 10
   price: 20
   color: {r: 0, g: 0, b: 0, a: 0}

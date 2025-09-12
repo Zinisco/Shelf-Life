@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: the-silence-of-the-yams
   title: The Silence of the Yams
-  genre: Horror
+  genre: 3
   cost: 10
   price: 20
   color: {r: 0.7735849, g: 0.39321673, b: 0.032840855, a: 0}

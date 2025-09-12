@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: the-fork-in-our-stars
   title: The Fork in Our Stars
-  genre: Romance
+  genre: 2
   cost: 10
   price: 20
   color: {r: 0.03203986, g: 0.754717, b: 0.74756485, a: 0}

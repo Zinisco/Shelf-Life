@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: a-latte-like-love
   title: A Latte Like Love
-  genre: Romance
+  genre: 2
   cost: 10
   price: 20
   color: {r: 0.5943396, g: 0.042052325, b: 0.17456585, a: 0}

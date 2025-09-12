@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: a-game-of-scones
   title: A Game of Scones
-  genre: Fantasy
+  genre: 6
   cost: 10
   price: 20
   color: {r: 0, g: 0, b: 0, a: 0}

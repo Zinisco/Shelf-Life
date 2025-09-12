@@ -3,9 +3,25 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "BookDefinition", menuName = "Books/BookDefinition")]
 public class BookDefinition : ScriptableObject
 {
+    public enum Genre
+    {
+        Fiction,
+        Mystery,
+        Romance,
+        SciFi,
+        Horror,
+        Drama,
+        Fantasy,
+        NonFiction,
+        Poetry,
+        History,
+        YoungAdult,
+        Biography
+    }
+
     public string bookID;
     public string title;
-    public string genre;
+    public Genre genre;
     public int cost = 10;
     public int price = 20;
     public Color color;

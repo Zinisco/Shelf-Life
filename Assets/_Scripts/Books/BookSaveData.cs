@@ -8,7 +8,7 @@ public class BookSaveData
     public string bookID;             // Unique ID (used to retrieve prefab/definition)
 
     public string title;
-    public string genre;
+    public BookDefinition.Genre genre;
     public int cost;
     public int price;
     public string summary;

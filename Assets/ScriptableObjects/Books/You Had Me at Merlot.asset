@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: you-had-me-at-merlot
   title: You Had Me at Merlot
-  genre: Romance
+  genre: 2
   cost: 10
   price: 20
   color: {r: 0.7075472, g: 0.05799567, b: 0, a: 0}

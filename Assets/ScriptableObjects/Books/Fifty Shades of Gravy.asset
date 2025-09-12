@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: fifty-shades-of-gravy
   title: Fifty Shades of Gravy
-  genre: Romance
+  genre: 2
   cost: 10
   price: 20
   color: {r: 0.31132078, g: 0.31132078, b: 0.31132078, a: 0}

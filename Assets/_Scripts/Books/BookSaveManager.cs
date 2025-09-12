@@ -157,7 +157,7 @@ public class BookSaveManager : MonoBehaviour
             {
                 bookID = info.bookID,                   // now guaranteed non-empty
                 title = info.definition?.title ?? "",
-                genre = info.definition?.genre ?? "",
+                genre = info.definition != null ? info.definition.genre : BookDefinition.Genre.Fiction,
                 summary = info.definition?.summary ?? "",
                 price = info.definition?.price ?? 0,
                 cost = info.definition?.cost ?? 0,

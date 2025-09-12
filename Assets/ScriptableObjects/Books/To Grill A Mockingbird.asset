@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: to-grill-a-mockingbird
   title: To Grill A Mockingbird
-  genre: Fiction
+  genre: 10
   cost: 10
   price: 20
   color: {r: 0, g: 0, b: 0, a: 0}

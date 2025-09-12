@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: the-tell-tale-fart
   title: The Tell-Tale Fart
-  genre: Horror
+  genre: 3
   cost: 10
   price: 20
   color: {r: 0.47058824, g: 0.24314362, b: 0.1098039, a: 0}

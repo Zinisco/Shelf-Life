@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: the-marshian
   title: The Marshian
-  genre: Sci-Fi
+  genre: 3
   cost: 10
   price: 20
   color: {r: 0.7830189, g: 0.3378055, b: 0.033241354, a: 0}

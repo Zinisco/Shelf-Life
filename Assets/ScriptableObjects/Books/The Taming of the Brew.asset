@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   bookID: the-taming-of-the-brew
   title: The Taming of the Brew
-  genre: Romance
+  genre: 2
   cost: 10
   price: 20
   color: {r: 0.5283019, g: 0.2501725, b: 0.062299743, a: 0}

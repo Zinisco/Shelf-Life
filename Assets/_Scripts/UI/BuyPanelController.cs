@@ -22,6 +22,9 @@ public class BuyPanelController : MonoBehaviour
     public Button randomButton;
     public GameObject priceTextButton;
 
+    [Header("Filter UI")]
+    public TMP_Dropdown genreDropdown;
+
     [Header("Random Button Panel")]
     public GameObject randomQuantityPanel;
     public TMP_InputField quantityInputField;
@@ -49,6 +52,16 @@ public class BuyPanelController : MonoBehaviour
         // Auto-fill from BookDatabase
         if (bookDatabase != null)
             availableBooks = bookDatabase.allBooks;
+
+        // Populate dropdown with enum names
+        genreDropdown.ClearOptions();
+        var options = System.Enum.GetNames(typeof(BookDefinition.Genre)).ToList();
+        options.Insert(0, "All"); // Add "All" option at the top
+        genreDropdown.AddOptions(options);
+
+        // Listen for changes
+        genreDropdown.onValueChanged.AddListener(OnGenreFilterChanged);
+
 
         UpdateWalletUI();
         UpdateConfirmButtonState(); // shows "Total: $0" on load
@@ -170,7 +183,7 @@ public class BuyPanelController : MonoBehaviour
 
             // Fill UI
             ui.titleText.text = book.title;
-            ui.genreText.text = book.genre;
+            ui.genreText.text = book.genre.ToString();
             ui.priceText.text = GameModeConfig.CurrentMode == GameMode.Zen ? " " : $"${book.cost}";
             ui.quantityInputField.text = quantity.ToString();
 
@@ -401,6 +414,30 @@ public class BuyPanelController : MonoBehaviour
                 finalList.Add(pair.Key);
         }
         return finalList;
+    }
+
+    private void OnGenreFilterChanged(int index)
+    {
+        // If "All" is selected
+        if (index == 0)
+        {
+            availableBooks = bookDatabase.allBooks;
+        }
+        else
+        {
+            BookDefinition.Genre selectedGenre =
+                (BookDefinition.Genre)System.Enum.Parse(typeof(BookDefinition.Genre), genreDropdown.options[index].text);
+
+            availableBooks = bookDatabase.allBooks
+                .Where(b => b.genre == selectedGenre)
+                .ToList();
+        }
+
+        // Refresh UI with filtered list
+        foreach (Transform child in contentParent)
+            Destroy(child.gameObject);
+
+        PopulateAvailableBooks();
     }
 
 }
