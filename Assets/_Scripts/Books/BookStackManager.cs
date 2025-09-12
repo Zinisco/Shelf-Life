@@ -12,10 +12,15 @@ public class BookStackManager : MonoBehaviour
 
         if (baseInfo == null || incomingInfo == null) return false;
 
-        // Match by title or book ID
+        // Prevent stacking if baseBook is on a BookDisplay
+        if (baseBook.transform.parent != null && baseBook.transform.parent.CompareTag("BookDisplay"))
+            return false;
+
+        // Match by title
         return string.Equals(baseInfo.title?.Trim(),
-                     incomingInfo.title?.Trim(),
-                     System.StringComparison.OrdinalIgnoreCase);
+                             incomingInfo.title?.Trim(),
+                             System.StringComparison.OrdinalIgnoreCase);
     }
+
 
 }

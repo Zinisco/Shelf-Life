@@ -181,6 +181,13 @@ public class GhostBookManager : MonoBehaviour
                     // Stack if titles match and not at max height
                     if (hitInfo != null && heldInfo != null && hitInfo.title == heldInfo.title)
                     {
+                        if (hitInfo.transform.parent != null && hitInfo.transform.parent.CompareTag("BookDisplay"))
+                        {
+                            ghostBookInstance.SetActive(false);
+                            latestGhostValid = false;
+                            return;
+                        }
+
                         BookStackRoot root = hitInfo.currentStackRoot;
                         GameObject topBook = hitBook;
                         if (root != null && root.books.Count > 0)
