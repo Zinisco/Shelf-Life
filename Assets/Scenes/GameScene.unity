@@ -5440,6 +5440,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1996043234}
     m_Modifications:
+    - target: {fileID: 3024623661007696190, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
+      propertyPath: m_UsePipelineSettings
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3723793643338908546, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_Name
       value: RecessedLight (7)
@@ -5506,19 +5510,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.w
-      value: 1.2057e-40
+      value: -11
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.x
-      value: 0
+      value: 1.02e-43
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.y
-      value: 6e-44
+      value: 1.7e-44
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.z
-      value: 6e-45
+      value: 3.3207e-41
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -5761,6 +5765,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1996043234}
     m_Modifications:
+    - target: {fileID: 3024623661007696190, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
+      propertyPath: m_UsePipelineSettings
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3723793643338908546, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_Name
       value: RecessedLight (5)
@@ -5972,67 +5980,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 349115907}
   m_CullTransparentMesh: 1
---- !u!1001 &354478295
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1130544393987534388, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -2.208078
-      objectReference: {fileID: 0}
-    - target: {fileID: 1130544393987534388, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1130544393987534388, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 3.0044427
-      objectReference: {fileID: 0}
-    - target: {fileID: 1130544393987534388, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1130544393987534388, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1130544393987534388, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1130544393987534388, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1130544393987534388, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1130544393987534388, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1130544393987534388, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3156376625117449069, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_Name
-      value: BanjoFig
-      objectReference: {fileID: 0}
-    - target: {fileID: 3156376625117449069, guid: 87dafaac6277ecd48807405af562da17, type: 3}
-      propertyPath: m_StaticEditorFlags
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 87dafaac6277ecd48807405af562da17, type: 3}
 --- !u!1 &368192552
 GameObject:
   m_ObjectHideFlags: 0
@@ -7296,6 +7243,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1996043234}
     m_Modifications:
+    - target: {fileID: 3024623661007696190, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
+      propertyPath: m_UsePipelineSettings
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3723793643338908546, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_Name
       value: RecessedLight (8)
@@ -9661,6 +9612,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1996043234}
     m_Modifications:
+    - target: {fileID: 3024623661007696190, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
+      propertyPath: m_UsePipelineSettings
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3723793643338908546, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_Name
       value: RecessedLight (1)
@@ -9727,7 +9682,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.w
-      value: 1.61788e-40
+      value: -3.730511e+17
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.x
@@ -9735,11 +9690,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.y
-      value: 1e-44
+      value: NaN
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.z
-      value: 2.6944e-41
+      value: 2.7314e-41
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -11900,6 +11855,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1996043234}
     m_Modifications:
+    - target: {fileID: 3024623661007696190, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
+      propertyPath: m_UsePipelineSettings
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3723793643338908546, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_Name
       value: RecessedLight (4)
@@ -11966,19 +11925,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.w
-      value: 4.1003012e-19
+      value: 3.923636e-39
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.x
-      value: 1.02e-43
+      value: 1.7e-44
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.y
-      value: 1e-44
+      value: NaN
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.z
-      value: 1.25936e-40
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -19905,6 +19864,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1996043234}
     m_Modifications:
+    - target: {fileID: 3024623661007696190, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
+      propertyPath: m_UsePipelineSettings
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3723793643338908546, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_Name
       value: RecessedLight (3)
@@ -19971,7 +19934,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.w
-      value: 4.1326e-40
+      value: -1.6104451e-11
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.x
@@ -19979,11 +19942,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.y
-      value: 1e-44
+      value: NaN
       objectReference: {fileID: 0}
     - target: {fileID: 6202372153176056634, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_BoundingSphereOverride.z
-      value: 7.4272e-41
+      value: 1.3726e-41
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -28422,6 +28385,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1996043234}
     m_Modifications:
+    - target: {fileID: 3024623661007696190, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
+      propertyPath: m_UsePipelineSettings
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3723793643338908546, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_Name
       value: RecessedLight (2)
@@ -28601,6 +28568,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1996043234}
     m_Modifications:
+    - target: {fileID: 3024623661007696190, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
+      propertyPath: m_UsePipelineSettings
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3723793643338908546, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_Name
       value: RecessedLight (6)
@@ -29044,6 +29015,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1996043234}
     m_Modifications:
+    - target: {fileID: 3024623661007696190, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
+      propertyPath: m_UsePipelineSettings
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3723793643338908546, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
       propertyPath: m_Name
       value: RecessedLight
@@ -29442,4 +29417,3 @@ SceneRoots:
   - {fileID: 1996043234}
   - {fileID: 1660829819}
   - {fileID: 1487188788}
-  - {fileID: 354478295}
