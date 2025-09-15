@@ -247,6 +247,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ghostVisual: {fileID: 927869748593052385}
+  visualRoot: {fileID: 2118249394960199296}
 --- !u!65 &7736422805493943586
 BoxCollider:
   m_ObjectHideFlags: 0

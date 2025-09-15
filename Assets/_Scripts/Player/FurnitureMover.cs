@@ -32,7 +32,8 @@ public class FurnitureMover : MonoBehaviour
     private Renderer arrowRenderer;
     private Vector3 originalPosition;
     private Quaternion originalRotation;
-
+    private Transform visualTransform;
+    private Vector3 visualOriginalLocalPos;
 
     private float currentRotation = 0f;
     private float postPlaceCooldown = 0.2f; // short buffer after placement
@@ -203,6 +204,14 @@ public class FurnitureMover : MonoBehaviour
             Physics.IgnoreCollision(c, playerCol, true);
         }
 
+        MovableFurniture movable = selectedFurniture.GetComponent<MovableFurniture>();
+        visualTransform = movable?.GetVisualRoot();
+
+        if (visualTransform == null)
+        {
+            Debug.LogWarning($"No visual root assigned in MovableFurniture on '{selectedFurniture.name}'!");
+        }
+
 
         // Assign ghostRenderer BEFORE disabling other renderers
         if (ghostVisual != null)
@@ -215,13 +224,17 @@ public class FurnitureMover : MonoBehaviour
         {
             if (rend != null && !rend.transform.IsChildOf(ghostVisual.transform))
             {
-                // Store original materials
-                originalMaterials[rend] = rend.materials;
-
-                // Disable the renderer entirely
+                // Just hide renderer
                 rend.enabled = false;
             }
         }
+
+        Debug.Log("Selected Furniture: " + selectedFurniture.name);
+        foreach (Transform child in selectedFurniture.transform)
+        {
+            Debug.Log(" - Child: " + child.name);
+        }
+
 
         if (ghostVisual != null)
         {
@@ -248,87 +261,56 @@ public class FurnitureMover : MonoBehaviour
     {
         if (!isMoving || selectedFurniture == null || ghostVisual == null) return;
 
-        // Only place if valid location
         if (!CanPlaceGhost())
         {
             Debug.Log("Invalid placement location.");
             return;
         }
 
-        // Apply ghost position/rotation to furniture
-        // Set X and Z from ghost, but calculate Y so furniture sits flush with floor
-        Bounds bounds = selectedFurniture.GetComponent<Collider>().bounds;
-        float bottomOffset = bounds.center.y - bounds.extents.y;
-
+        // Apply ghost transform to the root
         Vector3 ghostPos = ghostVisual.transform.position;
+        float y = ghostPos.y;
 
-        // Raycast to get ground height
-        RaycastHit hitInfo;
-        float y = ghostPos.y; // fallback
-
-        if (Physics.Raycast(ghostPos + Vector3.up, Vector3.down, out hitInfo, 5f, groundMask))
-        {
+        if (Physics.Raycast(ghostPos + Vector3.up, Vector3.down, out RaycastHit hitInfo, 5f, groundMask))
             y = hitInfo.point.y;
-        }
 
         Vector3 correctPosition = new Vector3(ghostPos.x, y, ghostPos.z);
-        selectedFurniture.transform.position = correctPosition;
+        selectedFurniture.transform.SetPositionAndRotation(correctPosition, ghostVisual.transform.rotation);
 
-        selectedFurniture.transform.rotation = ghostVisual.transform.rotation;
-
-        // Cache all the furniture’s colliders
-        Collider[] furnitureCols = selectedFurniture.GetComponentsInChildren<Collider>();
-
-        // Turn OFF collisions between furniture and player
-        foreach (var c in furnitureCols)
-        {
+        // Restore collisions
+        foreach (var c in selectedFurniture.GetComponentsInChildren<Collider>())
             Physics.IgnoreCollision(c, playerCol, false);
-        }
 
 
+        // Re-enable the renderers
         if (originalRenderers != null)
         {
             foreach (var rend in originalRenderers)
-            {
-                if (rend != null)
+                if (rend != null && !rend.transform.IsChildOf(ghostVisual.transform))
                     rend.enabled = true;
-            }
         }
 
-        if (originalMaterials != null)
-        {
-            foreach (var kvp in originalMaterials)
-            {
-                if (kvp.Key != null)
-                    kvp.Key.materials = kvp.Value;
-            }
-            originalMaterials.Clear();
-        }
-
+        // Reset layers
         selectedFurniture.layer = originalFurnitureLayer;
-
-        if (originalLayers != null)
-        {
-            foreach (var kvp in originalLayers)
-            {
-                if (kvp.Key != null)
-                    kvp.Key.layer = kvp.Value;
-            }
-        }
-        originalLayers.Clear(); // Clean up
+        foreach (var kvp in originalLayers)
+            if (kvp.Key != null) kvp.Key.layer = kvp.Value;
+        originalLayers.Clear();
 
         ghostVisual.SetActive(false);
 
+        // Reset state
         selectedFurniture = null;
         ghostVisual = null;
         ghostRenderer = null;
         rotationAmount = 0f;
         isMoving = false;
         ghostRenderers = null;
+        visualTransform = null;
 
         postPlaceTimer = postPlaceCooldown;
         PauseMenuController.Instance?.BlockPauseFor(0.1f);
     }
+
 
     private bool TryFindFurniture(out GameObject furniture)
     {
@@ -348,35 +330,39 @@ public class FurnitureMover : MonoBehaviour
 
         return false;
     }
-
-
     private void UpdateGhostPosition()
     {
         if (ghostVisual == null || selectedFurniture == null) return;
 
+        // Project forward from camera
         Vector3 forwardPos = playerCamera.position + playerCamera.forward * moveDistance;
-        Vector3 rayOrigin = forwardPos + Vector3.up * 2f; // cast from above to ensure it hits
+        Vector3 rayOrigin = forwardPos + Vector3.up * 2f;
         Ray ray = new Ray(rayOrigin, Vector3.down);
 
         if (Physics.Raycast(ray, out RaycastHit hit, 5f, groundMask))
-        {
             forwardPos.y = hit.point.y;
-        }
         else
+            forwardPos.y = 0f;
+
+        if (visualTransform != null)
         {
-            forwardPos.y = 0f; // fallback
+            Debug.DrawLine(visualTransform.position, selectedFurniture.transform.position, Color.red);
+            Debug.Log($"[Visual] {visualTransform.name} localPos: {visualTransform.localPosition}, worldPos: {visualTransform.position}");
         }
 
+        // Move the root only
         selectedFurniture.transform.position = forwardPos;
 
-
-        // Smoothly interpolate rotation
+        // Smoothly rotate the root
         currentRotation = Mathf.LerpAngle(currentRotation, rotationAmount, Time.deltaTime * rotationSmoothSpeed);
         Quaternion targetRot = Quaternion.Euler(0f, currentRotation, 0f);
         selectedFurniture.transform.rotation = targetRot;
 
-        ghostVisual.transform.localPosition = ghostOffset;
+        // Keep ghost aligned with the root
+        ghostVisual.transform.localPosition = Vector3.zero;
+        ghostVisual.transform.localRotation = Quaternion.identity;
 
+        // Set ghost materials (valid/invalid)
         bool canPlace = CanPlaceGhost();
         Material ghostMat = canPlace ? validMaterial : invalidMaterial;
 
@@ -394,11 +380,11 @@ public class FurnitureMover : MonoBehaviour
             }
         }
 
-
         if (arrowRenderer != null)
             arrowRenderer.material = ghostMat;
-
     }
+
+
 
     private void HandleMovePressed()
     {
@@ -619,5 +605,4 @@ public class FurnitureMover : MonoBehaviour
             progressRingUI.gameObject.SetActive(false);
         }
     }
-
 }

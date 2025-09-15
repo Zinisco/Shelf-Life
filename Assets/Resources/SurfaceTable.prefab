@@ -49,6 +49,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ghostVisual: {fileID: 8361356697049365285}
+  visualRoot: {fileID: 6337394487723056741}
 --- !u!114 &5147861767735035300
 MonoBehaviour:
   m_ObjectHideFlags: 0
