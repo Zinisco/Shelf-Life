@@ -3,147 +3,153 @@ using UnityEngine;
 
 public class DeliveryZone : MonoBehaviour
 {
-    [SerializeField] private Vector3 boxSize = new Vector3(2, 1, 2);
-    [SerializeField] private float spacing = 0.15f;       // horizontal margin
-    [SerializeField] private float physicsMargin = 0.05f; // hidden extra gap
+    [Header("Zone Settings")]
+    [SerializeField] private Vector3 boxSize = new Vector3(4, 2, 4);   // total delivery area
+    [SerializeField] private Vector2 slotSize = new Vector2(0.5f, 0.5f); // base cell size (X,Z)
+    [SerializeField] private float layerHeight = 1f;                   // vertical spacing per layer
+    [SerializeField] private int maxLayers = 5;
     [SerializeField] private LayerMask crateLayer;
 
-    private List<Vector3> basePositions = new();
-    private Dictionary<int, HashSet<int>> occupiedIndicesPerLayer = new();
+    private int gridX, gridZ;
+    private Dictionary<int, bool[,]> occupiedGridPerLayer = new(); // layer ? grid occupancy
 
     private void Awake()
     {
-        ResetOccupiedMap();
-        GenerateBasePositions(Vector3.one); // init with dummy
+        BuildGrid();
     }
 
-    private void ResetOccupiedMap()
+    /// <summary>
+    /// Build the base grid once. Each grid cell is a slotSize footprint.
+    /// </summary>
+    private void BuildGrid()
     {
-        occupiedIndicesPerLayer.Clear();
-        for (int i = 0; i < 5; i++)
-            occupiedIndicesPerLayer[i] = new HashSet<int>();
+        gridX = Mathf.Max(1, Mathf.FloorToInt(boxSize.x / slotSize.x));
+        gridZ = Mathf.Max(1, Mathf.FloorToInt(boxSize.z / slotSize.y));
+
+        occupiedGridPerLayer.Clear();
+        for (int l = 0; l < maxLayers; l++)
+            occupiedGridPerLayer[l] = new bool[gridX, gridZ];
+
+        Debug.Log($"[DeliveryZone] Built grid {gridX}x{gridZ} per layer, {maxLayers} layers");
     }
 
-    private void GenerateBasePositions(Vector3 crateSize)
-    {
-        basePositions.Clear();
-
-        float stepX = crateSize.x + spacing + physicsMargin;
-        float stepZ = crateSize.z + spacing + physicsMargin;
-
-        int perRowX = Mathf.Max(1, Mathf.FloorToInt(boxSize.x / stepX));
-        int perRowZ = Mathf.Max(1, Mathf.FloorToInt(boxSize.z / stepZ));
-
-        float startX = -boxSize.x / 2 + crateSize.x / 2;
-        float startZ = -boxSize.z / 2 + crateSize.z / 2;
-        float baseY = -boxSize.y / 2;
-
-        for (int z = 0; z < perRowZ; z++)
-        {
-            for (int x = 0; x < perRowX; x++)
-            {
-                Vector3 localOffset = new Vector3(startX + x * stepX, baseY, startZ + z * stepZ);
-                Vector3 worldPos = transform.TransformPoint(localOffset);
-                basePositions.Add(worldPos);
-            }
-        }
-
-        Debug.Log($"[DeliveryZone] Generated {basePositions.Count} slots");
-    }
+    // --------------------------
+    // PUBLIC API
+    // --------------------------
 
     public bool TrySpawnCrate(GameObject cratePrefab)
     {
         GameObject crate = Instantiate(cratePrefab);
-        CrateDimensions dim = crate.GetComponent<CrateDimensions>();
-        if (dim == null) { Destroy(crate); return false; }
-
-        GenerateBasePositions(dim.Size);
-        PrepareCrateForPlacement(crate);
-
-        if (TryPlaceCrateAtAnyValidPosition(crate, dim.Size))
-            return true;
-
-        Destroy(crate);
-        return false;
+        if (!TryPlacePreInstantiatedCrate(crate))
+        {
+            Destroy(crate);
+            return false;
+        }
+        return true;
     }
 
     public bool TryPlacePreInstantiatedCrate(GameObject crate)
     {
-        CrateDimensions dim = crate.GetComponent<CrateDimensions>();
-        if (dim == null) { Destroy(crate); return false; }
+        if (!crate.TryGetComponent(out CrateDimensions dim))
+        {
+            Debug.LogWarning("Crate missing CrateDimensions component");
+            Destroy(crate);
+            return false;
+        }
 
-        GenerateBasePositions(dim.Size);
         PrepareCrateForPlacement(crate);
 
-        return TryPlaceCrateAtAnyValidPosition(crate, dim.Size);
+        // convert crate size into grid cells
+        int cellsX = Mathf.CeilToInt(dim.Size.x / slotSize.x);
+        int cellsZ = Mathf.CeilToInt(dim.Size.z / slotSize.y);
+
+        // try to find a valid placement
+        for (int layer = 0; layer < maxLayers; layer++)
+        {
+            if (layer > 0 && !IsLayerFullBelow(layer - 1))
+                return false; // must fill below first
+
+            for (int gx = 0; gx <= gridX - cellsX; gx++)
+            {
+                for (int gz = 0; gz <= gridZ - cellsZ; gz++)
+                {
+                    if (CanOccupy(gx, gz, cellsX, cellsZ, layer))
+                    {
+                        Vector3 worldPos = GridToWorld(gx, gz, cellsX, cellsZ, layer, dim.Size.y);
+                        PlaceCrateAtPosition(crate, worldPos);
+
+                        MarkOccupied(gx, gz, cellsX, cellsZ, layer);
+                        return true;
+                    }
+                }
+            }
+        }
+
+        Debug.LogWarning("DeliveryZone full. No space for new crate.");
+        return false;
     }
+
+    // --------------------------
+    // GRID LOGIC
+    // --------------------------
+
+    private bool CanOccupy(int startX, int startZ, int sizeX, int sizeZ, int layer)
+    {
+        var grid = occupiedGridPerLayer[layer];
+        for (int x = startX; x < startX + sizeX; x++)
+            for (int z = startZ; z < startZ + sizeZ; z++)
+                if (grid[x, z]) return false;
+
+        return true;
+    }
+
+    private void MarkOccupied(int startX, int startZ, int sizeX, int sizeZ, int layer)
+    {
+        var grid = occupiedGridPerLayer[layer];
+        for (int x = startX; x < startX + sizeX; x++)
+            for (int z = startZ; z < startZ + sizeZ; z++)
+                grid[x, z] = true;
+    }
+
+    private Vector3 GridToWorld(int gx, int gz, int sizeX, int sizeZ, int layer, float crateHeight)
+    {
+        // center of the slot rectangle
+        float cellOriginX = -boxSize.x / 2 + (gx + sizeX / 2f) * slotSize.x;
+        float cellOriginZ = -boxSize.z / 2 + (gz + sizeZ / 2f) * slotSize.y;
+
+        Vector3 local = new Vector3(cellOriginX, -boxSize.y / 2 + layer * layerHeight, cellOriginZ);
+        Vector3 world = transform.TransformPoint(local);
+
+        // align bottom of crate to grid Y
+        world.y += crateHeight / 2f;
+        return world;
+    }
+
+    private bool IsLayerFullBelow(int layer)
+    {
+        var grid = occupiedGridPerLayer[layer];
+        for (int x = 0; x < gridX; x++)
+            for (int z = 0; z < gridZ; z++)
+                if (!grid[x, z]) return false;
+        return true;
+    }
+
+    // --------------------------
+    // CRATE HELPERS
+    // --------------------------
 
     private void PrepareCrateForPlacement(GameObject crate)
     {
         if (crate.TryGetComponent<Rigidbody>(out var rb))
         {
-            rb.isKinematic = false;
-            rb.useGravity = true;
+            rb.isKinematic = true;
+            rb.useGravity = false;
         }
-    }
-
-    private bool TryPlaceCrateAtAnyValidPosition(GameObject crate, Vector3 size)
-    {
-        const int maxVerticalLayers = 5;
-
-        for (int layer = 0; layer < maxVerticalLayers; layer++)
-        {
-            if (layer > 0 && !IsLayerFull(layer - 1))
-                return false;
-
-            for (int i = 0; i < basePositions.Count; i++)
-            {
-                if (occupiedIndicesPerLayer[layer].Contains(i)) continue;
-
-                float layerHeight = Mathf.Max(size.y, 0.8f);
-                Vector3 basePos = basePositions[i] + Vector3.up * (layer * layerHeight);
-
-                if (layer > 0 && !IsDirectlyAboveCrate(basePos, size))
-                    continue;
-
-                // overlap check
-                Vector3 halfExtents = size * 0.5f;
-                Vector3 checkCenter = basePos + Vector3.up * halfExtents.y;
-
-                if (Physics.CheckBox(checkCenter, halfExtents, Quaternion.identity, crateLayer))
-                    continue;
-
-                PlaceCrateAtPosition(crate, basePos);
-                occupiedIndicesPerLayer[layer].Add(i);
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private void PlaceCrateAtPosition(GameObject crate, Vector3 targetPos)
     {
-        if (crate.TryGetComponent(out Collider col))
-        {
-            float halfHeight = col.bounds.size.y * 0.5f;
-            crate.transform.position = targetPos + Vector3.up * halfHeight;
-        }
-        else
-        {
-            crate.transform.position = targetPos;
-        }
-    }
-
-    private bool IsLayerFull(int layer)
-    {
-        return occupiedIndicesPerLayer[layer].Count >= basePositions.Count;
-    }
-
-    private bool IsDirectlyAboveCrate(Vector3 pos, Vector3 size)
-    {
-        Ray ray = new Ray(pos + Vector3.up * 0.3f, Vector3.down);
-        return Physics.Raycast(ray, 2f, crateLayer);
+        crate.transform.position = targetPos;
     }
 
 #if UNITY_EDITOR
@@ -151,6 +157,40 @@ public class DeliveryZone : MonoBehaviour
     {
         Gizmos.color = Color.yellow;
         Gizmos.DrawWireCube(transform.position, boxSize);
+
+        // Bail out if grid isn't built yet
+        if (gridX == 0 || gridZ == 0) return;
+
+        // Always draw for all layers, offset upward per layer
+        for (int layer = 0; layer < maxLayers; layer++)
+        {
+            var grid = occupiedGridPerLayer.ContainsKey(layer) ? occupiedGridPerLayer[layer] : null;
+            float layerY = -boxSize.y / 2 + layer * layerHeight;
+
+            for (int x = 0; x < gridX; x++)
+            {
+                for (int z = 0; z < gridZ; z++)
+                {
+                    Vector3 localCenter = new Vector3(
+                        -boxSize.x / 2 + (x + 0.5f) * slotSize.x,
+                        layerY,
+                        -boxSize.z / 2 + (z + 0.5f) * slotSize.y
+                    );
+                    Vector3 worldCenter = transform.TransformPoint(localCenter);
+                    Vector3 cellSize = new Vector3(slotSize.x, 0.05f, slotSize.y);
+
+                    bool occupied = grid != null && grid[x, z];
+                    Gizmos.color = occupied
+                        ? new Color(1f, 0f, 0f, 0.5f)   // red semi-transparent
+                        : new Color(0f, 1f, 0f, 0.2f); // green transparent
+
+                    Gizmos.DrawCube(worldCenter, cellSize);
+                    Gizmos.color = Color.black;
+                    Gizmos.DrawWireCube(worldCenter, cellSize);
+                }
+            }
+        }
     }
 #endif
+
 }

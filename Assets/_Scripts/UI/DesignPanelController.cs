@@ -64,6 +64,12 @@ public class DesignPanelController : MonoBehaviour
         paintButton.onClick.AddListener(() => ShowCategory(DesignItem.Category.Paint));
     }
 
+    private void OnEnable()
+    {
+        UpdateWalletUI();
+    }
+
+
     private void ShowCategory(DesignItem.Category category)
     {
         currentCategory = category;

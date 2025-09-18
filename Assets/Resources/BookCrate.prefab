@@ -4935,7 +4935,7 @@ GameObject:
   - component: {fileID: 325891283615525521}
   m_Layer: 21
   m_Name: BookCrate
-  m_TagString: BookCrate
+  m_TagString: Crate
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -5040,6 +5040,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   crateID: 
+  placementAnchor: {fileID: 0}
   gameInput: {fileID: 0}
   openParticles: {fileID: 311024371721543886}
   bookDatabase: {fileID: 11400000, guid: c463eee527b601c428f9fbd3b53edd72, type: 2}

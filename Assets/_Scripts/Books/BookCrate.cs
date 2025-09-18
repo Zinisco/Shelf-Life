@@ -208,8 +208,29 @@ public class BookCrate : MonoBehaviour
     public void SetHeld(bool held)
     {
         isHeld = held;
-        if (isHeld)
-            EnablePhysics();
+
+        if (TryGetComponent<Rigidbody>(out var rb))
+        {
+            if (isHeld)
+            {
+                // Let the FixedJoint drive it without physics interference
+                rb.isKinematic = false;                    // must stay dynamic for joint
+                rb.useGravity = false;                     // disable gravity
+                rb.velocity = Vector3.zero;                // reset motion
+                rb.angularVelocity = Vector3.zero;
+                rb.interpolation = RigidbodyInterpolation.None; // disable smoothing
+                rb.collisionDetectionMode = CollisionDetectionMode.Discrete; // reduce over-correction
+            }
+            else
+            {
+                // Re-enable proper physics when dropped
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.interpolation = RigidbodyInterpolation.Interpolate;
+                rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+            }
+        }
     }
+
 
 }

@@ -7,9 +7,9 @@ TagManager:
   - CinemachineTarget
   - Pickable
   - Furniture
-  - BookCrate
   - Book
   - BookDisplay
+  - Crate
   layers:
   - Default
   - TransparentFX

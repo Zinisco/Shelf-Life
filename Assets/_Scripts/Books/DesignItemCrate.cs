@@ -7,6 +7,8 @@ public class DesignItemCrate : MonoBehaviour
     [Header("Crate Settings")]
     [SerializeField] private string crateID;
 
+    [SerializeField] private MeshRenderer labelRenderer;
+
     [SerializeField] private Transform placementAnchor;
     public Transform GetPlacementAnchor() => placementAnchor;
 
@@ -62,7 +64,16 @@ public class DesignItemCrate : MonoBehaviour
     public void SetDesignItem(DesignItem item)
     {
         designItem = item;
+
+        if (labelRenderer != null && designItem.itemImage != null)
+        {
+            // Clone the material so each crate gets its own instance
+            Material matInstance = new Material(labelRenderer.sharedMaterial);
+            matInstance.mainTexture = designItem.itemImage.texture;
+            labelRenderer.material = matInstance;
+        }
     }
+
 
     public void OpenCrate()
     {
@@ -116,9 +127,31 @@ public class DesignItemCrate : MonoBehaviour
     public void SetHeld(bool held)
     {
         isHeld = held;
-        if (isHeld)
-            EnablePhysics();
+
+        if (TryGetComponent<Rigidbody>(out var rb))
+        {
+            if (isHeld)
+            {
+                rb.isKinematic = false;  // stays dynamic so joint can drive it
+                rb.useGravity = false;   // no gravity while held
+                rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+                rb.constraints = RigidbodyConstraints.None; // let joint fully control motion
+                rb.interpolation = RigidbodyInterpolation.None;
+                rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
+            }
+            else
+            {
+                rb.isKinematic = false;
+                rb.useGravity = true;
+                rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
+                rb.interpolation = RigidbodyInterpolation.Interpolate;
+                rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+            }
+        }
     }
+
+
 
     // Accessors
     public string GetCrateID() => crateID;

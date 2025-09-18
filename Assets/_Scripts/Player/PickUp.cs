@@ -21,6 +21,8 @@ public class PickUp : MonoBehaviour
     [Header("Pickup Settings")]
     [SerializeField] private float pickupRange = 4f; // Max pickup distance
     [SerializeField] private LayerMask pickableLayerMask; // Layers that can be picked up
+    [SerializeField] private Vector3 bookHoldOffset = new Vector3(0, 0, 0.3f);
+    [SerializeField] private Vector3 crateHoldOffset = new Vector3(0, -0.2f, 0.8f);
 
     private GameObject heldObject; // Currently held object
     private Rigidbody heldObjectRb; // Rigidbody of held object
@@ -32,8 +34,7 @@ public class PickUp : MonoBehaviour
 
     private void Awake()
     {
-        // Ensure proper mask is set
-        pickableLayerMask = LayerMask.GetMask("Pickable", "Book", "BookDisplay");
+        pickableLayerMask = LayerMask.GetMask("Pickable", "Book", "BookDisplay", "Crate");
     }
 
     private void Start()
@@ -143,19 +144,20 @@ public class PickUp : MonoBehaviour
             }
         }
 
-        BookCrate bookCrate = heldObject.GetComponent<BookCrate>();
+        BookCrate bookCrate = hit.collider.GetComponent<BookCrate>();
         if (bookCrate != null)
         {
             bookCrate.SetHeld(true);
         }
-        else if (heldObject.TryGetComponent<DesignItemCrate>(out var designCrate))
+        else if (hit.collider.TryGetComponent<DesignItemCrate>(out var designCrate))
         {
             designCrate.SetHeld(true);
         }
 
 
+
         if (!hit.collider.CompareTag("Pickable") &&
-            !hit.collider.CompareTag("BookCrate") &&
+            !hit.collider.CompareTag("Crate") &&
             !hit.collider.CompareTag("Book") &&
             !isBookDisplay) return;
 
@@ -228,7 +230,14 @@ public class PickUp : MonoBehaviour
             heldObjectRb.isKinematic = false;
             heldObjectRb.interpolation = RigidbodyInterpolation.Interpolate;
             heldObjectRb.collisionDetectionMode = CollisionDetectionMode.Continuous;
-            heldObject.transform.position = holdPosition.position;
+            Vector3 offset = Vector3.zero;
+            if (heldObject.CompareTag("Crate") )
+                offset = crateHoldOffset;
+            else if (heldObject.CompareTag("Book") || heldObject.CompareTag("BookDisplay"))
+                offset = bookHoldOffset;
+
+            heldObject.transform.position = holdPosition.TransformPoint(offset);
+
 
             Quaternion rotation = Quaternion.LookRotation(Vector3.up, -playerCamera.transform.forward);
             if (heldObject.CompareTag("BookDisplay"))

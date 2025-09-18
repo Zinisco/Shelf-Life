@@ -2091,6 +2091,8 @@ MonoBehaviour:
   pickableLayerMask:
     serializedVersion: 2
     m_Bits: 2099200
+  bookHoldOffset: {x: 0, y: 0, z: 0.3}
+  crateHoldOffset: {x: 0, y: -0.2, z: 1.2}
 --- !u!1 &110062422
 GameObject:
   m_ObjectHideFlags: 0
@@ -9515,8 +9517,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   boxSize: {x: 8, y: 3.5, z: 5}
-  spacing: 0.2
-  physicsMargin: 0.15
+  slotSize: {x: 0.5, y: 0.5}
+  layerHeight: 1
+  maxLayers: 5
   crateLayer:
     serializedVersion: 2
     m_Bits: 2097152

@@ -77,6 +77,11 @@ public class BuyPanelController : MonoBehaviour
         cancelRandomButton.onClick.AddListener(() => randomQuantityPanel.SetActive(false));
     }
 
+    private void OnEnable()
+    {
+        UpdateWalletUI();
+    }
+
     private void PopulateAvailableBooks()
     {
         foreach (var book in availableBooks)
