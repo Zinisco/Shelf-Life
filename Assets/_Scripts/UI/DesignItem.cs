@@ -9,6 +9,7 @@ public class DesignItem : ScriptableObject
     public string itemName;
     public Sprite itemImage;
     public GameObject itemPrefab; // 3D model to instantiate
+    public GameObject cratePrefab;    // Unique crate for this design item
     public int price;
     [TextArea] public string description;
 }

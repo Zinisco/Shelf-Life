@@ -16,5 +16,6 @@ MonoBehaviour:
   itemName: Book Table
   itemImage: {fileID: 21300000, guid: e6273da456d392f42a732f0bb86d1aed, type: 3}
   itemPrefab: {fileID: 8309916831982774950, guid: 6ab1fef2d9ac29b44a0b86f7393d759f, type: 3}
+  cratePrefab: {fileID: 5678955298891952940, guid: 4b6a642c8d3602544a061a843e815c65, type: 3}
   price: 100
   description: 

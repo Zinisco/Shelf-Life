@@ -143,6 +143,16 @@ public class PickUp : MonoBehaviour
             }
         }
 
+        BookCrate bookCrate = heldObject.GetComponent<BookCrate>();
+        if (bookCrate != null)
+        {
+            bookCrate.SetHeld(true);
+        }
+        else if (heldObject.TryGetComponent<DesignItemCrate>(out var designCrate))
+        {
+            designCrate.SetHeld(true);
+        }
+
 
         if (!hit.collider.CompareTag("Pickable") &&
             !hit.collider.CompareTag("BookCrate") &&
@@ -273,21 +283,14 @@ public class PickUp : MonoBehaviour
         // Restore original layer
         heldObject.layer = heldObjectOriginalLayer;
 
-        // Special handling for crates
-        BookCrate crate = heldObject.GetComponent<BookCrate>();
-        if (crate != null)
+        BookCrate bookCrate = heldObject.GetComponent<BookCrate>();
+        if (bookCrate != null)
         {
-            crate.SetHeld(false);
-            Vector3 currentEuler = heldObject.transform.rotation.eulerAngles;
-            heldObject.transform.rotation = Quaternion.Euler(0f, currentEuler.y, 0f);
-
-            Rigidbody crateRb = heldObject.GetComponent<Rigidbody>();
-            if (crateRb != null)
-            {
-                crateRb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-                crateRb.velocity = Vector3.zero;
-                crateRb.angularVelocity = Vector3.zero;
-            }
+            bookCrate.SetHeld(false);
+        }
+        else if (heldObject.TryGetComponent<DesignItemCrate>(out var designCrate))
+        {
+            designCrate.SetHeld(false);
         }
 
         ghostDisplayManager.SetHeldObject(null);

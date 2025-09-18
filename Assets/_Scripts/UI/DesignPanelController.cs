@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 public class DesignPanelController : MonoBehaviour
 {
+    [SerializeField] private CrateDeliveryManager crateDeliveryManager; 
+
     [Header("UI References")]
     [SerializeField] private GameObject itemEntryPrefab;
     [SerializeField] private Transform contentParent;
@@ -253,6 +255,12 @@ public class DesignPanelController : MonoBehaviour
         if (CurrencyManager.Instance != null && CurrencyManager.Instance.Spend(totalCost))
         {
             Debug.Log($"Spent ${totalCost} on design order with {finalOrder.Count} items.");
+
+            // Deliver each design item
+            foreach (var item in finalOrder)
+            {
+                crateDeliveryManager.DeliverDesignItemCrate(item);
+            }
         }
         else
         {
@@ -260,6 +268,7 @@ public class DesignPanelController : MonoBehaviour
             return;
         }
 
+        // Clean up UI & data
         currentOrder.Clear();
         CloseAll();
         UpdateItemCountText();
@@ -274,6 +283,7 @@ public class DesignPanelController : MonoBehaviour
                 ui.quantityInputField.text = "0";
         }
     }
+
 
     public void CloseAll()
     {

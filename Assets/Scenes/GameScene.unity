@@ -2090,7 +2090,7 @@ MonoBehaviour:
   pickupRange: 4
   pickableLayerMask:
     serializedVersion: 2
-    m_Bits: 2048
+    m_Bits: 2099200
 --- !u!1 &110062422
 GameObject:
   m_ObjectHideFlags: 0
@@ -9470,6 +9470,56 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1198925330}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &644485702
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 644485703}
+  - component: {fileID: 644485704}
+  m_Layer: 0
+  m_Name: DeliveryZone
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &644485703
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 644485702}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 3.92, y: 1.5, z: -17.39}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1175120301}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &644485704
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 644485702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 709984d601a3a6f4f8c524a1972948ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  boxSize: {x: 8, y: 3.5, z: 5}
+  spacing: 0.2
+  physicsMargin: 0.15
+  crateLayer:
+    serializedVersion: 2
+    m_Bits: 2097152
 --- !u!1 &645337750
 GameObject:
   m_ObjectHideFlags: 0
@@ -12717,7 +12767,7 @@ GameObject:
   - component: {fileID: 981259266}
   - component: {fileID: 981259265}
   m_Layer: 0
-  m_Name: CrateOrderManager
+  m_Name: CrateDeliveryManager
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -12735,8 +12785,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b541644530d76543a9397545bce9ee2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  bookCratePrefab: {fileID: 1222076401034301047, guid: 25c4cbe5eeee25e49a3f880674106778, type: 3}
-  spawnPoint: {fileID: 5687155}
+  bookCratePrefab: {fileID: 7926626855724881451, guid: 25c4cbe5eeee25e49a3f880674106778, type: 3}
+  deliveryZone: {fileID: 644485704}
 --- !u!4 &981259266
 Transform:
   m_ObjectHideFlags: 0
@@ -14600,6 +14650,7 @@ Transform:
   - {fileID: 2064573677}
   - {fileID: 1864987818}
   - {fileID: 1903379001}
+  - {fileID: 644485703}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1177249527
@@ -24514,6 +24565,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 461c8d4300faaaf45a5ab371b5eeb462, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  crateDeliveryManager: {fileID: 981259265}
   itemEntryPrefab: {fileID: 1278330423751093326, guid: d1126c3f0f693c549be7a67316ca89b6, type: 3}
   contentParent: {fileID: 1324312911}
   reviewPanel: {fileID: 212435423}
@@ -25951,7 +26003,10 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 7045566846923000982, guid: 6ab1fef2d9ac29b44a0b86f7393d759f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6962093842163339789}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6ab1fef2d9ac29b44a0b86f7393d759f, type: 3}
 --- !u!4 &1918218533 stripped
@@ -26663,7 +26718,6 @@ Transform:
   - {fileID: 1918218533}
   - {fileID: 248091664}
   - {fileID: 1201559708}
-  - {fileID: 6962093842163339789}
   - {fileID: 1324781426}
   - {fileID: 2659919844947546308}
   - {fileID: 2131609906}
@@ -29350,7 +29404,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 1996043234}
+    m_TransformParent: {fileID: 1918218533}
     m_Modifications:
     - target: {fileID: 2307712202499325776, guid: 77e6e83898134c249af7ee3baec0bff7, type: 3}
       propertyPath: m_Name
@@ -29358,15 +29412,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7735379845068815721, guid: 77e6e83898134c249af7ee3baec0bff7, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.20215166
+      value: -1.5121516
       objectReference: {fileID: 0}
     - target: {fileID: 7735379845068815721, guid: 77e6e83898134c249af7ee3baec0bff7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 1.912
+      value: 1.9120001
       objectReference: {fileID: 0}
     - target: {fileID: 7735379845068815721, guid: 77e6e83898134c249af7ee3baec0bff7, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 6.0451083
+      value: -0.82489157
       objectReference: {fileID: 0}
     - target: {fileID: 7735379845068815721, guid: 77e6e83898134c249af7ee3baec0bff7, type: 3}
       propertyPath: m_LocalRotation.w

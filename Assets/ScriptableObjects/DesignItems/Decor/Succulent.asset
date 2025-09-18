@@ -16,5 +16,6 @@ MonoBehaviour:
   itemName: Succulent
   itemImage: {fileID: 21300000, guid: d264bcf02ab7aa64081bf9301b00aebc, type: 3}
   itemPrefab: {fileID: 732951043624842467, guid: b2106a7c99395024b82280f01dac83cc, type: 3}
+  cratePrefab: {fileID: 414828148449989755, guid: a93feadc9306b2940abedee4c417e560, type: 3}
   price: 30
   description: 

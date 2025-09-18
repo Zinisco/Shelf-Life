@@ -11,6 +11,8 @@ public class BookCrate : MonoBehaviour
 
     [SerializeField] private string crateID;
 
+    [SerializeField] private Transform placementAnchor;
+    public Transform GetPlacementAnchor() => placementAnchor;
 
     [Header("Game Input")]
     [SerializeField] private GameInput gameInput;
@@ -21,7 +23,7 @@ public class BookCrate : MonoBehaviour
     [SerializeField] private BookDatabase bookDatabase;
 
     [Tooltip("How many books to deliver in this crate")]
-    [SerializeField] private int crateSize = 5;
+    [SerializeField] private int crateSize = 10;
 
     [Tooltip("If false, ensures each book is unique (requires crateSize <= database count)")]
     [SerializeField] private bool allowDuplicates = false;
@@ -31,29 +33,22 @@ public class BookCrate : MonoBehaviour
 
     [SerializeField] private bool isHeld = false;
 
-    [SerializeField] private float animationDuration = 0.1f; // Adjust to your animation length
-
     private List<BookDefinition> customBooks = null;
 
-
-
-    private Animator animator;
 
     private void Awake()
     {
         if (string.IsNullOrEmpty(crateID))
             crateID = System.Guid.NewGuid().ToString();
-
-        animator = GetComponent<Animator>();
     }
 
 
     private void Start()
     {
-
-        Rigidbody rb = GetComponent<Rigidbody>();
-        if (rb != null)
+        if (TryGetComponent<Rigidbody>(out var rb))
         {
+            rb.isKinematic = false;
+            rb.useGravity = true;
             rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         }
 
@@ -62,8 +57,8 @@ public class BookCrate : MonoBehaviour
         {
             gameInput.OnInteractAction += GameInput_OnInteractAction;
         }
-
     }
+
 
     private void GameInput_OnInteractAction(object sender, System.EventArgs e)
     {
@@ -83,18 +78,9 @@ public class BookCrate : MonoBehaviour
         if (gameInput != null)
             gameInput.OnInteractAction -= GameInput_OnInteractAction;
 
-        if (animator != null)
-        {
-            //animator.SetTrigger("Open");
-            StartCoroutine(SpawnAndDestroyAfterDelay(animationDuration));
-        }
-        else
-        {
-            // If no animator is present, fallback immediately
             SpawnBooks();
             PlayParticleEffect();
             Destroy(gameObject);
-        }
     }
 
 
@@ -139,23 +125,6 @@ public class BookCrate : MonoBehaviour
     {
         if (openParticles != null)
             openParticles.Play();
-    }
-
-    private IEnumerator SpawnAndDestroyAfterDelay(float delay)
-    {
-        // Wait for animation to finish
-        yield return new WaitForSeconds(delay);
-
-        // Play particles right before destruction
-        PlayParticleEffect();
-
-        // Optional: delay destroy a tiny bit to let particles play
-        yield return new WaitForSeconds(.3f);
-
-        // Spawn books after animation and particle effect
-        SpawnBooks();
-
-        Destroy(gameObject);
     }
 
     private void SpawnBooks()
@@ -212,6 +181,15 @@ public class BookCrate : MonoBehaviour
         allowDuplicates = true; // make sure spawn logic doesn't restrict
     }
 
+    public void EnablePhysics()
+    {
+        if (TryGetComponent<Rigidbody>(out var rb))
+        {
+            rb.isKinematic = false;
+            rb.useGravity = true;
+        }
+    }
+
 
     // Fisher–Yates shuffle
     private static void Shuffle<T>(List<T> list)
@@ -227,7 +205,11 @@ public class BookCrate : MonoBehaviour
 
     public bool IsOpened() => _opened;
     public string GetCrateID() => crateID;
-
-    public void SetHeld(bool held) => isHeld = held;
+    public void SetHeld(bool held)
+    {
+        isHeld = held;
+        if (isHeld)
+            EnablePhysics();
+    }
 
 }
