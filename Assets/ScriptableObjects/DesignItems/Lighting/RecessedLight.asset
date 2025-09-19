@@ -18,4 +18,5 @@ MonoBehaviour:
   itemPrefab: {fileID: 3723793643338908546, guid: ed422049e3b76bf4dbfff579becaed67, type: 3}
   cratePrefab: {fileID: 414828148449989755, guid: a93feadc9306b2940abedee4c417e560, type: 3}
   price: 30
-  description: 
+  placement: 2
+  verticalOffset: 0

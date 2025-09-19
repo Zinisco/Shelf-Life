@@ -344,12 +344,6 @@ public class FurnitureMover : MonoBehaviour
         else
             forwardPos.y = 0f;
 
-        if (visualTransform != null)
-        {
-            Debug.DrawLine(visualTransform.position, selectedFurniture.transform.position, Color.red);
-            Debug.Log($"[Visual] {visualTransform.name} localPos: {visualTransform.localPosition}, worldPos: {visualTransform.position}");
-        }
-
         // Move the root only
         selectedFurniture.transform.position = forwardPos;
 
