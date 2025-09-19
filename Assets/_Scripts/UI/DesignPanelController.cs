@@ -27,7 +27,7 @@ public class DesignPanelController : MonoBehaviour
 
     [Header("Category Buttons")]
     [SerializeField] private Button furnitureButton;
-    [SerializeField] private Button lightingButton;
+    [SerializeField] private Button signageButton;
     [SerializeField] private Button decorButton;
     [SerializeField] private Button paintButton;
 
@@ -59,7 +59,7 @@ public class DesignPanelController : MonoBehaviour
         confirmButton.onClick.AddListener(ConfirmOrder);
 
         furnitureButton.onClick.AddListener(() => ShowCategory(DesignItem.Category.Furniture));
-        lightingButton.onClick.AddListener(() => ShowCategory(DesignItem.Category.Lighting));
+        signageButton.onClick.AddListener(() => ShowCategory(DesignItem.Category.Signage));
         decorButton.onClick.AddListener(() => ShowCategory(DesignItem.Category.Decor));
         paintButton.onClick.AddListener(() => ShowCategory(DesignItem.Category.Paint));
     }

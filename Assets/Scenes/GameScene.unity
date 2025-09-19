@@ -7352,7 +7352,7 @@ GameObject:
   - component: {fileID: 460797381}
   - component: {fileID: 460797380}
   m_Layer: 0
-  m_Name: Lighting_Button
+  m_Name: Signage_Button
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7375,7 +7375,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 350, y: -18.99997}
+  m_AnchoredPosition: {x: 481.3, y: -18.99997}
   m_SizeDelta: {x: 120, y: 25}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &460797380
@@ -17272,7 +17272,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 481, y: -18.99997}
+  m_AnchoredPosition: {x: 351.5, y: -18.99997}
   m_SizeDelta: {x: 120, y: 25}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1354093517
@@ -24582,7 +24582,7 @@ MonoBehaviour:
   backButton: {fileID: 500981095}
   confirmButton: {fileID: 1753652939}
   furnitureButton: {fileID: 413269265}
-  lightingButton: {fileID: 460797380}
+  signageButton: {fileID: 0}
   decorButton: {fileID: 1354093517}
   paintButton: {fileID: 1210392905}
   maxItemsPerOrder: 10
@@ -27763,7 +27763,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Lighting
+  m_text: Signage
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}

@@ -3,7 +3,7 @@ using UnityEngine;
 [CreateAssetMenu(menuName = "Design Item")]
 public class DesignItem : ScriptableObject
 {
-    public enum Category { Furniture, Lighting, Decor, Paint }
+    public enum Category { Furniture, Signage, Decor, Paint }
     public enum PlacementType { Floor, Table, Ceiling }
 
 
