@@ -80,7 +80,10 @@ public class BuyPanelController : MonoBehaviour
     private void OnEnable()
     {
         UpdateWalletUI();
+        RefreshStockUI();        // update stock text in BuyPanel
+        RefreshReviewStockUI();  // update stock text in ReviewPanel
     }
+
 
     private void PopulateAvailableBooks()
     {
@@ -92,8 +95,15 @@ public class BuyPanelController : MonoBehaviour
 
             // Fill UI
             ui.titleText.text = book.title;
+            ui.genreText.text = book.genre.ToString();
             ui.priceText.text = GameModeConfig.CurrentMode == GameMode.Zen ? " " : $"${book.cost}";
             ui.quantityInputField.text = "0";
+
+            // NEW: show current stock
+            int qtyOnHand = InventoryManager.Instance != null
+                ? InventoryManager.Instance.GetQuantity(book.bookID)
+                : 0;
+            ui.onHandText.text = $"On Hand: {qtyOnHand}";
 
             if (ui.bookImage != null)
             {
@@ -124,6 +134,7 @@ public class BuyPanelController : MonoBehaviour
 
         UpdateBookCountText();
     }
+
 
     private void AddBook(BookDefinition book, TMP_InputField qtyInput)
     {
@@ -198,6 +209,13 @@ public class BuyPanelController : MonoBehaviour
                 ui.bookImage.preserveAspect = true;
             }
 
+            // NEW: show current stock
+            if (ui.onHandText != null && InventoryManager.Instance != null)
+            {
+                int qtyOnHand = InventoryManager.Instance.GetQuantity(book.bookID);
+                ui.onHandText.text = $"On Hand: {qtyOnHand}";
+            }
+
             // Hook up buttons
             ui.plusButton.onClick.AddListener(() => AddBook(book, ui.quantityInputField));
             ui.minusButton.onClick.AddListener(() => RemoveBook(book, ui.quantityInputField));
@@ -232,7 +250,10 @@ public class BuyPanelController : MonoBehaviour
         }
 
         UpdateConfirmButtonState();
+        RefreshStockUI();
+        RefreshReviewStockUI();
     }
+
 
 
 
@@ -354,6 +375,8 @@ public class BuyPanelController : MonoBehaviour
         UpdateBookCountText();
         UpdateWalletUI();
         UpdateConfirmButtonState();
+        RefreshStockUI();
+        RefreshReviewStockUI();
 
         // Reset UI quantities on first page
         foreach (Transform child in contentParent)
@@ -362,6 +385,12 @@ public class BuyPanelController : MonoBehaviour
             if (ui != null)
                 ui.quantityInputField.text = "0";
         }
+
+        foreach (var book in finalOrder)
+        {
+            InventoryManager.Instance.AddStock(book, 1);
+        }
+
     }
 
 
@@ -385,6 +414,44 @@ public class BuyPanelController : MonoBehaviour
                 ui.quantityInputField.text = "0";
         }
     }
+
+    private void RefreshStockUI()
+    {
+        foreach (Transform child in contentParent)
+        {
+            var ui = child.GetComponent<BookEntryUI>();
+            if (ui == null) continue;
+
+            var book = availableBooks.Find(b => b.title == ui.titleText.text);
+            if (book != null && ui.onHandText != null)
+            {
+                int qtyOnHand = InventoryManager.Instance != null
+                    ? InventoryManager.Instance.GetQuantity(book.bookID)
+                    : 0;
+                ui.onHandText.text = $"On Hand: {qtyOnHand}";
+            }
+        }
+    }
+
+    private void RefreshReviewStockUI()
+    {
+        foreach (Transform child in reviewContentParent)
+        {
+            var ui = child.GetComponent<ReviewBookEntryUI>();
+            if (ui == null) continue;
+
+            var book = availableBooks.Find(b => b.title == ui.titleText.text);
+            if (book != null && ui.onHandText != null)
+            {
+                int qtyOnHand = InventoryManager.Instance != null
+                    ? InventoryManager.Instance.GetQuantity(book.bookID)
+                    : 0;
+                ui.onHandText.text = $"On Hand: {qtyOnHand}";
+            }
+        }
+    }
+
+
 
     private int GetTotalCost()
     {

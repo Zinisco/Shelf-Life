@@ -9,28 +9,30 @@ public class CashRegister : MonoBehaviour
     [SerializeField] private Transform bagPoint;          // where scanned books go
     [SerializeField] private TMP_Text registerText;       // UI to show scanned items
     [SerializeField] private AudioSource scanSound;
+    [SerializeField] private BookDatabase bookDatabase;   // Reference for lookups
 
+    // Tracks by bookID instead of title
     private Dictionary<string, (int quantity, int price)> saleItems = new();
     private int totalPrice = 0;
 
     // Called when the player scans a book (clicks/interacts with top book)
     public void ScanBook(BookInfo book)
     {
-        if (book == null) return;
+        if (book == null || string.IsNullOrEmpty(book.bookID)) return;
 
-        string title = book.definition?.title ?? "Unknown Book";
+        string bookID = book.bookID;
         int price = book.definition?.price ?? 1;
 
         // Add or increment quantity
-        if (saleItems.ContainsKey(title))
+        if (saleItems.ContainsKey(bookID))
         {
-            var entry = saleItems[title];
+            var entry = saleItems[bookID];
             entry.quantity++;
-            saleItems[title] = entry;
+            saleItems[bookID] = entry;
         }
         else
         {
-            saleItems[title] = (1, price);
+            saleItems[bookID] = (1, price);
         }
 
         totalPrice += price;
@@ -89,6 +91,17 @@ public class CashRegister : MonoBehaviour
         // Add total to wallet
         CurrencyManager.Instance.Add(totalPrice, isSale: true);
 
+        // Remove stock from inventory
+        foreach (var kv in saleItems)
+        {
+            string bookID = kv.Key;
+            int qty = kv.Value.quantity;
+
+            var def = bookDatabase.GetDefinitionByID(bookID);
+            if (def != null)
+                InventoryManager.Instance.RemoveStock(def, qty);
+        }
+
         // Clear transaction
         saleItems.Clear();
         totalPrice = 0;
@@ -108,9 +121,14 @@ public class CashRegister : MonoBehaviour
         string ui = "Scanned Items:\n";
         foreach (var kv in saleItems)
         {
-            string title = kv.Key;
+            string bookID = kv.Key;
             int qty = kv.Value.quantity;
             int price = kv.Value.price;
+
+            // Look up title for display
+            var def = bookDatabase.GetDefinitionByID(bookID);
+            string title = def != null ? def.title : bookID;
+
             ui += $"{title} x{qty} - ${price * qty}\n";
         }
 
