@@ -101,6 +101,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ghostVisual: {fileID: 2907803221008229283}
+  plantID: Orchid
   Type: 0
 --- !u!1001 &1882081409040001831
 PrefabInstance:

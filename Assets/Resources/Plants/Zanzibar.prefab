@@ -101,6 +101,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ghostVisual: {fileID: 2317458774085898498}
+  plantID: Zanzibar
   Type: 1
 --- !u!1001 &5753575276241965913
 PrefabInstance:

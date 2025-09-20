@@ -6,11 +6,12 @@ public class MovablePlant : MonoBehaviour
     [Header("References")]
     [SerializeField] private GameObject ghostVisual;
 
+    [Header("Plant Info")]
+    [SerializeField] private string plantID; // e.g. "Monstera", "Zanzibar", "Orchid", etc.
     public PlantType Type;
 
     private void Awake()
     {
-        // Auto-find the ghost if not manually assigned
         if (ghostVisual == null)
         {
             Transform ghost = transform.Find("Ghost");
@@ -19,13 +20,10 @@ public class MovablePlant : MonoBehaviour
         }
     }
 
-    public bool CanMove()
-    {
-        return ghostVisual != null;
-    }
+    public bool CanMove() => ghostVisual != null;
 
-    public GameObject GetGhostVisual()
-    {
-        return ghostVisual;
-    }
+    public GameObject GetGhostVisual() => ghostVisual;
+
+    public string GetPlantID() => plantID;
+    public void SetPlantID(string id) => plantID = id;
 }

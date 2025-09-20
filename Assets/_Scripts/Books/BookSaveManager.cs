@@ -26,6 +26,7 @@ public class BookSaveManager : MonoBehaviour
         public List<FreeformShelfSaveData> allFreeformShelves = new();
         public List<SurfaceAnchorSaveData> allSurfaces = new();
         public List<BookDisplaySaveData> allBookDisplays = new();
+        public List<PlantSaveData> allPlants = new();
         public ComputerSaveData terminalData;
         public Vector3 playerPos;
         public float playerYaw;       // rotation around Y for the player body
@@ -33,7 +34,7 @@ public class BookSaveManager : MonoBehaviour
     }
     // === Save versioning ===
     // Bump this whenever you change the save schema.
-    private const int CURRENT_SAVE_VERSION = 7;
+    private const int CURRENT_SAVE_VERSION = 8;
 
     // While in development, only accept the current version.
     private const int MIN_COMPATIBLE_VERSION = CURRENT_SAVE_VERSION;
@@ -100,11 +101,8 @@ public class BookSaveManager : MonoBehaviour
 
         foreach (var anchor in FindObjectsOfType<SurfaceAnchor>())
         {
-            if (anchor == null || anchor.GetID() == null)
-            {
-                Debug.LogWarning("Null SurfaceAnchor or missing ID detected during save.");
-                continue;
-            }
+            if (anchor.GetComponentInParent<ComputerTerminal>() != null)
+                continue; // don’t save terminal anchors
 
             w.allSurfaces.Add(new SurfaceAnchorSaveData
             {
@@ -113,6 +111,7 @@ public class BookSaveManager : MonoBehaviour
                 rotation = anchor.transform.rotation
             });
         }
+
 
         // Save all FreeformBookshelf placements
         foreach (var shelf in FindObjectsOfType<FreeformBookshelf>())
@@ -132,6 +131,32 @@ public class BookSaveManager : MonoBehaviour
                 localScale = shelf.transform.localScale
             });
         }
+
+        foreach (var plant in FindObjectsOfType<MovablePlant>())
+        {
+            if (string.IsNullOrEmpty(plant.GetPlantID()))
+            {
+                Debug.LogWarning($"[Save] Plant {plant.name} missing plantID. Skipping.");
+                continue;
+            }
+
+            string parentTableID = null;
+            var anchor = plant.transform.GetComponentInParent<SurfaceAnchor>();
+            if (anchor != null)
+                parentTableID = anchor.GetID();
+
+            var data = new PlantSaveData
+            {
+                plantID = plant.GetPlantID(),
+                type = plant.Type,
+                position = plant.transform.position,
+                rotation = plant.transform.rotation,
+                tableID = parentTableID  // <-- store the anchor link if available
+            };
+
+            w.allPlants.Add(data);
+        }
+
 
 
         foreach (var info in FindObjectsOfType<BookInfo>())
@@ -366,9 +391,16 @@ public class BookSaveManager : MonoBehaviour
 
         foreach (var b in FindObjectsOfType<BookInfo>()) Destroy(b.gameObject);
         foreach (var c in FindObjectsOfType<BookCrate>()) Destroy(c.gameObject);
-        foreach (var t in FindObjectsOfType<SurfaceAnchor>()) Destroy(t.gameObject);
+        foreach (var t in FindObjectsOfType<SurfaceAnchor>())
+        {
+            if (t.GetComponentInParent<ComputerTerminal>() != null)
+                continue; // keep terminal anchors
+            Destroy(t.gameObject);
+        }
+
         foreach (var ff in FindObjectsOfType<FreeformBookshelf>()) Destroy(ff.gameObject);
         foreach (var bd in FindObjectsOfType<BookDisplay>()) Destroy(bd.gameObject);
+        foreach (var p in FindObjectsOfType<MovablePlant>()) Destroy(p.gameObject);
 
         var terminal = FindObjectOfType<ComputerTerminal>();
         if (terminal != null) Destroy(terminal.gameObject);
@@ -406,7 +438,7 @@ public class BookSaveManager : MonoBehaviour
             Debug.Log($"[Load] Shelf present: {id} with regions: [{names}] at {ff.transform.position}");
         }
 
-
+        //Load all tables
         foreach (var surfaceData in w.allSurfaces)
         {
             var prefab = Resources.Load<GameObject>("SurfaceTable");
@@ -449,6 +481,39 @@ public class BookSaveManager : MonoBehaviour
                 }
             }
         }
+
+        //Load all Plants
+        foreach (var pd in w.allPlants)
+        {
+            GameObject prefab = Resources.Load<GameObject>($"Plants/{pd.plantID}");
+            if (prefab == null)
+            {
+                Debug.LogError($"[Load] No prefab found for plantID '{pd.plantID}'. Make sure it's in Resources/Plants/");
+                continue;
+            }
+
+            var go = Instantiate(prefab, pd.position, pd.rotation);
+            var mp = go.GetComponent<MovablePlant>();
+            if (mp != null)
+            {
+                mp.Type = pd.type;
+                mp.SetPlantID(pd.plantID);
+
+                // Re-parent if it had a tableID
+                if (!string.IsNullOrEmpty(pd.tableID))
+                {
+                    foreach (var anchor in FindObjectsOfType<SurfaceAnchor>())
+                    {
+                        if (anchor.GetID() == pd.tableID)
+                        {
+                            go.transform.SetParent(anchor.transform, worldPositionStays: true);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // --- Load all books ---
 
         Dictionary<string, List<GameObject>> instantiatedBooksByID = new();
 
@@ -559,6 +624,7 @@ public class BookSaveManager : MonoBehaviour
             }
         }
 
+        //Load BookDisplays
         foreach (var bdd in w.allBookDisplays)
         {
             if (string.IsNullOrEmpty(bdd.attachedBookID)) continue;
@@ -800,6 +866,7 @@ public class BookSaveManager : MonoBehaviour
         }
         return best;
     }
+
 
     // Example migration hook (currently unused)
     private bool TryMigrateSave(SaveDataWrapper w)

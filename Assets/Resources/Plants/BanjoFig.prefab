@@ -69,6 +69,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ghostVisual: {fileID: 7323185302680783285}
+  plantID: BanjoFig
   Type: 1
 --- !u!1001 &1543056522836788661
 PrefabInstance:
