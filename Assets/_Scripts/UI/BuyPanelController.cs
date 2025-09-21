@@ -20,6 +20,8 @@ public class BuyPanelController : MonoBehaviour
     public Button backButton;
     public Button confirmButton;
     public Button randomButton;
+    public Button plusButton;
+    public Button minusButton;
     public GameObject priceTextButton;
 
     [Header("Filter UI")]
@@ -44,7 +46,7 @@ public class BuyPanelController : MonoBehaviour
 
     private void Start()
     {
-        if(GameModeConfig.CurrentMode == GameMode.Zen)
+        if (GameModeConfig.CurrentMode == GameMode.Zen)
         {
             priceTextButton.SetActive(false);
         }
@@ -62,9 +64,8 @@ public class BuyPanelController : MonoBehaviour
         // Listen for changes
         genreDropdown.onValueChanged.AddListener(OnGenreFilterChanged);
 
-
         UpdateWalletUI();
-        UpdateConfirmButtonState(); // shows "Total: $0" on load
+        UpdateConfirmButtonState();
 
         reviewPanel.SetActive(false);
         PopulateAvailableBooks();
@@ -75,7 +76,31 @@ public class BuyPanelController : MonoBehaviour
         randomButton.onClick.AddListener(() => randomQuantityPanel.SetActive(true));
         confirmRandomButton.onClick.AddListener(OnConfirmRandomSelection);
         cancelRandomButton.onClick.AddListener(() => randomQuantityPanel.SetActive(false));
+
+        // Hook up random panel plus/minus
+        plusButton.onClick.AddListener(() => ChangeRandomQuantity(1));
+        minusButton.onClick.AddListener(() => ChangeRandomQuantity(-1));
+
+        // Clamp typed values
+        quantityInputField.onEndEdit.AddListener((val) =>
+        {
+            if (int.TryParse(val, out int newQty))
+            {
+                newQty = Mathf.Clamp(newQty, 1, maxBooksPerOrder);
+                quantityInputField.text = newQty.ToString();
+            }
+            else
+            {
+                // fallback if input is invalid
+                quantityInputField.text = "1";
+            }
+
+            UpdateRandomConfirmButtonState();
+        });
+
+        UpdateRandomConfirmButtonState();
     }
+
 
     private void OnEnable()
     {
@@ -95,7 +120,6 @@ public class BuyPanelController : MonoBehaviour
 
             // Fill UI
             ui.titleText.text = book.title;
-            ui.genreText.text = book.genre.ToString();
             ui.priceText.text = GameModeConfig.CurrentMode == GameMode.Zen ? " " : $"${book.cost}";
             ui.quantityInputField.text = "0";
 
@@ -475,8 +499,6 @@ public class BuyPanelController : MonoBehaviour
         }
     }
 
-
-
     public List<BookDefinition> GetFinalOrder()
     {
         List<BookDefinition> finalList = new List<BookDefinition>();
@@ -487,6 +509,33 @@ public class BuyPanelController : MonoBehaviour
         }
         return finalList;
     }
+
+    private void ChangeRandomQuantity(int delta)
+    {
+        int current = 1;
+        int.TryParse(quantityInputField.text, out current);
+
+        current += delta;
+        current = Mathf.Clamp(current, 1, maxBooksPerOrder);
+
+        quantityInputField.text = current.ToString();
+        UpdateRandomConfirmButtonState();
+    }
+
+
+    private void UpdateRandomConfirmButtonState()
+    {
+        if (int.TryParse(quantityInputField.text, out int qty))
+        {
+            confirmRandomButton.interactable = qty >= 1;
+        }
+        else
+        {
+            confirmRandomButton.interactable = false;
+        }
+    }
+
+
 
     private void OnGenreFilterChanged(int index)
     {
