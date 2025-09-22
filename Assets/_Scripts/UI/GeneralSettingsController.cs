@@ -33,18 +33,18 @@ public class GeneralSettingsController : MonoBehaviour
 
     // --- Defaults ---
     const float DEFAULT_FOV = 60f;
-    const float DEFAULT_MSENS = 0.20f;
-    const float DEFAULT_CSENS = 2.00f;
+    const float DEFAULT_MSENS = 0.30f;
+    const float DEFAULT_CSENS = 0.70f;
 
     // --- Ranges ---
     const float MIN_FOV = 40f;
     const float MAX_FOV = 120f;
 
     const float MIN_MSENS = 0.05f;
-    const float MAX_MSENS = 2.00f;
+    const float MAX_MSENS = 10.00f;
 
     const float MIN_CSENS = 0.50f;
-    const float MAX_CSENS = 10.0f;
+    const float MAX_CSENS = 10.00f;
 
     void Awake()
     {
@@ -125,8 +125,13 @@ public class GeneralSettingsController : MonoBehaviour
 
     private void ApplyFOV(float v)
     {
-        if (playerCamera) playerCamera.fieldOfView = Clamp(v, MIN_FOV, MAX_FOV);
+        if (!playerCamera)
+            playerCamera = Camera.main; // fallback
+
+        if (playerCamera)
+            playerCamera.fieldOfView = Clamp(v, MIN_FOV, MAX_FOV);
     }
+
 
     private void ApplyMouse(float v)
     {
@@ -142,12 +147,18 @@ public class GeneralSettingsController : MonoBehaviour
     {
         bool invX = invertXDropdown.value == 1;
         bool invY = invertYDropdown.value == 1;
+
+        // Ensure we have a reference to PlayerMovement
+        if (!playerMovement)
+            playerMovement = FindObjectOfType<PlayerMovement>();
+
         if (playerMovement)
         {
             playerMovement.InvertX = invX;
             playerMovement.InvertY = invY;
         }
     }
+
 
     // --- Save ---
 

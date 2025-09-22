@@ -7,18 +7,18 @@ using TMPro;
 public class GraphicSettingsController : MonoBehaviour
 {
     [Header("UI")]
-    [SerializeField] private TMP_Dropdown windowModeDropdown; // Windowed, Windowed Fullscreen, Fullscreen
-    [SerializeField] private TMP_Dropdown resolutionDropdown; // 1920 x 1080, ...
-    [SerializeField] private TMP_Dropdown vSyncDropdown;      // Disabled, Enabled
+    [SerializeField] private TMP_Dropdown windowModeDropdown;
+    [SerializeField] private TMP_Dropdown resolutionDropdown;
+    [SerializeField] private TMP_Dropdown vSyncDropdown;
 
     // --- PlayerPrefs keys ---
     const string KEY_MODE = "GFX_WindowMode";   // int (0..2)
-    const string KEY_W = "GFX_Width";        // int
-    const string KEY_H = "GFX_Height";       // int
-    const string KEY_VS = "GFX_VSync";        // int (0/1)
+    const string KEY_W = "GFX_Width";
+    const string KEY_H = "GFX_Height";
+    const string KEY_VS = "GFX_VSync";
 
     // --- Defaults ---
-    const int DEFAULT_MODE = 2;   // 0=Windowed, 1=Windowed Fullscreen, 2=Fullscreen
+    const int DEFAULT_MODE = 2;   // 0=Windowed, 1=Borderless Fullscreen, 2=Exclusive Fullscreen
     const int DEFAULT_VSYNC = 1;
 
     // Internal state
@@ -31,7 +31,7 @@ public class GraphicSettingsController : MonoBehaviour
 
         BuildWindowModeOptions();
         BuildVSyncOptions();
-        BuildResolutionOptions();     // collects & fills the resolution dropdown
+        BuildResolutionOptions();
 
         // Load saved or current system values
         int savedMode = PlayerPrefs.GetInt(KEY_MODE, DEFAULT_MODE);
@@ -55,13 +55,12 @@ public class GraphicSettingsController : MonoBehaviour
         _initializing = false;
     }
 
-    // Rebuild the resolution list (call if displays change)
+    // Rebuild the resolution list
     private void BuildResolutionOptions()
     {
         resolutionDropdown.ClearOptions();
         _resList.Clear();
 
-        // Dedup by WxH; sort descending
         var unique = new HashSet<string>();
         var resos = Screen.resolutions
             .Select(r => (r.width, r.height))
@@ -81,7 +80,6 @@ public class GraphicSettingsController : MonoBehaviour
             }
         }
 
-        // Fallback: at least current resolution
         if (_resList.Count == 0)
         {
             _resList.Add((Screen.currentResolution.width, Screen.currentResolution.height));
@@ -90,7 +88,6 @@ public class GraphicSettingsController : MonoBehaviour
 
         resolutionDropdown.AddOptions(opts);
 
-        // Select current screen size if nothing saved
         int idx = IndexOfResolution(Screen.width, Screen.height);
         resolutionDropdown.SetValueWithoutNotify(idx);
         resolutionDropdown.RefreshShownValue();
@@ -101,9 +98,9 @@ public class GraphicSettingsController : MonoBehaviour
         windowModeDropdown.ClearOptions();
         windowModeDropdown.AddOptions(new List<string>
         {
-            "Windowed",
-            "Windowed Fullscreen",
-            "Fullscreen"
+            "Windowed",              // has borders
+            "Borderless Fullscreen", // borderless, fills screen
+            "Exclusive Fullscreen"   // true exclusive mode
         });
     }
 
@@ -118,7 +115,6 @@ public class GraphicSettingsController : MonoBehaviour
         for (int i = 0; i < _resList.Count; i++)
             if (_resList[i].w == w && _resList[i].h == h) return i;
 
-        // If not found, pick closest by pixel count
         int best = 0;
         var target = w * h;
         int bestDiff = int.MaxValue;
@@ -138,34 +134,45 @@ public class GraphicSettingsController : MonoBehaviour
 
     private void ApplyGraphics(bool forceApply)
     {
-        // Read selections
         int modeIdx = Mathf.Clamp(windowModeDropdown.value, 0, 2);
         var (w, h) = _resList[Mathf.Clamp(resolutionDropdown.value, 0, _resList.Count - 1)];
         bool vsyncOn = vSyncDropdown.value == 1;
 
-        // Map mode
         FullScreenMode fsMode = FullScreenMode.Windowed;
+        Debug.Log($"Applied graphics: Mode={fsMode}, Res={w}x{h}, VSync={QualitySettings.vSyncCount}");
+
         switch (modeIdx)
         {
-            case 0: fsMode = FullScreenMode.Windowed; break;                // windowed
-            case 1: fsMode = FullScreenMode.FullScreenWindow; break;        // borderless/windowed fullscreen
-            case 2: fsMode = FullScreenMode.ExclusiveFullScreen; break;     // exclusive fullscreen (if supported)
+            case 0: // Windowed
+                fsMode = FullScreenMode.Windowed;
+                if (w == Display.main.systemWidth && h == Display.main.systemHeight)
+                {
+                    w = Mathf.RoundToInt(w * 0.8f);
+                    h = Mathf.RoundToInt(h * 0.8f);
+                }
+                resolutionDropdown.interactable = true;
+                break;
+
+            case 1: // Borderless Fullscreen
+                fsMode = FullScreenMode.FullScreenWindow;
+                w = Display.main.systemWidth;
+                h = Display.main.systemHeight;
+                resolutionDropdown.interactable = false; // disable dropdown
+                break;
+
+            case 2: // Exclusive Fullscreen
+                fsMode = FullScreenMode.ExclusiveFullScreen;
+                resolutionDropdown.interactable = true;
+                break;
         }
 
-        // Apply VSync
         QualitySettings.vSyncCount = vsyncOn ? 1 : 0;
 
-        // Only set resolution if it actually differs (prevents flicker)
-        bool sizeDiff = (Screen.width != w || Screen.height != h);
-        bool modeDiff = (Screen.fullScreenMode != fsMode);
-
-        if (forceApply || sizeDiff || modeDiff)
+        if (forceApply || Screen.width != w || Screen.height != h || Screen.fullScreenMode != fsMode)
         {
-            // NOTE: On some platforms ExclusiveFullScreen may be ignored; Unity falls back automatically.
             Screen.SetResolution(w, h, fsMode);
         }
 
-        // Persist
         PlayerPrefs.SetInt(KEY_MODE, modeIdx);
         PlayerPrefs.SetInt(KEY_W, w);
         PlayerPrefs.SetInt(KEY_H, h);
