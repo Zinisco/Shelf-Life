@@ -488,7 +488,12 @@ public class PickUp : MonoBehaviour
                 Transform tableTransform = tableHit.transform;
 
                 heldObject.transform.SetPositionAndRotation(ghostPos, ghostRot);
-                heldObject.transform.SetParent(tableTransform, worldPositionStays: true);
+                MovableFurniture furniture = tableTransform.GetComponentInParent<MovableFurniture>();
+                if (furniture != null)
+                    heldObject.transform.SetParent(furniture.GetContentsRoot(), true);
+                else
+                    heldObject.transform.SetParent(tableTransform, true); // fallback
+
 
 
                 Rigidbody rb = heldObject.GetComponent<Rigidbody>();
@@ -579,9 +584,18 @@ public class PickUp : MonoBehaviour
                 // Create a stack root if it doesn’t exist
                 if (root == null)
                 {
+                    // Create stack root under furniture contents
                     GameObject rootObj = new GameObject("StackRoot");
-                    rootObj.transform.SetPositionAndRotation(targetStackBook.transform.position, targetStackBook.transform.rotation);
-                    rootObj.transform.parent = tableTransform;
+                    rootObj.transform.SetPositionAndRotation(
+                        targetStackBook.transform.position,
+                        targetStackBook.transform.rotation
+                    );
+
+                    MovableFurniture movable = tableTransform.GetComponentInParent<MovableFurniture>();
+                    if (movable != null)
+                        rootObj.transform.SetParent(movable.GetContentsRoot(), true);
+                    else
+                        rootObj.transform.SetParent(tableTransform, true);
 
                     root = rootObj.AddComponent<BookStackRoot>();
                     root.stackTitle = targetInfo.title;
@@ -647,7 +661,11 @@ public class PickUp : MonoBehaviour
             }
 
             heldObject.transform.SetPositionAndRotation(surfacePos, finalRot);
-            heldObject.transform.SetParent(tableTransform);
+            MovableFurniture furniture = tableTransform.GetComponentInParent<MovableFurniture>();
+            if (furniture != null)
+                heldObject.transform.SetParent(furniture.GetContentsRoot(), true);
+            else
+                heldObject.transform.SetParent(tableTransform, true);
             FinalizeBookPlacement();
         }
     }
