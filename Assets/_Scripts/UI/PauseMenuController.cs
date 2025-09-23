@@ -34,15 +34,17 @@ public class PauseMenuController : MonoBehaviour
 
     [Header("Restart Confirm Panel")]
     [SerializeField] private GameObject restartConfirmPanel;
-    [SerializeField] private HoldToConfirmButton restartHoldButton; 
+    [SerializeField] private Button restartConfirmButton;   // NEW - replaces HoldToConfirmButton
     [SerializeField] private Button restartCancelButton;
-    [SerializeField] private GameObject restartFirstSelected;       // focus when confirm panel opens
+    [SerializeField] private GameObject restartFirstSelected; // focus when confirm panel opens
+                                                           
 
     [Header("Quit Confirm Panel")]
     [SerializeField] private GameObject quitConfirmPanel;
-    [SerializeField] private HoldToConfirmButton quitHoldButton;
+    [SerializeField] private Button quitConfirmButton;  
     [SerializeField] private Button quitCancelButton;
     [SerializeField] private GameObject quitFirstSelected;
+
 
     [Header("Tooltip")]
     [SerializeField] private GameObject saveTooltip;
@@ -92,10 +94,10 @@ public class PauseMenuController : MonoBehaviour
         if (quitButton) quitButton.onClick.AddListener(QuitToDesktop);
 
         if (restartCancelButton) restartCancelButton.onClick.AddListener(HideRestartPrompt);
-        if (restartHoldButton) restartHoldButton.onCompleted.AddListener(DoRestartConfirmed);
+        if (restartConfirmButton) restartConfirmButton.onClick.AddListener(DoRestartConfirmed);
 
         if (quitCancelButton) quitCancelButton.onClick.AddListener(HideQuitPrompt);
-        if (quitHoldButton) quitHoldButton.onCompleted.AddListener(DoQuitConfirmed);
+        if (quitConfirmButton) quitConfirmButton.onClick.AddListener(DoQuitConfirmed);
 
 
         if (saveButton)
@@ -173,7 +175,6 @@ public class PauseMenuController : MonoBehaviour
         }
 
         restartConfirmPanel.SetActive(true);
-        restartHoldButton.ResetHold();
         pauseMenuLayout.SetActive(false);
 
         if (restartFirstSelected)
@@ -272,12 +273,12 @@ public class PauseMenuController : MonoBehaviour
         }
 
         quitConfirmPanel.SetActive(true);
-        quitHoldButton.ResetHold();
         pauseMenuLayout.SetActive(false);
 
         if (quitFirstSelected)
             EventSystem.current?.SetSelectedGameObject(quitFirstSelected);
     }
+
 
     private void HideQuitPrompt()
     {
