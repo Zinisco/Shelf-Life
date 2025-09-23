@@ -9,6 +9,7 @@ public class CustomerSpawner : MonoBehaviour
     [SerializeField] private StoreSignController storeSign;
     [SerializeField] private Transform[] spawnPoints;   // positions outside your shop door
     [SerializeField] private GameObject customerPrefab; // your NPC prefab
+    [SerializeField] private Transform storeEntryPoint; // NEW: assign in inspector (just inside doorway)
 
     [Header("Spawn Settings")]
     [SerializeField] private float spawnIntervalMin = 5f;
@@ -30,7 +31,6 @@ public class CustomerSpawner : MonoBehaviour
         }
     }
 
-
     IEnumerator SpawnLoop()
     {
         while (true)
@@ -40,17 +40,15 @@ public class CustomerSpawner : MonoBehaviour
         }
     }
 
-
     void SpawnCustomer()
     {
         if (customerPrefab == null || spawnPoints.Length == 0) return;
 
         Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Length)];
-
         Vector3 spawnPos = spawnPoint.position;
 
         // Snap to NavMesh surface
-        if (UnityEngine.AI.NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
+        if (NavMesh.SamplePosition(spawnPos, out NavMeshHit hit, 2f, NavMesh.AllAreas))
         {
             spawnPos = hit.position;
         }
@@ -59,7 +57,7 @@ public class CustomerSpawner : MonoBehaviour
 
         CustomerAI ai = customer.GetComponent<CustomerAI>();
         ai.sidewalkPoints = sidewalkPoints;
+        ai.storeEntryPoint = storeEntryPoint;
     }
-
 
 }

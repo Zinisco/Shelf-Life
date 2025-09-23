@@ -44,7 +44,5 @@ public class DoorInteraction : MonoBehaviour
         {
             obstacle.enabled = !isOpen; // Block path if closed, free path if open
         }
-
-        Debug.Log($"[Door] {doorName} toggled to {(isOpen ? "Open" : "Closed")}");
     }
 }

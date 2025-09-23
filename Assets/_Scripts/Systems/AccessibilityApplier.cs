@@ -93,8 +93,6 @@ public class AccessibilityApplier : MonoBehaviour
         colorLookup.texture.value = lut;
         colorLookup.contribution.overrideState = true;
         colorLookup.contribution.value = lut ? 1f : 0f;
-
-        Debug.Log($"[AccessibilityApplier] Colorblind = {v} ({(lut ? lut.name : "none")})");
     }
 
     public void ApplyMotionBlur(int v)
@@ -104,7 +102,5 @@ public class AccessibilityApplier : MonoBehaviour
         motionBlur.active = (v == 1);
         motionBlur.intensity.overrideState = (v == 1);
         motionBlur.intensity.value = (v == 1 ? 1f : 0f);
-
-        Debug.Log($"[AccessibilityApplier] MotionBlur = {(v == 1 ? "On" : "Off")}");
     }
 }

@@ -212,6 +212,7 @@ GameObject:
   - component: {fileID: 2312858938884777415}
   - component: {fileID: 5666219226406578281}
   - component: {fileID: 5879716264263026596}
+  - component: {fileID: 5207861084700677584}
   m_Layer: 10
   m_Name: FreeformBookshelf
   m_TagString: Furniture
@@ -340,3 +341,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da49a4ec628d50d40aaf2adf60fb2d76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &5207861084700677584
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5881056715669250753}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b75fdb59c1b10fe45853a3ea3b01eabf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lingerTime: 10
+  useFront: 1
+  invertForward: 1
+  frontDistance: 1.2
+  lateralSpread: 0.8

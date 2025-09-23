@@ -14,6 +14,7 @@ GameObject:
   - component: {fileID: 4210402336720398165}
   - component: {fileID: 6851616360440892286}
   - component: {fileID: 1868255496034155119}
+  - component: {fileID: 457510829843973577}
   m_Layer: 16
   m_Name: SurfaceTable
   m_TagString: Furniture
@@ -115,6 +116,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: da49a4ec628d50d40aaf2adf60fb2d76, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &457510829843973577
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8309916831982774950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b75fdb59c1b10fe45853a3ea3b01eabf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  lingerTime: 10
 --- !u!1 &8361356697049365285
 GameObject:
   m_ObjectHideFlags: 0
