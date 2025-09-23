@@ -5,18 +5,17 @@ using TMPro;
 
 public class AccessibilitySettingsController : MonoBehaviour
 {
-    [Header("UI Elements")]
+    [Header("UI Elements (optional in GameScene)")]
     [SerializeField] private TMP_Dropdown subtitlesDropdown;
     [SerializeField] private TMP_Dropdown subtitleSizeDropdown;
     [SerializeField] private TMP_Dropdown colorblindDropdown;
     [SerializeField] private TMP_Dropdown motionBlurDropdown;
 
-    [Header("Post Processing")]
-    [SerializeField] private Volume globalVolume; // Assign your Global Volume in Inspector
-
-    [SerializeField] private ColorblindManager colorblindManager;
+    [Header("Post Processing (GameScene only)")]
+    [SerializeField] private Volume globalVolume;
 
     private MotionBlur motionBlur;
+    private ColorLookup colorLookup;
 
     // Keys
     const string KEY_SUBTITLES = "ACC_Subtitles";
@@ -26,48 +25,46 @@ public class AccessibilitySettingsController : MonoBehaviour
 
     void Awake()
     {
-        var profile = globalVolume.profile != null
-    ? globalVolume.profile
-    : globalVolume.sharedProfile;
-
-        if (profile != null && profile.TryGet(out MotionBlur mb))
+        if (globalVolume)
         {
-            motionBlur = mb;
+            var profile = globalVolume.profile != null ? globalVolume.profile : globalVolume.sharedProfile;
+            if (profile != null)
+            {
+                if (profile.TryGet(out MotionBlur mb)) motionBlur = mb;
+                if (profile.TryGet(out ColorLookup cl)) colorLookup = cl;
+            }
         }
- 
 
-        // Build dropdown options
+        // Build dropdowns
         BuildSubtitleOptions();
         BuildSubtitleSizeOptions();
         BuildColorblindOptions();
         BuildMotionBlurOptions();
 
-        // Load saved prefs
+        // Hook listeners (but don’t apply yet)
+        if (colorblindDropdown)
+            colorblindDropdown.onValueChanged.AddListener(v => SaveAndApply(KEY_COLORBLIND, v));
+        if (motionBlurDropdown)
+            motionBlurDropdown.onValueChanged.AddListener(v => SaveAndApply(KEY_MOTIONBLUR, v));
+        ;
+    }
+
+    void Start()
+    {
         int subtitles = PlayerPrefs.GetInt(KEY_SUBTITLES, 1);
         int size = PlayerPrefs.GetInt(KEY_SUBSIZE, 1);
         int colorblind = PlayerPrefs.GetInt(KEY_COLORBLIND, 0);
-        int motion = PlayerPrefs.GetInt(KEY_MOTIONBLUR, 0); // default OFF
+        int motion = PlayerPrefs.GetInt(KEY_MOTIONBLUR, 0);
 
-        // Set dropdowns without firing events
-        subtitlesDropdown.SetValueWithoutNotify(subtitles);
-        subtitleSizeDropdown.SetValueWithoutNotify(size);
-        colorblindDropdown.SetValueWithoutNotify(colorblind);
-        motionBlurDropdown.SetValueWithoutNotify(motion);
-
-        // Hook listeners
-        subtitlesDropdown.onValueChanged.AddListener(v => { PlayerPrefs.SetInt(KEY_SUBTITLES, v); PlayerPrefs.Save(); ApplySubtitles(v); });
-        subtitleSizeDropdown.onValueChanged.AddListener(v => { PlayerPrefs.SetInt(KEY_SUBSIZE, v); PlayerPrefs.Save(); ApplySubtitleSize(v); });
-        colorblindDropdown.onValueChanged.AddListener(v => { PlayerPrefs.SetInt(KEY_COLORBLIND, v); PlayerPrefs.Save(); ApplyColorblind(v); });
-        motionBlurDropdown.onValueChanged.AddListener(v => { PlayerPrefs.SetInt(KEY_MOTIONBLUR, v); PlayerPrefs.Save(); ApplyMotionBlur(v); });
-
-        // Apply current values
-        ApplySubtitles(subtitles);
-        ApplySubtitleSize(size);
-        ApplyColorblind(colorblind);
-        ApplyMotionBlur(motion);
+        // Sync dropdowns (UI side, if they exist)
+        subtitlesDropdown?.SetValueWithoutNotify(subtitles);
+        subtitleSizeDropdown?.SetValueWithoutNotify(size);
+        colorblindDropdown?.SetValueWithoutNotify(colorblind);
+        motionBlurDropdown?.SetValueWithoutNotify(motion);
     }
 
-    // --- Build dropdown lists ---
+
+    // --- Dropdown Builders ---
     private void BuildSubtitleOptions()
     {
         subtitlesDropdown?.ClearOptions();
@@ -83,9 +80,7 @@ public class AccessibilitySettingsController : MonoBehaviour
     private void BuildColorblindOptions()
     {
         colorblindDropdown?.ClearOptions();
-        colorblindDropdown?.AddOptions(new System.Collections.Generic.List<string> {
-            "Off", "Protanopia", "Deuteranopia", "Tritanopia"
-        });
+        colorblindDropdown?.AddOptions(new System.Collections.Generic.List<string> { "Off", "Protanopia", "Deuteranopia", "Tritanopia" });
     }
 
     private void BuildMotionBlurOptions()
@@ -94,51 +89,15 @@ public class AccessibilitySettingsController : MonoBehaviour
         motionBlurDropdown?.AddOptions(new System.Collections.Generic.List<string> { "Off", "On" });
     }
 
-    // --- Apply ---
-    private void ApplySubtitles(int v)
+    private void SaveAndApply(string key, int value)
     {
-        Debug.Log("Subtitles " + (v == 1 ? "On" : "Off"));
-    }
+        PlayerPrefs.SetInt(key, value);
+        PlayerPrefs.Save();
+        AccessibilityApplier.Instance?.ApplyAll();
 
-    private void ApplySubtitleSize(int v)
-    {
-        Debug.Log("Subtitle size index: " + v);
-    }
-
-    private void ApplyColorblind(int v)
-    {
-        if (colorblindManager)
-        {
-            colorblindManager.ApplyColorblind(v);
-        }
-        else
-        {
-            Debug.LogWarning("No ColorblindManager assigned!");
-        }
-    }
-
-    private void ApplyMotionBlur(int v)
-    {
-        if (!motionBlur)
-        {
-            Debug.LogWarning("MotionBlur not found in Global Volume!");
-            return;
-        }
-
-        if (v == 1) // On
-        {
-            motionBlur.intensity.overrideState = true;
-            motionBlur.intensity.value = 1f;
-            motionBlur.active = true; // keep effect alive
-        }
-        else // Off
-        {
-            motionBlur.intensity.overrideState = false; // release control
-            motionBlur.active = false;                  // fully disable effect
-            motionBlur.intensity.value = 0f;            // safety
-        }
-
-        Debug.Log($"Motion Blur Applied : {(v == 1 ? "On" : "Off")}");
+        // keep dropdowns synced if needed
+        if (key == KEY_COLORBLIND) colorblindDropdown?.SetValueWithoutNotify(value);
+        if (key == KEY_MOTIONBLUR) motionBlurDropdown?.SetValueWithoutNotify(value);
     }
 
 

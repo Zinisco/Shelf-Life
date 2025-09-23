@@ -6497,6 +6497,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7112010289354312971}
   - component: {fileID: 8597034168861562908}
+  - component: {fileID: 4035453400016401320}
   m_Layer: 5
   m_Name: AccessibilityPanel
   m_TagString: Untagged
@@ -6553,6 +6554,27 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &4035453400016401320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2842052528739022207}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b65b558f838621c459d4cc86811758b7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  subtitlesDropdown: {fileID: 1612523669492722635}
+  subtitleSizeDropdown: {fileID: 3646437498717950764}
+  colorblindDropdown: {fileID: 2436957579014791102}
+  motionBlurDropdown: {fileID: 4402034935380053120}
+  globalVolume: {fileID: 0}
+  colorblindManager: {fileID: 0}
+  lutProtanopia: {fileID: 2800000, guid: 6219be0801dccc442925e53ae23687e8, type: 3}
+  lutDeuteranopia: {fileID: 2800000, guid: 3cbaf36dbca47514cbe8819bc76bc965, type: 3}
+  lutTritanopia: {fileID: 2800000, guid: 86f1ea44e5408cd4a8891538e48d2429, type: 3}
 --- !u!1 &2864121581500403032
 GameObject:
   m_ObjectHideFlags: 0

@@ -474,6 +474,7 @@ GameObject:
   m_Component:
   - component: {fileID: 23904911}
   - component: {fileID: 23904912}
+  - component: {fileID: 23904913}
   m_Layer: 0
   m_Name: ColorblindManager
   m_TagString: Untagged
@@ -509,6 +510,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   globalVolume: {fileID: 1660829818}
+--- !u!114 &23904913
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 23904910}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 415fbd2667d2cf743bb945f61ff5f6f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  globalVolume: {fileID: 1660829818}
+  lutProtanopia: {fileID: 2800000, guid: 6219be0801dccc442925e53ae23687e8, type: 3}
+  lutDeuteranopia: {fileID: 2800000, guid: 3cbaf36dbca47514cbe8819bc76bc965, type: 3}
+  lutTritanopia: {fileID: 2800000, guid: 86f1ea44e5408cd4a8891538e48d2429, type: 3}
 --- !u!1 &29538380
 GameObject:
   m_ObjectHideFlags: 0
@@ -1195,11 +1212,11 @@ MonoBehaviour:
   mainMenuButton: {fileID: 1774577912}
   quitButton: {fileID: 944324845}
   restartConfirmPanel: {fileID: 993379886}
-  restartConfirmButton: {fileID: 0}
+  restartConfirmButton: {fileID: 1276562204}
   restartCancelButton: {fileID: 1833237785}
   restartFirstSelected: {fileID: 1833237783}
   quitConfirmPanel: {fileID: 1518474317}
-  quitConfirmButton: {fileID: 0}
+  quitConfirmButton: {fileID: 173245446}
   quitCancelButton: {fileID: 1629013106}
   quitFirstSelected: {fileID: 1629013104}
   saveTooltip: {fileID: 177702621}
@@ -4078,17 +4095,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 214864040}
   m_CullTransparentMesh: 1
---- !u!114 &219018673 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 2436957579014791102, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
-  m_PrefabInstance: {fileID: 1551378557}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b743370ac3e4ec2a1668f5455a8ef8a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &224043900
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -17735,17 +17741,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1281880670}
   m_CullTransparentMesh: 1
---- !u!114 &1284771622 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1612523669492722635, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
-  m_PrefabInstance: {fileID: 1551378557}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b743370ac3e4ec2a1668f5455a8ef8a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1286131868
 GameObject:
   m_ObjectHideFlags: 0
@@ -18429,17 +18424,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 1996043234}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1325998999 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3646437498717950764, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
-  m_PrefabInstance: {fileID: 1551378557}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b743370ac3e4ec2a1668f5455a8ef8a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1327899969
 GameObject:
   m_ObjectHideFlags: 0
@@ -21803,6 +21787,14 @@ PrefabInstance:
       propertyPath: m_LocalScale.z
       value: 0.8
       objectReference: {fileID: 0}
+    - target: {fileID: 4035453400016401320, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: globalVolume
+      value: 
+      objectReference: {fileID: 1660829818}
+    - target: {fileID: 4035453400016401320, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
+      propertyPath: colorblindManager
+      value: 
+      objectReference: {fileID: 23904912}
     - target: {fileID: 4228576812931316534, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -21986,10 +21978,7 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 2842052528739022207, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1562061528}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
 --- !u!224 &1551378558 stripped
 RectTransform:
@@ -22220,24 +22209,6 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
---- !u!114 &1562061528
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1551378561}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b65b558f838621c459d4cc86811758b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  subtitlesDropdown: {fileID: 1284771622}
-  subtitleSizeDropdown: {fileID: 1325998999}
-  colorblindDropdown: {fileID: 219018673}
-  motionBlurDropdown: {fileID: 1766364428}
-  globalVolume: {fileID: 1660829818}
-  colorblindManager: {fileID: 23904912}
 --- !u!1 &1588188595
 GameObject:
   m_ObjectHideFlags: 0
@@ -25491,17 +25462,6 @@ RectTransform:
   m_AnchoredPosition: {x: -50, y: 20}
   m_SizeDelta: {x: 80, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1766364428 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4402034935380053120, guid: b45f3dff3a23b9e41b54c0286e90d8ca, type: 3}
-  m_PrefabInstance: {fileID: 1551378557}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7b743370ac3e4ec2a1668f5455a8ef8a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1769572221
 GameObject:
   m_ObjectHideFlags: 0

@@ -30,7 +30,6 @@ public class DeliveryZone : MonoBehaviour
         for (int l = 0; l < maxLayers; l++)
             occupiedGridPerLayer[l] = new bool[gridX, gridZ];
 
-        Debug.Log($"[DeliveryZone] Built grid {gridX}x{gridZ} per layer, {maxLayers} layers");
     }
 
     // --------------------------
