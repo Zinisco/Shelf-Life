@@ -118,6 +118,10 @@ public class PlantMover : MonoBehaviour
     private void StartMove(GameObject plantGO)
     {
         selectedPlant = plantGO;
+
+        var navObstacle = selectedPlant.GetComponent<MovableNavMeshObstacle>();
+        if (navObstacle) navObstacle.OnPickup();
+
         MovablePlant plant = selectedPlant.GetComponent<MovablePlant>();
         currentType = plant.Type;
         ghost = plant.GetGhostVisual();
@@ -137,6 +141,9 @@ public class PlantMover : MonoBehaviour
         selectedPlant.transform.rotation = Quaternion.Euler(0f, currentRotation, 0f);
         selectedPlant.transform.SetParent(currentType == PlantType.Table ? hit.collider.transform : originalParent);
 
+        var navObstacle = selectedPlant.GetComponent<MovableNavMeshObstacle>();
+        if (navObstacle) navObstacle.OnPlace();
+
         TogglePlantRenderers(true);
         ghost.SetActive(false);
         selectedPlant = null;
@@ -151,6 +158,9 @@ public class PlantMover : MonoBehaviour
             CancelHold();
             return;
         }
+
+        var navObstacle = selectedPlant.GetComponent<MovableNavMeshObstacle>();
+        if (navObstacle) navObstacle.OnPlace();
 
         TogglePlantRenderers(true);
         ghost.SetActive(false);

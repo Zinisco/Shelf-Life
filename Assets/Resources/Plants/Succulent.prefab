@@ -43,6 +43,8 @@ GameObject:
   - component: {fileID: 4327121776706145177}
   - component: {fileID: 2678403508911899686}
   - component: {fileID: 6369553441086047087}
+  - component: {fileID: 6007759687446891863}
+  - component: {fileID: 8588171499695074864}
   m_Layer: 0
   m_Name: Succulent
   m_TagString: Untagged
@@ -103,6 +105,34 @@ MonoBehaviour:
   ghostVisual: {fileID: 359241295762685632}
   plantID: Succulent
   Type: 0
+--- !u!208 &6007759687446891863
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 732951043624842467}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.185, y: 0.14, z: 0.18}
+  m_MoveThreshold: 0.1
+  m_Carve: 0
+  m_CarveOnlyStationary: 1
+  m_Center: {x: -0.04, y: 0.32, z: -0.11}
+  m_TimeToStationary: 0.5
+--- !u!114 &8588171499695074864
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 732951043624842467}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da49a4ec628d50d40aaf2adf60fb2d76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &183167393216929496
 PrefabInstance:
   m_ObjectHideFlags: 0

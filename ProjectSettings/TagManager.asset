@@ -10,6 +10,7 @@ TagManager:
   - Book
   - BookDisplay
   - Crate
+  - StoreExit
   layers:
   - Default
   - TransparentFX

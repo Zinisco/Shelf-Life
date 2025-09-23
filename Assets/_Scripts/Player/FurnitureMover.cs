@@ -235,6 +235,9 @@ public class FurnitureMover : MonoBehaviour
             Debug.Log(" - Child: " + child.name);
         }
 
+        // Disable carving while moving
+        var navObstacle = selectedFurniture.GetComponent<MovableNavMeshObstacle>();
+        if (navObstacle) navObstacle.OnPickup();
 
         if (ghostVisual != null)
         {
@@ -281,6 +284,9 @@ public class FurnitureMover : MonoBehaviour
         foreach (var c in selectedFurniture.GetComponentsInChildren<Collider>())
             Physics.IgnoreCollision(c, playerCol, false);
 
+        // Re-enable carving after placement
+        var navObstacle = selectedFurniture.GetComponent<MovableNavMeshObstacle>();
+        if (navObstacle) navObstacle.OnPlace();
 
         // Re-enable the renderers
         if (originalRenderers != null)
@@ -572,6 +578,10 @@ public class FurnitureMover : MonoBehaviour
         // Turn off ghost
         if (ghostVisual != null)
             ghostVisual.SetActive(false);
+
+        // Re-enable carving even if cancelled
+        var navObstacle = selectedFurniture.GetComponent<MovableNavMeshObstacle>();
+        if (navObstacle) navObstacle.OnPlace();
 
         // Reset layers (root + all children)
         selectedFurniture.layer = originalFurnitureLayer;

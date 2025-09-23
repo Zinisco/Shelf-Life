@@ -43,6 +43,8 @@ GameObject:
   - component: {fileID: 5524336264724043774}
   - component: {fileID: 1161108081079920839}
   - component: {fileID: 8888256322282592897}
+  - component: {fileID: 1155007483121851235}
+  - component: {fileID: 8976474532934422858}
   m_Layer: 0
   m_Name: Orchid
   m_TagString: Untagged
@@ -103,6 +105,34 @@ MonoBehaviour:
   ghostVisual: {fileID: 2907803221008229283}
   plantID: Orchid
   Type: 0
+--- !u!208 &1155007483121851235
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8905215291265207959}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.28, y: 0.59, z: 0.17}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 0.64, z: 0}
+  m_TimeToStationary: 0.5
+--- !u!114 &8976474532934422858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8905215291265207959}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da49a4ec628d50d40aaf2adf60fb2d76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &1882081409040001831
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -43,6 +43,8 @@ GameObject:
   - component: {fileID: 5735552567658843513}
   - component: {fileID: 2128197166570454722}
   - component: {fileID: 8135133544855183456}
+  - component: {fileID: 5338600837103282099}
+  - component: {fileID: 943673576580454894}
   m_Layer: 0
   m_Name: Zanzibar
   m_TagString: Untagged
@@ -103,6 +105,34 @@ MonoBehaviour:
   ghostVisual: {fileID: 2317458774085898498}
   plantID: Zanzibar
   Type: 1
+--- !u!208 &5338600837103282099
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6244323191912569174}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.71, y: 1.48, z: 0.655}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 1.43, z: 0}
+  m_TimeToStationary: 0.5
+--- !u!114 &943673576580454894
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6244323191912569174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da49a4ec628d50d40aaf2adf60fb2d76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &5753575276241965913
 PrefabInstance:
   m_ObjectHideFlags: 0

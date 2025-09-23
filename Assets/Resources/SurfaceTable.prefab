@@ -12,6 +12,8 @@ GameObject:
   - component: {fileID: 1981481281099932863}
   - component: {fileID: 5147861767735035300}
   - component: {fileID: 4210402336720398165}
+  - component: {fileID: 6851616360440892286}
+  - component: {fileID: 1868255496034155119}
   m_Layer: 16
   m_Name: SurfaceTable
   m_TagString: Furniture
@@ -50,6 +52,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ghostVisual: {fileID: 8361356697049365285}
   visualRoot: {fileID: 6337394487723056741}
+  contentsRoot: {fileID: 0}
 --- !u!114 &5147861767735035300
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -84,6 +87,34 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 4.329096, y: 1.6430982, z: 2.3378234}
   m_Center: {x: -0.017306805, y: 0.8240139, z: -0.08032107}
+--- !u!208 &6851616360440892286
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8309916831982774950}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 2.155, y: 0.86, z: 1.22}
+  m_MoveThreshold: 0.1
+  m_Carve: 1
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 0.78, z: 0}
+  m_TimeToStationary: 0.5
+--- !u!114 &1868255496034155119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8309916831982774950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: da49a4ec628d50d40aaf2adf60fb2d76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &8361356697049365285
 GameObject:
   m_ObjectHideFlags: 0
