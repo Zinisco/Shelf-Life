@@ -478,6 +478,23 @@ public class GhostBookManager : MonoBehaviour
         Quaternion spinAroundShelfUp = Quaternion.AngleAxis(currentRotation, shelfUp);
         Quaternion targetRot = spinAroundShelfUp * orientShelf;
 
+        if (NudgableStackMover.IsNudging)
+        {
+            // Force cover to face the player
+            Vector3 cameraForward = camera.transform.forward;
+            cameraForward.y = 0f; // flatten
+            cameraForward.Normalize();
+
+            // Overwrite currentRotation to face player
+            float angle = Mathf.Atan2(cameraForward.x, cameraForward.z) * Mathf.Rad2Deg;
+            currentRotationY = Mathf.Round(angle / 90f) * 90f;
+            rotationAmount = currentRotationY;
+
+            // Replace targetRot with player-facing
+            targetRot = Quaternion.Euler(0f, currentRotationY, 0f);
+        }
+
+
         ghostBookInstance.transform.SetPositionAndRotation(point, targetRot);
         ghostBookInstance.transform.localScale =
             WorldScaleToLocal(heldObject.transform, ghostBookInstance.transform.parent);

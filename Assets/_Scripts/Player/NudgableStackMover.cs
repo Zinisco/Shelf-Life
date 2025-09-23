@@ -268,9 +268,32 @@ public class NudgableStackMover : MonoBehaviour
      tableSurfaceMask,
      ref currentYRotation
  );
-        Vector3 ghostBasePos = ghostBookManager.GhostBookInstance.transform.position;
-        Quaternion ghostRot = ghostBookManager.GhostBookInstance.transform.rotation;
-        ghostBookManager.UpdateGhostStackTransforms(ghostBasePos, ghostRot);
+        // Use the manager's clamped position, but control rotation ourselves when nudging a shelf stack
+        var inst = ghostBookManager.GhostBookInstance?.transform;
+        if (inst == null) return;
+
+        Vector3 ghostBasePos = inst.position;
+
+        // Default: whatever the manager computed (table flow etc.)
+        Quaternion baseRot = inst.rotation;
+
+        // Shelf nudging: align to the shelf under the ghost if present;
+        // otherwise keep the stack’s original shelf-facing rotation.
+        if (selectedStackRoot != null && originalContext == StackContext.Shelf)
+        {
+            Quaternion shelfRot = originalRotation;
+
+            if (Physics.Raycast(inst.position + Vector3.up * 0.1f, Vector3.down, out var shelfHit, 2f, shelfSurfaceMask))
+            {
+                shelfRot = AlignBookUpToShelfOutward(shelfHit.collider.transform);
+            }
+
+            baseRot = shelfRot;
+            inst.rotation = baseRot; // keep single ghost consistent
+        }
+
+        // Drive the multi-book ghost stack with the chosen rotation
+        ghostBookManager.UpdateGhostStackTransforms(ghostBasePos, baseRot);
 
         // Real-time placement validation for stacks
         Transform ghost = ghostBookManager.GhostBookTopTransform;
@@ -460,17 +483,21 @@ public class NudgableStackMover : MonoBehaviour
             else
                 finalPos = ghost.position;
         }
-        else // ShelfContext: slide only along the shelf’s local X axis
+        else // ShelfContext
         {
-            // compute how far the ghost moved along shelf right
-            Vector3 shelfRight = selectedStackRoot.transform.right;
-            Vector3 delta      = ghost.position - originalPosition;
-            float distAlongX   = Vector3.Dot(delta, shelfRight);
-            finalPos = originalPosition + shelfRight * distAlongX;
-            // lock Y & Z to original shelf rail
-            finalPos.y = originalPosition.y;
-            finalPos.z = originalPosition.z;
+            // Use the ghost’s shelf if one is directly under it; otherwise keep original
+            finalPos = ghost.position;
+
+            if (Physics.Raycast(ghost.position + Vector3.up * 0.1f, Vector3.down, out var shelfHit, 2f, shelfSurfaceMask))
+            {
+                correctRotation = AlignBookUpToShelfOutward(shelfHit.collider.transform);
+            }
+            else
+            {
+                correctRotation = originalRotation;
+            }
         }
+
 
         selectedStackRoot.transform.SetPositionAndRotation(finalPos, correctRotation);
         selectedStackRoot.wasJustNudged = true;
@@ -553,6 +580,26 @@ public class NudgableStackMover : MonoBehaviour
 
         Debug.Log("Nudging canceled.");
     }
+
+    // Align a book whose cover normal is +Y so that:
+    //   book.up    -> shelf outward (-forward)
+    //   book.right -> shelf right   (resolves the twist around outward)
+    private static Quaternion AlignBookUpToShelfOutward(Transform shelfTf)
+    {
+        Vector3 shelfOut = -shelfTf.forward; // outward toward the player
+        Vector3 shelfRight = shelfTf.right;
+
+        // 1) rotate so book.up (Y) becomes shelfOut
+        Quaternion alignUp = Quaternion.FromToRotation(Vector3.up, shelfOut);
+
+        // 2) after that rotation, where did book.right end up?
+        Vector3 rightAfter = alignUp * Vector3.right;
+
+        // 3) twist around shelfOut so right matches shelfRight
+        float twist = Vector3.SignedAngle(rightAfter, shelfRight, shelfOut);
+        return Quaternion.AngleAxis(twist, shelfOut) * alignUp;
+    }
+
 
     public void GhostSetValidity(bool isValid)
     {
