@@ -29,10 +29,6 @@ public class Runtime3DText : MonoBehaviour
     // If true, force text to render Left->Right even if parent has negative X scale
     [SerializeField, Tooltip("Keep Left-to-Right even if parent has negative X scale.")]
     private bool forceLTR = true;
-
-    // If true, nudge each spawned letter so its left (or right) renderer edge sits exactly on X
-    [SerializeField, Tooltip("Align by renderer edge to neutralize inconsistent pivots.")]
-    private bool alignByRendererEdge = true;
     
     [SerializeField, Tooltip("If OFF, spacing/kerning ignore letterScale (good for tuning).")]
     private bool scaleSpacingWithLetterScale = true;

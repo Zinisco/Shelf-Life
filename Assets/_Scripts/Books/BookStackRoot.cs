@@ -42,10 +42,42 @@ public class BookStackRoot : MonoBehaviour
         }
     }
 
-
     /// <summary>
-    /// Parents & positions the book under this root.
+    /// Un-parents and reflows remaining books; destroys root if empty.
     /// </summary>
+    public void RemoveBook(GameObject book, bool rebuild = true)
+    {
+        if (!books.Remove(book))
+            return;
+
+        book.transform.SetParent(null, worldPositionStays: true);
+        var info = book.GetComponent<BookInfo>();
+        if (info != null) info.currentStackRoot = null;
+
+        if (rebuild)
+            RebuildStackLayout();
+
+        if (books.Count == 0)
+            Destroy(gameObject);
+    }
+
+
+    public void InsertBookAt(GameObject book, int index)
+    {
+        if (index < 0 || index > books.Count)
+            index = books.Count; // fallback to top
+
+        books.Insert(index, book);
+        book.transform.SetParent(transform, false);
+
+        // Reassign reference
+        var info = book.GetComponent<BookInfo>();
+        if (info != null)
+            info.currentStackRoot = this;
+
+        RebuildStackLayout();
+    }
+
     public void AddBook(GameObject book)
     {
         var info = book.GetComponent<BookInfo>();
@@ -53,36 +85,39 @@ public class BookStackRoot : MonoBehaviour
             return;
 
         books.Add(book);
-        book.transform.SetParent(transform, worldPositionStays: true);
-        if (context == StackContext.Table)
-            book.transform.localPosition = new Vector3(0f, bookThickness * (books.Count - 1), 0f);
-        else // Shelf
-            book.transform.localPosition = new Vector3(0f, 0f, bookThickness * (books.Count - 1));
 
-        book.transform.localRotation = Quaternion.identity;
-        info.currentStackRoot = this;
-    }
-
-    /// <summary>
-    /// Un-parents and reflows remaining books; destroys root if empty.
-    /// </summary>
-    public void RemoveBook(GameObject book)
-    {
-        if (!books.Remove(book))
-            return;
-
-        book.transform.SetParent(null, worldPositionStays: true);
-        book.GetComponent<BookInfo>().currentStackRoot = null;
-
-        // Reposition remaining books
-        for (int i = 0; i < books.Count; i++)
+        // Ensure root is aligned to the first book’s position
+        if (books.Count == 1)
         {
-            books[i].transform.localPosition = new Vector3(0f, bookThickness * i, 0f);
+            // Root goes exactly where the first book is
+            transform.position = book.transform.position;
+            if (books.Count == 1)
+            {
+                transform.position = book.transform.position;
+                transform.rotation = book.transform.rotation; // match the book instead of identity
+            }
+
         }
 
-        if (books.Count == 0)
-            Destroy(gameObject);
+        book.transform.SetParent(transform, false);
+        info.currentStackRoot = this;
+
+        RebuildStackLayout();
     }
+
+    public void RebuildStackLayout()
+    {
+        // Root stays where it was first created
+
+        for (int i = 0; i < books.Count; i++)
+        {
+            if (context == StackContext.Table)
+                books[i].transform.localPosition = new Vector3(0f, bookThickness * i, 0f);
+            else // Shelf
+                books[i].transform.localPosition = new Vector3(0f, 0f, bookThickness * i);
+        }
+    }
+
 
     void Reset()
     {

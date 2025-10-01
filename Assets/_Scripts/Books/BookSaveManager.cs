@@ -13,6 +13,14 @@ public class SurfaceAnchorSaveData
     public Quaternion rotation;
 }
 
+[System.Serializable]
+public class InventorySaveData
+{
+    public string bookID;
+    public int quantity;
+}
+
+
 public class BookSaveManager : MonoBehaviour
 {
     [System.Serializable]
@@ -27,6 +35,7 @@ public class BookSaveManager : MonoBehaviour
         public List<SurfaceAnchorSaveData> allSurfaces = new();
         public List<BookDisplaySaveData> allBookDisplays = new();
         public List<PlantSaveData> allPlants = new();
+        public List<InventorySaveData> allInventory = new();
         public ComputerSaveData terminalData;
         public Vector3 playerPos;
         public float playerYaw;       // rotation around Y for the player body
@@ -112,6 +121,18 @@ public class BookSaveManager : MonoBehaviour
             });
         }
 
+        // Save inventory stock
+        if (InventoryManager.Instance != null)
+        {
+            foreach (var kvp in InventoryManager.Instance.GetAllStock())
+            {
+                w.allInventory.Add(new InventorySaveData
+                {
+                    bookID = kvp.Key,
+                    quantity = kvp.Value
+                });
+            }
+        }
 
         // Save all FreeformBookshelf placements
         foreach (var shelf in FindObjectsOfType<FreeformBookshelf>())
@@ -438,6 +459,20 @@ public class BookSaveManager : MonoBehaviour
             Debug.Log($"[Load] Shelf present: {id} with regions: [{names}] at {ff.transform.position}");
         }
 
+        // Restore inventory
+        if (InventoryManager.Instance != null)
+        {
+            InventoryManager.Instance.ClearStock(); // optional reset
+            foreach (var inv in w.allInventory)
+            {
+                var def = bookDatabase.GetDefinitionByID(inv.bookID);
+                if (def != null)
+                {
+                    InventoryManager.Instance.AddStock(def, inv.quantity);
+                }
+            }
+        }
+
         //Load all tables
         foreach (var surfaceData in w.allSurfaces)
         {
@@ -453,6 +488,14 @@ public class BookSaveManager : MonoBehaviour
             var go = Instantiate(Resources.Load<GameObject>("ComputerTerminal"));
             go.transform.position = w.terminalData.Position;
             go.transform.rotation = w.terminalData.Rotation;
+
+            var terminalUI = go.GetComponent<ComputerTerminal>();
+            var ui = FindObjectOfType<ComputerUI>();
+            if (terminalUI != null && ui != null)
+                typeof(ComputerTerminal)
+                    .GetField("computerUI", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                    .SetValue(terminal, ui);
+
         }
 
         var stacksByID = new Dictionary<string, List<(BookSaveData, GameObject)>>();

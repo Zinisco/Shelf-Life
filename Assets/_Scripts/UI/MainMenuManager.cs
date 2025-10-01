@@ -34,9 +34,7 @@ public class MainMenuManager : MonoBehaviour
     [Header("Game Mode Chooser")]
     [SerializeField] private Button newStandardButton;
     [SerializeField] private Button newZenModeButton;
-    [SerializeField] private Button cancelGameModeButton; // NEW
-
-    private GameMode _selectedNewMode = GameMode.Standard;
+    [SerializeField] private Button cancelGameModeButton; 
 
     private void Start()
     {

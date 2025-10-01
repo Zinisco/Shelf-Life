@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -16,6 +17,8 @@ public class CustomerSpawner : MonoBehaviour
     [SerializeField] private float spawnIntervalMax = 12f;
 
     private Coroutine spawnRoutine;
+
+    public List<GameObject> activeCustomers = new List<GameObject>();
 
     void Start()
     {
@@ -54,10 +57,22 @@ public class CustomerSpawner : MonoBehaviour
         }
 
         GameObject customer = Instantiate(customerPrefab, spawnPos, spawnPoint.rotation);
+        activeCustomers.Add(customer);
 
         CustomerAI ai = customer.GetComponent<CustomerAI>();
         ai.sidewalkPoints = sidewalkPoints;
         ai.storeEntryPoint = storeEntryPoint;
+
+        // Remove from list on destroy
+        customer.AddComponent<DespawnNotifier>().Init(this);
     }
+
+    public class DespawnNotifier : MonoBehaviour
+    {
+        private CustomerSpawner spawner;
+        public void Init(CustomerSpawner s) => spawner = s;
+        void OnDestroy() { if (spawner) spawner.activeCustomers.Remove(gameObject); }
+    }
+
 
 }

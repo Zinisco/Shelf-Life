@@ -29,7 +29,6 @@ public class InventoryManager : MonoBehaviour
             stock[def.bookID] = 0;
 
         stock[def.bookID] += amount;
-        Debug.Log($"[Inventory] Added {amount}x {def.title}. New count = {stock[def.bookID]}");
     }
 
     /// <summary>
@@ -47,7 +46,6 @@ public class InventoryManager : MonoBehaviour
         }
 
         stock[def.bookID] -= amount;
-        Debug.Log($"[Inventory] Removed {amount}x {def.title}. New count = {stock[def.bookID]}");
         return true;
     }
 
@@ -69,4 +67,15 @@ public class InventoryManager : MonoBehaviour
         foreach (var pair in stock)
             Debug.Log($"{pair.Key}: {pair.Value}");
     }
+
+    public Dictionary<string, int> GetAllStock()
+    {
+        return new Dictionary<string, int>(stock); // return a copy
+    }
+
+    public void ClearStock()
+    {
+        stock.Clear();
+    }
+
 }

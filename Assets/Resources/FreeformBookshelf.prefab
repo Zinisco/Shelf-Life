@@ -354,7 +354,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   lingerTime: 10
+  weight: 3
   useFront: 1
   invertForward: 1
-  frontDistance: 1.2
+  frontDistance: 1.5
   lateralSpread: 0.8

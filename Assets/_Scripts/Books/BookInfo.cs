@@ -4,6 +4,19 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody))]
 public class BookInfo : MonoBehaviour
 {
+    public enum BookOriginType { Freeform, Stack, Display }
+
+    public class BookOrigin
+    {
+        public BookOriginType type;
+        public Transform parent;
+        public Vector3 localPos;
+        public Quaternion localRot;
+        public BookStackRoot stackRoot;
+        public int stackIndex;
+    }
+
+
     [Header("UI")]
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private TMP_Text spineText;
@@ -20,6 +33,7 @@ public class BookInfo : MonoBehaviour
     [HideInInspector] public Quaternion Rotation;
     [HideInInspector] public string ObjectID;
     [HideInInspector] public string title;
+    [HideInInspector] public BookOrigin lastOrigin;
 
     public BookStackRoot currentStackRoot;
 
@@ -112,6 +126,87 @@ public class BookInfo : MonoBehaviour
             {
                 r.SetPropertyBlock(null, 1);
             }
+        }
+    }
+
+    public void RememberOrigin()
+    {
+        lastOrigin = new BookOrigin
+        {
+            parent = transform.parent,
+            localPos = transform.localPosition,
+            localRot = transform.localRotation
+        };
+
+        if (currentStackRoot != null)
+        {
+            lastOrigin.type = BookOriginType.Stack;
+            lastOrigin.stackRoot = currentStackRoot;
+            lastOrigin.stackIndex = currentStackRoot.GetBookIndex(gameObject);
+        }
+        else if (transform.parent != null && transform.parent.CompareTag("BookDisplay"))
+        {
+            lastOrigin.type = BookOriginType.Display;
+        }
+        else
+        {
+            lastOrigin.type = BookOriginType.Freeform;
+        }
+    }
+
+
+    public void RestoreOrigin()
+    {
+        if (lastOrigin == null) return;
+
+        switch (lastOrigin.type)
+        {
+            case BookOriginType.Stack:
+                if (lastOrigin.stackRoot != null)
+                {
+                    int count = lastOrigin.stackRoot.GetCount();
+
+                    // If index still valid, insert back there
+                    if (lastOrigin.stackIndex >= 0 && lastOrigin.stackIndex <= count)
+                    {
+                        lastOrigin.stackRoot.InsertBookAt(gameObject, lastOrigin.stackIndex);
+                        Debug.Log($"[BookInfo] Restored {name} to stack index {lastOrigin.stackIndex}");
+                    }
+                    else
+                    {
+                        // Always re-add safely to top
+                        lastOrigin.stackRoot.AddBook(gameObject);
+                        Debug.LogWarning($"[BookInfo] Index invalid, restored {name} to top of stack.");
+                    }
+                }
+                else
+                {
+                    // fallback: put on ground, but not float
+                    if (UnityEngine.AI.NavMesh.SamplePosition(transform.position, out var hit, 2f, UnityEngine.AI.NavMesh.AllAreas))
+                    {
+                        transform.SetParent(null);
+                        transform.position = hit.position;
+                        transform.rotation = Quaternion.identity;
+                    }
+                    else
+                    {
+                        transform.SetParent(null);
+                    }
+                }
+                break;
+
+
+            case BookOriginType.Display:
+                transform.SetParent(lastOrigin.parent, true);
+                transform.localPosition = lastOrigin.localPos;
+                transform.localRotation = lastOrigin.localRot;
+                break;
+
+            case BookOriginType.Freeform:
+                transform.SetParent(lastOrigin.parent, true);
+                transform.localPosition = lastOrigin.localPos;
+                transform.localRotation = lastOrigin.localRot;
+                break;
         }
     }
 }

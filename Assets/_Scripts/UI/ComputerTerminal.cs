@@ -14,6 +14,9 @@ public class ComputerTerminal : MonoBehaviour
         if (gameInput != null)
             gameInput.OnInteractAction += OnInteract;
 
+        if (computerUI == null)
+            computerUI = FindObjectOfType<ComputerUI>(); // auto-bind at runtime
+
         if (computerUI != null)
             computerUI.ToggleUI(false);
     }

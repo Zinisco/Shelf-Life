@@ -726,6 +726,12 @@ public class PickUp : MonoBehaviour
             rb.collisionDetectionMode = CollisionDetectionMode.Discrete;
         }
 
+        BookInfo info = heldObject.GetComponent<BookInfo>();
+        if (info != null)
+        {
+            info.RememberOrigin();
+        }
+
         heldObject.layer = LayerMask.NameToLayer("Book");
         EnablePlayerCollision(heldObject, ignore: true);
         ClearHeldBook();
@@ -849,22 +855,14 @@ public class PickUp : MonoBehaviour
 
         if (root != null)
         {
-            root.RemoveBook(book);
+            if (root.GetCount() > 0) // Only safe to remove if still books left
+                root.RemoveBook(book);
 
-            if (root.GetCount() == 0)
-            {
-                if (heldObject != book)
-                    Destroy(root.gameObject);
-                else
-                    StartCoroutine(DestroyRootLater(root));
-            }
+            // Don’t destroy the root if other books remain
+            if (root.GetCount() == 0 && heldObject != book)
+                Destroy(root.gameObject);
         }
-    }
 
-    private IEnumerator DestroyRootLater(BookStackRoot root)
-    {
-        yield return new WaitForEndOfFrame();
-        if (root != null) Destroy(root.gameObject);
     }
 
     private IEnumerator AnimateBookPlacement(GameObject book, Transform target, Quaternion rotation, float duration = 0.25f)

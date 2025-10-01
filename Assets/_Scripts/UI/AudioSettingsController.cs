@@ -32,11 +32,8 @@ public class AudioSettingsController : MonoBehaviour
     private const float MIN_VOL = 0.0f;
     private const float MAX_VOL = 1.0f;
 
-    private bool _initializing;
-
     void Awake()
     {
-        _initializing = true;
 
         // 1) Configure sliders
         SetupSlider(masterSlider);
@@ -66,8 +63,6 @@ public class AudioSettingsController : MonoBehaviour
         Apply("MasterVolume", m);
         Apply("MusicVolume", mu);
         Apply("SFXVolume", s);
-
-        _initializing = false;
     }
 
     // --- Public helper (optional button) ---

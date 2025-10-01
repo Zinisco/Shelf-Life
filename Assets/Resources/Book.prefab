@@ -13,6 +13,7 @@ GameObject:
   - component: {fileID: 6298778966942306572}
   - component: {fileID: 5011039745262841221}
   - component: {fileID: 6324312024836018304}
+  - component: {fileID: 5585647287927972364}
   m_Layer: 15
   m_Name: Book
   m_TagString: Book
@@ -126,6 +127,20 @@ MonoBehaviour:
   coverTitleText: {fileID: 8574068824914450158}
   spineTitleText: {fileID: 6103417470195975679}
   coverRenderer: {fileID: 3005049027854845143}
+--- !u!114 &5585647287927972364
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 940939929322109603}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0a44d85558cb7c94f998d9fc48352797, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  title: 
+  isTaken: 0
 --- !u!1 &1403580079620976138
 GameObject:
   m_ObjectHideFlags: 0
